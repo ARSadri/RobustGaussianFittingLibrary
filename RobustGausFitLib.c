@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+
 void indexCheck(float* inTensor, float* targetLoc,
 		unsigned int X, unsigned int Y, float Z) {
 	unsigned int rCnt, cCnt;
@@ -240,61 +241,51 @@ void TLS_AlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, unsigned
 
 void stretch2CornersFunc(struct sortStruct errorVec[], float* x, float* y, 
 						unsigned int N, unsigned char D) {
-    if((D<2) || (D>N/2))
+    if((D<2) || (N/100< D) || (N<200))
 		return;
 						
-	unsigned int regCnt_0, regCnt_1, regCnt_2, regCnt_3, i;
-	float x_mean, y_mean;
+	unsigned int i;
+	float x_min, y_min, x_max, y_max;
+	float winXCnt, winYCnt;
+	unsigned int winCnt, winStart, newSortInd;
+	unsigned int* winPtsCnt;
+	
 	struct sortStruct* errorVecMod;
 	errorVecMod = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-	
-	regCnt_0 = 0;
-	regCnt_1 = 1;
-	regCnt_2 = 2;
-	regCnt_3 = 3;
-	x_mean = 0;
-	y_mean = 0;
+	winPtsCnt = (unsigned int*) malloc(D*D * sizeof(unsigned int));
+
+	for(i=0; i<D*D; i++)
+		winPtsCnt[i]=0;
+	x_min = x[0];
+	x_max = x[0];
+	y_min = y[0];
+	y_max = y[0];	
 	for (i = 0; i < N; i++) {
-		x_mean += x[i];
-		y_mean += y[i];
-	}
-	x_mean = x_mean/N;
-	y_mean = y_mean/N;
-	
-	for (i = 0; i < N; i++) {
+		if(x_min>=x[i])
+			x_min = x[i];
+		if(x_max<=x[i])
+			x_max = x[i];
+		if(y_min>=y[i])
+			y_min = y[i];
+		if(y_max<=y[i])
+			y_max = y[i];
+		
 		errorVecMod[i].vecData = errorVec[i].vecData;
 		errorVecMod[i].indxs = errorVec[i].indxs;
 	}
+	
 	for (i = 0; i < N; i++) {
-		if (x[errorVec[i].indxs] < x_mean*(1-1/D)) {
-			if (y[errorVec[i].indxs] < y_mean*(1-1/D)) {
-				errorVecMod[regCnt_0].vecData = errorVec[i].vecData;
-				errorVecMod[regCnt_0].indxs = errorVec[i].indxs;
-				regCnt_0 += 4;
-			}
-			else if (y[errorVec[i].indxs] >= y_mean*(1+1/D)) {
-				errorVecMod[regCnt_1].vecData = errorVec[i].vecData;
-				errorVecMod[regCnt_1].indxs = errorVec[i].indxs;
-				regCnt_1 += 4;
-			}
-		}
-		else if (x[errorVec[i].indxs] >= x_mean*(1+1/D)) {
-			if (y[errorVec[i].indxs] < y_mean*(1-1/D)) {
-				errorVecMod[regCnt_2].vecData = errorVec[i].vecData;
-				errorVecMod[regCnt_2].indxs = errorVec[i].indxs;
-				regCnt_2 += 4;
-			}
-			else if (y[errorVec[i].indxs] >= y_mean*(1+1/D)) {
-				errorVecMod[regCnt_3].vecData = errorVec[i].vecData;
-				errorVecMod[regCnt_3].indxs = errorVec[i].indxs;
-				regCnt_3 += 4;
-			}
-		}
-	}
-	for (i = 0; i < N; i++) {
-		errorVec[i].vecData  = errorVecMod[i].vecData;
-		errorVec[i].indxs = errorVecMod[i].indxs;
+		winXCnt = (int) floor(D*(x[i] - x_min)/(x_max-x_min+1));
+		winYCnt = (int) floor(D*(y[i] - y_min)/(y_max-y_min+1));
+		winCnt = winYCnt + winXCnt*D;
+		winStart = (int) floor(winCnt*N/(D*D));
+		newSortInd = winPtsCnt[winCnt] + winStart;
+		winPtsCnt[winCnt]++;
+		errorVec[newSortInd].vecData  = errorVecMod[i].vecData;
+		errorVec[newSortInd].indxs = errorVecMod[i].indxs;
 	}	
+	free(errorVecMod);
+	free(winPtsCnt);
 }
 
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
@@ -317,7 +308,6 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 	sample_y = (float*) malloc(sampleSize * sizeof(float));
 	sample_z = (float*) malloc(sampleSize * sizeof(float));
 
-	stretch2CornersOpt = 1;
 	model[0]=0;
 	model[1]=0;
 	model[2]=0;
@@ -329,8 +319,7 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 		}
 		quickSort(errorVec,0,N-1);
 		
-		if(stretch2CornersOpt<2)
-			stretch2CornersFunc(errorVec, x, y, N, stretch2CornersOpt);
+		stretch2CornersFunc(errorVec, x, y, N, stretch2CornersOpt);
 		
 		cnt = 0;
 		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
