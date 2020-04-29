@@ -1,4 +1,4 @@
-# RGFLib: Robust Gaussian Fitting Library
+# Robust Gaussian Fitting Library
 A C Library for Robust Gaussian Fitting using geometric models in presence of outliers. This library is based on two main algorithms, FLKOS for finding the average of Gaussians, and MSSE for finding the scale.
 
 In robust segmentation, the main assumtion is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem.
