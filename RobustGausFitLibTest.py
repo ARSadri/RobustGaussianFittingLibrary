@@ -2,6 +2,7 @@ import RobustGausFitLibPy as RGFLib
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import os
 
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
@@ -11,7 +12,7 @@ def naiveHist(vec, mP):
     hist,bin_edges = np.histogram(vec, 100)
     plt.bar(bin_edges[:-1], hist, width = 3, color='#0504aa',alpha=0.7)
     x = np.linspace(vec.min(), vec.max(), 1000)
-    y = hist.max() * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
+    y = hist.max() * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1]))
     plt.plot(x,y, 'r')
     plt.xlim(min(bin_edges), max(bin_edges))
     plt.grid(axis='y', alpha=0.75)
@@ -79,7 +80,7 @@ def test_RobustAlgebraicLineFittingPy():
     
 def test_RMGImagePy():
     
-    inImage = 100*np.random.randn(1024, 1024).astype('float32')
+    inImage = np.zeros((1024, 1024), dtype='float32')
     
     inMask = np.ones(inImage.shape, dtype = 'uint8')
     inMask[-1, :] = 0
@@ -89,15 +90,18 @@ def test_RMGImagePy():
     
     for ccnt in range(inImage.shape[1]):
         for rcnt in range(inImage.shape[0]):
-            inImage[rcnt, ccnt] += (rcnt**2+ccnt**2)**0.5
-    
-    mP = RGFLib.RMGImagePy(inImage, inMask, winX = 102, winY = 102) \
-        + RGFLib.RMGImagePy(inImage, inMask, winX = 60, winY = 60) \
-        + RGFLib.RMGImagePy(inImage, inMask, winX = 20, winY = 20)
-    mP = mP/3
+            inImage[rcnt, ccnt] += 400*np.exp(-(((rcnt-512)**2+(ccnt-512)**2)**0.5 - 250)**2/(2*100**2))
+            inImage[rcnt, ccnt] += np.sqrt(inImage[rcnt, ccnt])*np.random.randn(1)
 
+    
     plt.imshow(inImage*inMask)
     plt.show()
+
+    mP = RGFLib.RMGImagePy(inImage, inMask, winX = 64, winY = 64, stretch2CornersOpt=4) \
+        + RGFLib.RMGImagePy(inImage, inMask, winX = 32, winY = 32, stretch2CornersOpt=2) \
+        + RGFLib.RMGImagePy(inImage, inMask, winX = 16, winY = 16, stretch2CornersOpt=1)
+    mP = mP/3
+
     plt.imshow(mP[0,...])
     plt.show()
     plt.imshow(mP[1,...])
@@ -208,4 +212,5 @@ def test_SginleGaussianTensor():
     
 if __name__ == '__main__':
     #choose a test from above
+    print('PID ->' + str(os.getpid()))
     test_RMGImagePy()
