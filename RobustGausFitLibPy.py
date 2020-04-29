@@ -1,19 +1,3 @@
-"""
-if we choose to use the samples of a Gaussian
-that are closest to the model and are less than T sigma,
-then the estimated scale by any algorithm should be divided by a factor.
-this is only true if you care to get the right std because if you did
-then you must have had enough data to use LAMBDA = 3.0. if you use LAMBDA = 2.0
-I suggest you live with the fact that you have inseparable structures
-and deal with it in high dimensional space rather than bringing the underlying
-problem down to MSSE. [MCNC CVIU'18]
-wolfram for LAMBDA=3: integrate (x^2 /((2*pi)^0.5))*exp(-x^2/2)  dx from -LAMBDA to LAMBDA
-for MSSE, I suggest the following rules of thumb:
-    LAMBDA = 2, factor: 1/0.75
-    LAMBDA = 2.35, factor: 1/0.9
-    LAMBDA = 3, factor: 1
-"""
-
 import numpy as np
 import ctypes
 from multiprocessing import Process, Queue, cpu_count
