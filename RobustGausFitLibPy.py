@@ -1,6 +1,8 @@
 import numpy as np
 import ctypes
+import os
 from multiprocessing import Process, Queue, cpu_count
+from robustLib.textProgBar import textProgBar
 
 import matplotlib.pyplot as plt
 
@@ -9,59 +11,75 @@ np.set_printoptions(precision=2)
 
 ##########################################################################################
 ############################# a header for Ctypes functions ##############################
-RobustGausFitLib = ctypes.cdll.LoadLibrary("./RobustGausFitLib.so")
+dir_path = os.path.dirname(os.path.realpath(__file__))
+RobustGausFitCLib = ctypes.cdll.LoadLibrary(dir_path + '/RobustGausFitLib.so')
 
+'''
+void islandRemoval(unsigned char* inMask, unsigned char* outMask, 
+					  unsigned int X, unsigned int Y, 
+					  unsigned int islandSizeThreshold)
+'''
+RobustGausFitCLib.islandRemoval.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
+                np.ctypeslib.ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
+  
 '''
 void indexCheck(float* inTensor, float* targetLoc, unsigned int X, unsigned int Y, unsigned int Z)
 '''
-RobustGausFitLib.indexCheck.argtypes = [
+RobustGausFitCLib.indexCheck.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 ctypes.c_int, ctypes.c_int, ctypes.c_float]
 
 '''
-void TLS_AlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, unsigned int N)
-'''
-RobustGausFitLib.TLS_AlgebraicPlaneFitting.argtypes = [
-                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                ctypes.c_int]
-
-'''
 float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 '''
-RobustGausFitLib.MSSE.restype = ctypes.c_float
-RobustGausFitLib.MSSE.argtypes = [
+RobustGausFitCLib.MSSE.restype = ctypes.c_float
+RobustGausFitCLib.MSSE.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 ctypes.c_int, ctypes.c_float, ctypes.c_int ]
 
 '''
-void RobustSingleGaussianVec(float *vec, float *modelParams,
-    unsigned int N, float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA))
+void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
+		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters)
 '''
-RobustGausFitLib.RobustSingleGaussianVec.argtypes = [
+RobustGausFitCLib.RobustSingleGaussianVec.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+                ctypes.c_float, ctypes.c_int, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
 
 '''
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N,
 							  float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
 '''                
-RobustGausFitLib.RobustAlgebraicLineFitting.argtypes = [
+RobustGausFitCLib.RobustAlgebraicLineFitting.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float]
 
+
+'''
+void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY, 
+                                        float *modelParamsMap, unsigned int N,
+                                        unsigned int X, unsigned int Y, 
+                            float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
+'''
+RobustGausFitCLib.RobustAlgebraicLineFittingTensor.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
+                ctypes.c_float, ctypes.c_float, ctypes.c_float]                
+                
 '''
 void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap,
     unsigned int N, unsigned int X,
     unsigned int Y, float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA))
 '''
-RobustGausFitLib.RobustSingleGaussianTensor.argtypes = [
+RobustGausFitCLib.RobustSingleGaussianTensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 ctypes.c_int, ctypes.c_int, ctypes.c_int,
@@ -72,7 +90,7 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 							unsigned int N, float topKthPerc, float bottomKthPerc, 
 							float MSSE_LAMBDA, unsigned char stretch2CornersOpt)
 '''                            
-RobustGausFitLib.RobustAlgebraicPlaneFitting.argtypes = [
+RobustGausFitCLib.RobustAlgebraicPlaneFitting.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
@@ -84,50 +102,65 @@ RobustGausFitLib.RobustAlgebraicPlaneFitting.argtypes = [
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
 				unsigned int X, unsigned int Y, 
-				float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, 
-                unsigned char stretch2CornersOpt)
+				float topKthPerc, float bottomKthPerc, 
+				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
+				unsigned char numModelParams, unsigned char optIters)
+
 '''                
-RobustGausFitLib.RSGImage.argtypes = [
+RobustGausFitCLib.RSGImage.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                ctypes.c_int, ctypes.c_int, 
-                ctypes.c_int, ctypes.c_int, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
-                
+                ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_float, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_uint8, 
+                ctypes.c_uint8, ctypes.c_uint8]
+       
 '''
-void RSGImagesInTensor(float *inTensor, unsigned char* inMask, 
-					float *modelParamsMap, unsigned int N,
-					unsigned int X, unsigned int Y, float topKthPerc,
-					float bottomKthPerc, float MSSE_LAMBDA, unsigned char stretch2CornersOpt)
+void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor, 
+						float *model_mean, float *model_std,
+						unsigned int winX, unsigned int winY,
+						unsigned int N, unsigned int X, unsigned int Y, 
+						float topKthPerc, float bottomKthPerc, 
+						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
+						unsigned char numModelParams, unsigned char optIters)
 '''
-RobustGausFitLib.RSGImagesInTensor.argtypes = [
+RobustGausFitCLib.RSGImage_by_Image_Tensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
-                
+                np.ctypeslib.ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
+                ctypes.c_float, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_uint8, 
+                ctypes.c_uint8, ctypes.c_uint8]
+          
 ################################## end of Ctypes functions ###############################
 ##########################################################################################
 
+###########################################################################################
+################################### Basic functions #######################################
+
+def islandRemovalPy(inMask, 
+            islandSizeThreshold = 1):
+    outMask = np.zeros(inMask.shape, dtype='uint8')
+    RobustGausFitCLib.islandRemoval(1 - inMask.astype('uint8'),
+                                   outMask,
+                                   inMask.shape[0],
+                                   inMask.shape[1],
+                                   islandSizeThreshold)
+    return(outMask+inMask)  
+    
 def indexCheck():
     inTensor = np.zeros((3,4), dtype='float32')
     for rCnt in range(3):
         for cCnt in range(4):
             inTensor[rCnt, cCnt] = rCnt + 10*cCnt
     targetLoc = np.zeros(2, dtype='float32')
-    RobustGausFitLib.indexCheck(inTensor, targetLoc, 3, 4, 21.0)
+    RobustGausFitCLib.indexCheck(inTensor, targetLoc, 3, 4, 21.0)
     print(targetLoc)
-
-def TLS_AlgebraicPlaneFittingPY(inX, inY, inZ):
-    mP = np.zeros(3, dtype = 'float32')
-    RobustGausFitLib.TLS_AlgebraicPlaneFitting( inX.copy().astype('float32'),
-                                                inY.copy().astype('float32'),
-                                                inZ.copy().astype('float32'),
-                                                mP,
-                                                inZ.shape[0])
-    return(mP)
 
 def sGHist(inVec, mP, SNR_ACCEPT=3.0):
     tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
@@ -137,15 +170,15 @@ def sGHist(inVec, mP, SNR_ACCEPT=3.0):
     _xlimMax = tmpM.max()
     plt.figure()
     if (tmpL.any()):
-        hist,bin_edges = np.histogram(tmpL, 40)
-        plt.bar(bin_edges[:-1], hist, width = 0.5*tmpL.std()/SNR_ACCEPT, color='b',alpha=0.5)
+        hist,bin_edges = np.histogram(tmpL, tmpL.shape[0])
+        plt.bar(bin_edges[:-1], hist, width = 0.1*tmpL.std()/SNR_ACCEPT, color='b',alpha=0.5)
         _xlimMin = tmpL.min()
     hist,bin_edges = np.histogram(tmpM, 40)
     tmpMmax = hist.max()
     plt.bar(bin_edges[:-1], hist, width = 0.5*tmpM.std()/SNR_ACCEPT, color='g',alpha=0.5)
     if (tmpH.any()):
-        hist,bin_edges = np.histogram(tmpH, 40)
-        plt.bar(bin_edges[:-1], hist, width = 0.5*tmpH.std()/SNR_ACCEPT, color='r',alpha=0.5)
+        hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
+        plt.bar(bin_edges[:-1], hist, width = 0.1*tmpH.std()/SNR_ACCEPT, color='r',alpha=0.5)
         _xlimMax = tmpH.max()
     x = np.linspace(mP[0]-SNR_ACCEPT*mP[1], mP[0]+SNR_ACCEPT*mP[1], 1000)
     y = tmpMmax * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
@@ -160,6 +193,25 @@ def sGHist(inVec, mP, SNR_ACCEPT=3.0):
     plt.title('Normal Distribution Histogram',fontsize=15)
     plt.show()
 
+def sGHist_multi_mP(inVec, mP, SNR=3.0):
+    numModels = mP.shape[1]
+    flag = np.zeros(inVec.size)
+    plt.figure()
+    for mCnt in range(numModels):
+        flag[(inVec>=mP[0, mCnt]-SNR*mP[1, mCnt]) & (inVec<=mP[0, mCnt]+SNR*mP[1, mCnt])] = mCnt + 1
+        modelVec = inVec[flag == mCnt + 1].copy()
+        hist,bin_edges = np.histogram(modelVec, 40)
+        tmpMmax = hist.max()
+        plt.bar(bin_edges[:-1], hist, width = mP[1, mCnt]/SNR,alpha=0.5)
+        x = np.linspace(mP[0, mCnt]-SNR*mP[1, mCnt], mP[0, mCnt]+SNR*mP[1, mCnt], 1000)
+        y = tmpMmax * np.exp(-((x-mP[0, mCnt])**2)/(2*mP[1, mCnt]**2)) 
+        plt.plot(x,y)
+    
+    modelVec = inVec[flag == 0]
+    hist,bin_edges = np.histogram(modelVec, modelVec.shape[0])
+    plt.bar(bin_edges[:-1], hist, color='g',alpha=0.5)
+    plt.show()
+    
 def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
     """
     This function gives indices by which a large tensor is broken into smaller segments,
@@ -172,8 +224,8 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
                                     rs x cs will be the segment number going in row direction first.
     Note: because we use linspace, obviously, one of the parts will be larger in case the sizes don't match
     """
-    print('meshgrid indices for shape: ' + str(inTensor_shape))
-    print('divided into ' + str(numRowSegs) + ' row segments and into '+ str(numClmSegs) + ' clm segments')
+    #print('meshgrid indices for shape: ' + str(inTensor_shape))
+    #print('divided into ' + str(numRowSegs) + ' row segments and into '+ str(numClmSegs) + ' clm segments')
     rowClmInds = np.zeros((numRowSegs*numClmSegs, 4), dtype='int')
     rowStarts = np.linspace(0, inTensor_shape[1], numRowSegs+1, dtype='int')
     rowEnds = rowStarts
@@ -195,19 +247,24 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
             segInds[segCnt, 1] = ccnt
             segCnt += 1
 
-    print('meshgrid number of parts: ' + str(segCnt))
+    #print('meshgrid number of parts: ' + str(segCnt))
     return(rowClmInds, segInds)
             
 def MSSEPy(inVec, 
             MSSE_LAMBDA = 3.0, k = 12):
-    return RobustGausFitLib.MSSE((inVec.copy()).astype('float32'),
+    return RobustGausFitCLib.MSSE((inVec.copy()).astype('float32'),
                                        inVec.shape[0],
                                        float(MSSE_LAMBDA), k)
 
+###########################################################################################
+################################### Robust average  #######################################
+                                       
 def RobustSingleGaussianVecPy(inVec,
                               topKthPerc = 0.5,
                               bottomKthPerc=0.45,
-                              MSSE_LAMBDA = 3.0):
+                              MSSE_LAMBDA = 3.0,
+                              modelValueInit = 0,
+                              optimizerNumIteration = 10):
     """
     finds the parameters of a single gaussian structure through FLKOS [DICTA'08]
     The Perc and sample size can be the same as suggested in MCNC [CVIU '18]
@@ -219,50 +276,21 @@ def RobustSingleGaussianVecPy(inVec,
         numpy.1darray of 2 elements, average and standard deviation of the guassian
     """
     modelParams = np.zeros(2, dtype='float32')
-    RobustGausFitLib.RobustSingleGaussianVec((inVec.copy()).astype('float32'),
-                                                   modelParams, inVec.shape[0],
+    RobustGausFitCLib.RobustSingleGaussianVec((inVec.copy()).astype('float32'),
+                                                   modelParams, modelValueInit,
+                                                   inVec.shape[0],
                                                    topKthPerc,
                                                    bottomKthPerc,
-                                                   MSSE_LAMBDA)
+                                                   MSSE_LAMBDA,
+                                                   optimizerNumIteration)
     return (modelParams)
 
-def RobustAlgebraicPlaneFittingPy(inX, inY, inZ,
-                            topKthPerc = 0.5,
-                            bottomKthPerc = 0.25,
-                            MSSE_LAMBDA = 3.0,
-                            stretch2CornersOpt = 2):
-    modelParams = np.zeros(4, dtype='float32')
-    RobustGausFitLib.RobustAlgebraicPlaneFitting((inX.copy()).astype('float32'),
-                                            (inY.copy()).astype('float32'),
-                                            (inZ.copy()).astype('float32'),
-                                            modelParams, 
-                                            inZ.shape[0],
-                                            topKthPerc,
-                                            bottomKthPerc,
-                                            MSSE_LAMBDA, 
-                                            stretch2CornersOpt)
-    return (modelParams)
-
-def RobustAlgebraicLineFittingPy(inX, inY,
-                            topKthPerc = 0.5,
-                            bottomKthPerc=0.45,
-                            MSSE_LAMBDA = 3.0):
-    modelParams = np.zeros(3, dtype='float32')
-    RobustGausFitLib.RobustAlgebraicLineFitting((inX.copy()).astype('float32'),
-                                            (inY.copy()).astype('float32'),
-                                            modelParams, 
-                                            inX.shape[0],
-                                            topKthPerc,
-                                            bottomKthPerc,
-                                            MSSE_LAMBDA)
-    return (modelParams)
-    
 def RobustSingleGaussianTensorPy(inTensor,
                               topKthPerc = 0.5,
                               bottomKthPerc=0.45,
                               MSSE_LAMBDA = 3.0):
     modelParamsMap = np.zeros((2, inTensor.shape[1], inTensor.shape[2]), dtype='float32')
-    RobustGausFitLib.RobustSingleGaussianTensor((inTensor.copy()).astype('float32'),
+    RobustGausFitCLib.RobustSingleGaussianTensor((inTensor.copy()).astype('float32'),
                                                         modelParamsMap,
                                                         inTensor.shape[0],
                                                         inTensor.shape[1],
@@ -300,11 +328,8 @@ def RobustSingleGaussiansTensorPy_MultiProc(inTensor,
     numWiating = numSegs
     numDone = 0
     partCnt = 0
-    print('inTensor shape -> ' + str(inTensor.shape)+ ', parts->' + str(numSegs))
-    print('rowClmInds shape->' + str(rowClmInds.shape))
-    
+    firstProcessed = 0
     modelParamsMap = np.zeros((2, inTensor.shape[1], inTensor.shape[2]), dtype='float32')
-    print('starting ' +str(numProc) + ' processes with ' + str(myCPUCount) + ' CPUs')
     while(numDone<numProc):
         if (not aQ.empty()):
             aQElement = aQ.get()
@@ -312,13 +337,17 @@ def RobustSingleGaussiansTensorPy_MultiProc(inTensor,
             modelParamsMap[:,
                            rowClmInds[_partCnt, 0]: rowClmInds[_partCnt, 1],
                            rowClmInds[_partCnt, 2]: rowClmInds[_partCnt, 3] ] = aQElement[1]
-            print('-> ' + str(int(100*numDone/numProc)) + '%')
             numDone += 1
             numBusyCores -= 1
+            if(firstProcessed==0):
+                pBar = textProgBar(numProc-1, title = 'Calculationg background')
+                firstProcessed = 1
+            else:
+                pBar.go(1)
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
             
-            Process(target=patchSTDModelPy_multiprocFunc,
+            Process(target=RobustSingleGaussiansTensorPy_MultiProcFunc,
                             args=(aQ, partCnt,
                             np.squeeze(inTensor[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
@@ -327,87 +356,65 @@ def RobustSingleGaussiansTensorPy_MultiProc(inTensor,
                             bottomKthPerc,
                             MSSE_LAMBDA)).start()
             partCnt += 1
-            print(str(int(100*numWiating/numProc)) +'% ->')
 
             numWiating -= 1
             numBusyCores += 1
-            if(numWiating==0):
-                print('all processes are submitted!')
-
+    del pBar
     return (modelParamsMap)
-
-################################### background estimation library ############
-def RMGImagePy(inImage, inMask = None,
-              winX = None,
-              winY = None,
-              topKthPerc = 0.5,
-              bottomKthPerc = 0.45,
-              MSSE_LAMBDA = 3.0,
-              stretch2CornersOpt = 2):
-    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
-    if(inMask is None):
-        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
-        
-    if(winX is None):
-        winX = inImage.shape[0]
-    if(winY is None):
-        winY = inImage.shape[1]
-    modelParamsMap = np.zeros((2, inImage.shape[0], inImage.shape[1]), dtype='float32')
-    RobustGausFitLib.RSGImage(inImage.astype('float32'),
-                                inMask,
-                                modelParamsMap,
-                                winX,
-                                winY,
-                                inImage.shape[0],
-                                inImage.shape[1],
-                                topKthPerc,
-                                bottomKthPerc,
-                                MSSE_LAMBDA,
-                                stretch2CornersOpt)
-    return (modelParamsMap)
-
-def RSGImagesInTensorPy(inTensor, inMask = None,
-                      topKthPerc = 0.5,
-                      bottomKthPerc = 0.4,
-                      MSSE_LAMBDA = 3.0,
-                      stretch2CornersOpt = 2):
     
-    if(inMask is None):
-        inMask = np.ones((inTensor.shape[1], inTensor.shape[2]), dtype='uint8')
-
-    modelParamsMap = np.zeros((4, inTensor.shape[0]), dtype='float32')
+################################################################################################
+################################### Line fitting library #######################################
     
-    RobustGausFitLib.RSGImagesInTensor((inTensor.copy()).astype('float32'),
-                                    inMask,
-                                    modelParamsMap,
-                                    inTensor.shape[0],
-                                    inTensor.shape[1],
-                                    inTensor.shape[2],
-                                    topKthPerc,
-                                    bottomKthPerc,
-                                    MSSE_LAMBDA,
-                                    stretch2CornersOpt)
-    return (modelParamsMap)
+def RobustAlgebraicLineFittingPy(inX, inY,
+                            topKthPerc = 0.5,
+                            bottomKthPerc=0.45,
+                            MSSE_LAMBDA = 3.0):
+    modelParams = np.zeros(3, dtype='float32')
+    RobustGausFitCLib.RobustAlgebraicLineFitting((inX.copy()).astype('float32'),
+                                            (inY.copy()).astype('float32'),
+                                            modelParams, 
+                                            inX.shape[0],
+                                            topKthPerc,
+                                            bottomKthPerc,
+                                            MSSE_LAMBDA)
+    return (modelParams)
 
-def RSGImagesInTensorPy_multiprocFunc(aQ, partCnt, inTensor, inMask,
-                  topKthPerc, bottomKthPerc, MSSE_LAMBDA):
-    modelParamsMap = RSGImagesInTensorPy(inTensor=inTensor, inMask=inMask,
-                        topKthPerc=topKthPerc,
-                        bottomKthPerc=bottomKthPerc,
-                        MSSE_LAMBDA = MSSE_LAMBDA)
-    aQ.put(list([partCnt, modelParamsMap]))
+def RobustAlgebraicLineFittingTensorPy(inX, inY,
+                            topKthPerc = 0.5,
+                            bottomKthPerc = 0.45,
+                            MSSE_LAMBDA = 3.0):
+    modelParams = np.zeros((3, inX.shape[1], inX.shape[2]), dtype='float32')
+    RobustGausFitCLib.RobustAlgebraicLineFittingTensor( (inX.copy()).astype('float32'),
+                                                        (inY.copy()).astype('float32'),
+                                                        modelParams, 
+                                                        inX.shape[0],
+                                                        inX.shape[1],
+                                                        inX.shape[2],
+                                                        topKthPerc,
+                                                        bottomKthPerc,
+                                                        MSSE_LAMBDA)
+    return (modelParams)
 
-def RSGImagesInTensorPy_multiproc(inTensor, inMask = None,
-                              topKthPerc = 0.8,
-                              bottomKthPerc = 0.5,
+def RobustAlgebraicLineFittingTensorPy_MultiProcFunc(aQ, partCnt, 
+                                                        inX, inY,
+                                                        topKthPerc,
+                                                        bottomKthPerc,
+                                                        MSSE_LAMBDA):
+
+    modelParams = RobustAlgebraicLineFittingTensorPy(inX, inY,
+                                                    topKthPerc,
+                                                    bottomKthPerc,
+                                                    MSSE_LAMBDA)
+    aQ.put(list([partCnt, modelParams]))
+
+def RobustAlgebraicLineFittingTensorPy_MultiProc(inTensorX, inTensorY,
                               numRowSegs = 1,
                               numClmSegs = 1,
+                              topKthPerc = 0.5,
+                              bottomKthPerc = 0.4,
                               MSSE_LAMBDA = 3.0):
 
-    if(inMask is None):
-        inMask = np.ones((inTensor.shape[1], inTensor.shape[2]), dtype='uint8')
-                              
-    rowClmInds, segInds = bigTensor2SmallsInds(inTensor.shape, numRowSegs, numClmSegs)
+    rowClmInds, _ = bigTensor2SmallsInds(inTensorX.shape, numRowSegs, numClmSegs)
 
     numSegs = rowClmInds.shape[0]
 
@@ -418,61 +425,216 @@ def RSGImagesInTensorPy_multiproc(inTensor, inMask = None,
     numWiating = numSegs
     numDone = 0
     partCnt = 0
-
-    modelParamsMap = np.zeros((2, inTensor.shape[0],
-                               inTensor.shape[1], inTensor.shape[2]), dtype='float32')
-    print('starting ' +str(numProc) + ' processes with ' + str(myCPUCount) + ' CPUs')
+    
+    modelParamsMap = np.zeros((3, inTensorX.shape[1], inTensorX.shape[2]), dtype='float32')
     while(numDone<numProc):
-        if ((not aQ.empty()) & ( (numWiating==0) | (numBusyCores >= myCPUCount) )):
+        if (not aQ.empty()):
             aQElement = aQ.get()
             _partCnt = aQElement[0]
-            patchModelParams = aQElement[1]
-            patchModelParams= np.tile(patchModelParams,
-                                        (rowClmInds[_partCnt, 1] - rowClmInds[_partCnt, 0],
-                                        rowClmInds[_partCnt, 3] - rowClmInds[_partCnt, 2],
-                                        1,1))
-            patchModelParams = np.swapaxes(patchModelParams, 0, 2)
-            patchModelParams = np.swapaxes(patchModelParams, 1, 3)
-            
-            x = np.arange(0, rowClmInds[_partCnt, 1]-rowClmInds[_partCnt, 0], dtype='int')
-            y = np.arange(0, rowClmInds[_partCnt, 3]-rowClmInds[_partCnt, 2], dtype='int')
-            Y, X = np.meshgrid(y, x)
-            xvals = np.tile(X, (inTensor.shape[0],1,1))
-            yvals = np.tile(Y, (inTensor.shape[0],1,1))
-            bckEst = np.zeros((2, inTensor.shape[0], 
-                                    rowClmInds[_partCnt, 1]-rowClmInds[_partCnt, 0], 
-                                    rowClmInds[_partCnt, 3]-rowClmInds[_partCnt, 2]))
-            # background mean
-            bckEst[0,...] = np.squeeze(patchModelParams[0, ...]*xvals + \
-                                       patchModelParams[1, ...]*yvals + \
-                                       patchModelParams[2, ...])
-            # background std
-            bckEst[1,...] = patchModelParams[3, ...]
-            modelParamsMap[:, :, 
+            modelParamsMap[:,
                            rowClmInds[_partCnt, 0]: rowClmInds[_partCnt, 1],
-                           rowClmInds[_partCnt, 2]: rowClmInds[_partCnt, 3] ] = bckEst
-            print('-> ' + str(int(100*numDone/numProc)) + '%')
+                           rowClmInds[_partCnt, 2]: rowClmInds[_partCnt, 3] ] = aQElement[1]
             numDone += 1
             numBusyCores -= 1
-            if(numBusyCores>myCPUCount*0.75):
-                continue;    # empty the queue
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
-            Process(target=RSGImagesInTensorPy_multiprocFunc,
+            
+            Process(target=RobustAlgebraicLineFittingTensorPy_MultiProcFunc,
                             args=(aQ, partCnt,
-                            np.squeeze(inTensor[                                            :,
+                            np.squeeze(inTensorX[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
-                            inMask,
+                            np.squeeze(inTensorY[                                            :,
+                                                rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
+                                                rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
                             topKthPerc,
                             bottomKthPerc,
                             MSSE_LAMBDA)).start()
             partCnt += 1
-            print(str(int(100*numWiating/numProc)) +'% ->')
 
             numWiating -= 1
             numBusyCores += 1
-            if(numWiating==0):
-                print('all processes are submitted!')
 
     return (modelParamsMap)
+    
+################################################################################################
+################################### background estimation library ##############################
+    
+def RobustAlgebraicPlaneFittingPy(inX, inY, inZ,
+                            topKthPerc = 0.5,
+                            bottomKthPerc = 0.25,
+                            MSSE_LAMBDA = 3.0,
+                            stretch2CornersOpt = 2):
+    modelParams = np.zeros(4, dtype='float32')
+    RobustGausFitCLib.RobustAlgebraicPlaneFitting((inX.copy()).astype('float32'),
+                                            (inY.copy()).astype('float32'),
+                                            (inZ.copy()).astype('float32'),
+                                            modelParams, 
+                                            inZ.shape[0],
+                                            topKthPerc,
+                                            bottomKthPerc,
+                                            MSSE_LAMBDA, 
+                                            stretch2CornersOpt)
+    return (modelParams)
+
+def RMGImagePy(inImage, 
+                inMask = None,
+                winX = None,
+                winY = None,
+                topKthPerc = 0.5,
+                bottomKthPerc = 0.45,
+                MSSE_LAMBDA = 3.0,
+                stretch2CornersOpt = 0,
+                numModelParams = 4,
+                optIters = 12):
+    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
+    if(inMask is None):
+        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
+        
+    if(winX is None):
+        winX = inImage.shape[0]
+    if(winY is None):
+        winY = inImage.shape[1]
+    modelParamsMap = np.zeros((2, inImage.shape[0], inImage.shape[1]), dtype='float32')
+
+    RobustGausFitCLib.RSGImage(inImage.astype('float32'),
+                                inMask,
+                                modelParamsMap,
+                                winX,
+                                winY,
+                                inImage.shape[0],
+                                inImage.shape[1],
+                                topKthPerc,
+                                bottomKthPerc,
+                                MSSE_LAMBDA,
+                                stretch2CornersOpt,
+                                numModelParams,
+                                optIters)
+    return (modelParamsMap)
+
+def RSGImage_by_Image_TensorPy(inImage_Tensor, 
+                inMask_Tensor = None,
+                winX = None,
+                winY = None,
+                topKthPerc = 0.5,
+                bottomKthPerc = 0.45,
+                MSSE_LAMBDA = 3.0,
+                stretch2CornersOpt = 2,
+                numModelParams = 4,
+                optIters = 12):
+                
+    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
+    if(inMask_Tensor is None):
+        inMask_Tensor = np.ones(inImage_Tensor.shape, dtype='uint8')
+    if(winX is None):
+        winX = inImage_Tensor.shape[1]
+    if(winY is None):
+        winY = inImage_Tensor.shape[2]
+    model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
+    model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
+
+    RobustGausFitCLib.RSGImage_by_Image_Tensor(inImage_Tensor.astype('float32'),
+                                                inMask_Tensor.astype('uint8'),
+                                                model_mean,
+                                                model_std,
+                                                winX,
+                                                winY,
+                                                inImage_Tensor.shape[0],
+                                                inImage_Tensor.shape[1],
+                                                inImage_Tensor.shape[2],
+                                                topKthPerc,
+                                                bottomKthPerc,
+                                                MSSE_LAMBDA,
+                                                stretch2CornersOpt,
+                                                numModelParams,
+                                                optIters)
+    
+    return ( np.array([model_mean, model_std]))
+    
+def RSGImage_by_Image_TensorPy_multiprocFunc(queue, imgCnt,
+                            inImage_Tensor, 
+                            inMask_Tensor,
+                            winX,
+                            winY,
+                            topKthPerc,
+                            bottomKthPerc,
+                            MSSE_LAMBDA,
+                            stretch2CornersOpt,
+                            numModelParams,
+                            optIters):
+    modelParamsMap = RSGImage_by_Image_TensorPy(inImage_Tensor, 
+                                                inMask_Tensor,
+                                                winX,
+                                                winY,
+                                                topKthPerc,
+                                                bottomKthPerc,
+                                                MSSE_LAMBDA,
+                                                stretch2CornersOpt,
+                                                numModelParams,
+                                                optIters)
+    queue.put(list([imgCnt, modelParamsMap]))
+    
+def RSGImage_by_Image_TensorPy_multiproc(inDataSet, inMask = None, 
+                                        winX = None, winY = None,
+                                        topKthPerc = 0.5,
+                                        bottomKthPerc = 0.4,
+                                        MSSE_LAMBDA = 3.0,
+                                        stretch2CornersOpt = 0,
+                                        numModelParams = 4,
+                                        optIters = 10):
+    
+    f_N = inDataSet.shape[0]
+    r_N = inDataSet.shape[1]
+    c_N = inDataSet.shape[2]
+    
+    if(inMask is None):
+        inMask = np.zeros(inDataSet.shape, dtype='uint8')
+    if(winX is None):
+        winX = r_N
+    if(winY is None):
+        winY = c_N
+    
+    modelParamsMapTensor = np.zeros((2, f_N, r_N, c_N), dtype='float32')
+
+    queue = Queue()
+    mycpucount = cpu_count() - 1
+    print('Multiprocessing ' + str(f_N) + ' frames...')
+    numProc = f_N
+    numSubmitted = 0
+    numProcessed = 0
+    numBusyCores = 0
+    firstProcessed = 0
+    default_stride = np.maximum(mycpucount, int(np.floor(numProc/mycpucount)))
+    while(numProcessed<numProc):
+        if (not queue.empty()):
+            qElement = queue.get()
+            _imgCnt = qElement[0]
+            _tmpResult = qElement[1]
+            _stride = _tmpResult.shape[1]            
+            modelParamsMapTensor[:, _imgCnt:_imgCnt+_stride, :, :] = _tmpResult
+            numBusyCores -= 1
+            numProcessed += _stride
+            if(firstProcessed==0):
+                pBar = textProgBar(numProc-_stride, title = 'Calculationg background')
+                firstProcessed = 1
+            else:
+                pBar.go(_stride)
+
+        if((numSubmitted<numProc) & (numBusyCores < mycpucount)):
+            stride = np.minimum(default_stride, numProc - numSubmitted)
+            Process(target = RSGImage_by_Image_TensorPy_multiprocFunc, 
+                    args=(queue, numSubmitted, 
+                            inDataSet[numSubmitted:numSubmitted+stride, :, :],
+                            inMask[numSubmitted:numSubmitted+stride, :, :],
+                            winX,
+                            winY,
+                            topKthPerc,
+                            bottomKthPerc,
+                            MSSE_LAMBDA,
+                            stretch2CornersOpt,
+                            numModelParams,
+                            optIters)).start()
+            numSubmitted += stride
+            numBusyCores += 1
+    del pBar
+    return(modelParamsMapTensor)
