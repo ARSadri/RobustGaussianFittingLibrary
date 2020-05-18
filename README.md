@@ -3,6 +3,8 @@ A C Library for Robust Gaussian Fitting using geometric models in presence of ou
 
 In robust segmentation, the main assumtion is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem.
 
+The library occasionally uses a text based progress bar that can be found [here](https://gist.github.com/ARSadri/cb35d3dd23fd9561dfc78f1784592897).
+
 # Compilation into shared library
 Run the following command to generate a shared .so library:
 ```
