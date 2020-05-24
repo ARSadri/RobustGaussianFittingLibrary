@@ -1,4 +1,4 @@
-import RobustGausFitLibPy as RGFLib
+import robustLib.RGFLib.RobustGausFitLibPy as RGFLib
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -96,7 +96,7 @@ def test_islandRemovalPy():
 def naiveHist(vec, mP):
     plt.figure(figsize=[10,8])
     hist,bin_edges = np.histogram(vec, 100)
-    plt.bar(bin_edges[:-1], hist, width = 3, color='#0504aa',alpha=0.7)
+    plt.bar(bin_edges[:-1], hist, width = mP[1], color='#0504aa',alpha=0.7)
     x = np.linspace(vec.min(), vec.max(), 1000)
     y = hist.max() * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1]))
     plt.plot(x,y, 'r')
@@ -120,6 +120,14 @@ def naiveHist_multi_mP(vec, mP):
         y = yMax * np.exp(-(x-mP[0, modelCnt])*(x-mP[0, modelCnt])/(2*mP[1, modelCnt]*mP[1, modelCnt]))
         plt.plot(x,y, 'r')
     plt.show()
+    
+def test_TLS_AlgebraicPlaneFittingPY():
+    N = 100
+    inX = np.random.rand(N) - 0.5
+    inY = np.random.rand(N) - 0.5
+    inZ = inX + inY + 0.01*np.random.randn(N)
+    mP = RGFLib.TLS_AlgebraicPlaneFittingPY(inX, inY, inZ)
+    print(mP)
     
 def test_bigTensor2SmallsInds():
     a = (100*np.random.randn(20,16,11)).astype('int')
@@ -268,17 +276,23 @@ def test_SginleGaussianVec():
     
 def test_flatField():    
     RNN0 =  0 + 1*np.random.randn(2048)
-    RNN1 =  4 + 1*np.random.randn(1024)
-    RNN2 =  8 + 1*np.random.randn(512)
-    RNN3 =  12 + 1*np.random.randn(256)
+    RNN1 =  6 + 6**0.5*np.random.randn(1024)
+    RNN2 =  12 + 12**0.5*np.random.randn(512)
+    RNN3 =  18 + 18**0.5*np.random.randn(256)
     data = np.concatenate((RNN0, RNN1, RNN2, RNN3)).flatten()
     np.random.shuffle(data)
     
     mP_All = np.zeros((2, 4))
     testData = data.copy()
+
+    modelCnt = 0
+    mP = RGFLib.RobustSingleGaussianVecPy(testData, 
+                            topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=2.0)
+    naiveHist(data, mP)
+
+
     for modelCnt in range(4):
         mP = RGFLib.RobustSingleGaussianVecPy(testData, topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=1.0)
-        naiveHist(data, mP)
         probs = np.random.rand(testData.shape[0]) - np.exp(-(testData - mP[0])**2/(2*mP[1]**2))
         probs[testData<mP[0]] = 0
         probs[probs>mP[0]+3.0*mP[1]] = 1
@@ -316,6 +330,6 @@ if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
     #test_RMGImagePy()
     #test_SginleGaussianVec()
-    #test_flatField()
+    test_flatField()
+    #test_RobustAlgebraicPlaneFittingPy()
     #test_RobustAlgebraicLineFittingPy()
-    test_RobustAlgebraicPlaneFittingPy()
