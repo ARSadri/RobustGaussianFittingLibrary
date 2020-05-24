@@ -208,8 +208,9 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
         plt.plot(x,y)
     
     modelVec = inVec[flag == 0]
-    hist,bin_edges = np.histogram(modelVec, modelVec.shape[0])
-    plt.bar(bin_edges[:-1], hist, color='g',alpha=0.5)
+    #hist,bin_edges = np.histogram(modelVec, modelVec.shape[0])
+    #plt.bar(bin_edges[:-1], hist, width =, color='g',alpha=0.5)
+    plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
     plt.show()
     
 def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
@@ -610,7 +611,7 @@ def RSGImage_by_Image_TensorPy_multiproc(inDataSet, inMask = None,
             qElement = queue.get()
             _imgCnt = qElement[0]
             _tmpResult = qElement[1]
-            _stride = _tmpResult.shape[1]            
+            _stride = _tmpResult.shape[1]
             modelParamsMapTensor[:, _imgCnt:_imgCnt+_stride, :, :] = _tmpResult
             numBusyCores -= 1
             numProcessed += _stride
