@@ -13,7 +13,7 @@ make
 A Python wrapper is also provided. Tha wrapper will be looking for the .so shared library file.
 
 ## importable libraries ##
-* __RobustGausFitLibPy__: In this file, you can find the basic funciton of robust gaussian fitting which include:
+1-__RobustGausFitLibPy__: In this file, you can find the basic funciton of robust gaussian fitting which include:
 	* MSSEPy : Given set of residuals, it find the scale of a gaussian
 	* RobustSingleGaussianVecPy : Given a vector, it finds average and standard deviation of the gaussian.
 	* RobustSingleGaussianTensorPy : Given a tensor of size N_frames, N_rows, N_clms, it finds the gaussian mean and std for each pixel in N_rows and N_clms.
@@ -23,7 +23,7 @@ A Python wrapper is also provided. Tha wrapper will be looking for the .so share
 	* RMGImagePy : Given an image returns the mean and std of background at each pixel.
 	* RSGImage_by_Image_TensorPy : Given a tensor of images N_f x N_r x N_c, returns the background mean and std for each pixel for each frame in N_f.
 
-* __RobustGausFitLibMultiprocPy__: In this file, there are two important funcitons:
+2-__RobustGausFitLibMultiprocPy__: In this file, there are two important funcitons:
 	* RobustSingleGaussiansTensorPy_MultiProc : Does RobustSingleGaussianTensorPy using multiprocessing over segmented Tensor
 	* RSGImage_by_Image_TensorPy_multiproc : Does RSGImage_by_Image_TensorPy using multiprocessing over segmented Tensor.
 
