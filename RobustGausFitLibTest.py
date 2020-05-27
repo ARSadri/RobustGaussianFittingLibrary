@@ -1,12 +1,33 @@
 import robustLib.RGFLib.RobustGausFitLibPy as RGFLib
+import robustLib.RGFLib.RobustGausFitLibMultiprocPy as RGFLib_multiproc
+import robustLib.RGFLib.RobustGausFitLibHist as RHist
+
 import numpy as np
 import time
 import matplotlib.pyplot as plt
 import os
 import scipy.stats
-
-np.set_printoptions(suppress=True)
-np.set_printoptions(precision=2)
+np.set_printoptions(suppress = True)
+np.set_printoptions(precision = 2)
+ 
+def visOrderStat():
+    # std of a few closests samplse of a gaussian to its average
+    # is less than the actual std:
+    allN = list([6000])
+    intervals = np.arange(0.01,1.01,0.01)
+    for N in allN:
+        Data = np.random.randn(N)
+        res = np.fabs(Data - Data.mean())
+        inds = np.argsort(res)
+        result = np.zeros(intervals.shape[0])
+        for idx, k in enumerate(intervals):
+            result[idx] = Data[inds[:int(k*N)]].std()
+        plt.plot(intervals, result)
+    plt.plot(intervals, np.power(intervals, 0.7)*np.exp(intervals)/2.78)
+    #x = np.erfinv(m)/(2*sqrt(2))
+    plt.plot(intervals, intervals)
+    plt.legend(allN)
+    plt.show()
 
 def gkern(kernlen):
     lim = kernlen//2 + (kernlen % 2)/2
@@ -92,34 +113,6 @@ def test_islandRemovalPy():
     plt.imshow(inMask), plt.show()
     outMask = RGFLib.islandRemovalPy(inMask)
     plt.imshow(outMask), plt.show()
-
-def naiveHist(vec, mP):
-    plt.figure(figsize=[10,8])
-    hist,bin_edges = np.histogram(vec, 100)
-    plt.bar(bin_edges[:-1], hist, width = mP[1], color='#0504aa',alpha=0.7)
-    x = np.linspace(vec.min(), vec.max(), 1000)
-    y = hist.max() * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1]))
-    plt.plot(x,y, 'r')
-    plt.xlim(min(bin_edges), max(bin_edges))
-    plt.grid(axis='y', alpha=0.75)
-    plt.xlabel('Value',fontsize=15)
-    plt.ylabel('Frequency',fontsize=15)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
-    plt.ylabel('Frequency',fontsize=15)
-    plt.title('Normal Distribution Histogram',fontsize=15)
-    plt.show()
-
-def naiveHist_multi_mP(vec, mP):
-    plt.figure(figsize=[10,8])
-    hist,bin_edges = np.histogram(vec, 100)
-    plt.bar(bin_edges[:-1], hist, width = 3, color='#0504aa',alpha=0.7)
-    x = np.linspace(vec.min(), vec.max(), 1000)
-    for modelCnt in range(mP.shape[1]):
-        yMax = hist[np.fabs(bin_edges[:-1]-mP[0, modelCnt]) < 3 * mP[1, modelCnt]].max()
-        y = yMax * np.exp(-(x-mP[0, modelCnt])*(x-mP[0, modelCnt])/(2*mP[1, modelCnt]*mP[1, modelCnt]))
-        plt.plot(x,y, 'r')
-    plt.show()
     
 def test_TLS_AlgebraicPlaneFittingPY():
     N = 100
@@ -131,7 +124,7 @@ def test_TLS_AlgebraicPlaneFittingPY():
     
 def test_bigTensor2SmallsInds():
     a = (100*np.random.randn(20,16,11)).astype('int')
-    rowClmInds, segInds = RGFLib.bigTensor2SmallsInds(a.shape, 2,3)
+    rowClmInds, segInds = RGFLib_multiproc.bigTensor2SmallsInds(a.shape, 2,3)
     print(rowClmInds)
 
 def test_RobustAlgebraicPlaneFittingPy():
@@ -230,7 +223,7 @@ def test_RSGImagesInTensorPy_multiproc():
         inTensor[frmCnt] = frmCnt+frmCnt**0.5*np.random.randn(r_N,c_N)
 
     print('input Tensor shape is: ', str(inTensor.shape))
-    modelParamsMap = RGFLib.RSGImage_by_Image_TensorPy_multiproc(inTensor,
+    modelParamsMap = RGFLib_multiproc.RSGImage_by_Image_TensorPy_multiproc(inTensor,
                                                               winX = 64,
                                                               winY = 64)
     for frmCnt in list([f_N-1]):
@@ -238,25 +231,6 @@ def test_RSGImagesInTensorPy_multiproc():
         axes[0].imshow(modelParamsMap[0,frmCnt])
         axes[1].imshow(modelParamsMap[1,frmCnt])
         plt.show()
-  
-def test_visOrderStat():
-    # std of a few closests samplse of a gaussian to its average
-    # is less than the actual std:
-    allN = list([6000])
-    intervals = np.arange(0.01,1.01,0.01)
-    for N in allN:
-        Data = np.random.randn(N)
-        res = np.fabs(Data - Data.mean())
-        inds = np.argsort(res)
-        result = np.zeros(intervals.shape[0])
-        for idx, k in enumerate(intervals):
-            result[idx] = Data[inds[:int(k*N)]].std()
-        plt.plot(intervals, result)
-    plt.plot(intervals, np.power(intervals, 0.7)*np.exp(intervals)/2.78)
-    #x = np.erfinv(m)/(2*sqrt(2))
-    plt.plot(intervals, intervals)
-    plt.legend(allN)
-    plt.show()
 
 def test_SginleGaussianVec():    
     RNN0 = 50 + 5*np.random.randn(12)
@@ -265,14 +239,14 @@ def test_SginleGaussianVec():
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
     mP = RGFLib.RobustSingleGaussianVecPy(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=1.0)
-    naiveHist(testData, mP)
+    RHist.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
     plt.plot(testData,'.'), 
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]-3*mP[1], mP[0]-3*mP[1]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
-    RGFLib.sGHist(testData, mP)
+    RHist.sGHist(testData, mP)
     
 def test_flatField():    
     RNN0 =  0 + 1*np.random.randn(2048)
@@ -288,7 +262,7 @@ def test_flatField():
     modelCnt = 0
     mP = RGFLib.RobustSingleGaussianVecPy(testData, 
                             topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=2.0)
-    naiveHist(data, mP)
+    RHist.naiveHist(data, mP)
 
 
     for modelCnt in range(4):
@@ -299,8 +273,8 @@ def test_flatField():
         testData = testData[probs>0]
         mP_All[:, modelCnt] = mP
         
-    naiveHist_multi_mP(data, mP_All)
-    RGFLib.sGHist_multi_mP(data, mP_All, SNR=2.5)
+    RHist.naiveHist_multi_mP(data, mP_All)
+    RHist.sGHist_multi_mP(data, mP_All, SNR=2.5)
     
 def test_SginleGaussianTensor():    
     SIGMA = 10
@@ -319,17 +293,22 @@ def test_SginleGaussianTensor():
     
     print('testing RobustSingleGaussiansTensorPy_MultiProc')
     nowtime = time.time()
-    modelParamsMap = RGFLib.RobustSingleGaussiansTensorPy_MultiProc(testData,
+    modelParamsMap = RGFLib_multiproc.RobustSingleGaussiansTensorPy_MultiProc(testData,
                                                                     numRowSegs = 6,
                                                                     numClmSegs = 12)
     print(time.time() - nowtime)
     print(modelParamsMap)
     
 if __name__ == '__main__':
-    #choose a test from above
     print('PID ->' + str(os.getpid()))
-    #test_RMGImagePy()
-    #test_SginleGaussianVec()
-    test_flatField()
+    #test_islandRemovalPy()
+    #test_TLS_AlgebraicPlaneFittingPY()
+    #test_bigTensor2SmallsInds()
     #test_RobustAlgebraicPlaneFittingPy()
     #test_RobustAlgebraicLineFittingPy()
+    #test_RMGImagePy()
+    #test_RSGImagesInTensorPy()
+    #test_RSGImagesInTensorPy_multiproc()
+    #test_SginleGaussianVec()
+    test_flatField()
+    #test_SginleGaussianTensor()
