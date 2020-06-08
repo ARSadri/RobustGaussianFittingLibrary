@@ -16,7 +16,7 @@ A Python wrapper is also provided. Tha wrapper will be looking for the .so share
 * __RobustGausFitLibPy__: In this file, you can find the basic funciton of robust gaussian fitting which include:
 	* MSSEPy : Given set of residuals, it find the scale of a gaussian
 	* RobustSingleGaussianVecPy : Given a vector, it finds average and standard deviation of the gaussian.
-	* RobustSingleGaussianTensorPy : Given a tensor of size n_Frames, n_Rows, n_Clms, it finds the gaussian mean and std for each pixel in N_rows and N_clms.
+	* RobustSingleGaussianTensorPy : Given a tensor of size n_Frames, n_Rows, n_Clms, it finds the gaussian mean and std for each pixel in n_Rows and n_Clms.
 	* RobustAlgebraicLineFittingPy : Given vectors X and Y, it finds three parameters describing a line by slope, intercept and scale of noise.
 	* RobustAlgebraicLineFittingTensorPy : Given a tensor, it fits a line for each pixel
 	* RobustAlgebraicPlaneFittingPy : Given an image, returns four parameters of a fit planethe
