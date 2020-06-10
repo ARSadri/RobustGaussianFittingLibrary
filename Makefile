@@ -3,9 +3,9 @@ CC = gcc
 CFLAGS = -fPIC -O3
 LDFLAGS = -shared
 RM = rm -rf
-TARGET_LIB = RobustGausFitLib.so
+TARGET_LIB = RGFLib.so
 
-SRCS = RobustGausFitLib.c
+SRCS = RGFLib.c
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: all
@@ -21,7 +21,7 @@ include $(SRCS:.c=.d)
 
 .PHONY: test
 test:
-	python3 RobustGausFitLibTest.py
+	python3 tests.py
 
 .PHONY: clean
 clean:
