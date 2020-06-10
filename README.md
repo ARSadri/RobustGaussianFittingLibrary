@@ -16,12 +16,12 @@ A Python wrapper is also provided. Tha wrapper will be looking for the .so share
 * __RGFLib__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
 	* MSSE : Given set of residuals, it finds the scale of a gaussian
 	* fitValue : Given a vector, it finds average and standard deviation of the gaussian.
-	* fitValueTensor : Given a tensor of size N_frames, N_rows, N_clms, it finds the gaussian mean and std for each pixel in N_rows and N_clms.
+	* fitValueTensor : Given a tensor of size n_F, n_R, n_C, it finds the gaussian mean and std for each pixel in n_R and n_C.
 	* fitLine : Given vectors X and Y, it finds three parameters describing a line by slope, intercept and scale of noise.
 	* fitLineTensor : Given a tensor, it fits a line for each pixel
 	* fitPlane : Given an image, returns four parameters of for algebraic fitting of a plane
 	* fitBackground : Given an image, returns the mean and std of background at each pixel.
-	* fitBackgroundTensor : Given a tensor of images N_f x N_r x N_c, returns the background mean and std for each pixel for each frame in N_f.
+	* fitBackgroundTensor : Given a tensor of images n_F x n_R x n_C, returns the background mean and std for each pixel for each frame in n_F.
 
 * __useMultiproc__: In this set, the tensor oporations are run by python Multiprocessing.
 	* fitValueTensor_MultiProc : Does fitValueTensor using multiprocessing
