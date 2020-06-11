@@ -1,6 +1,6 @@
-// gcc -fPIC -shared -o RobustGausFitLib.c RobustGausFitLib.so
 #include <math.h>
 #include <stdlib.h>
+// gcc -fPIC -shared -o RobustGausFitLib.c RobustGausFitLib.so
 
 void dfs(unsigned char* inMask, unsigned char* mask, 
 			 int x,  int y, unsigned int X, unsigned int Y,
