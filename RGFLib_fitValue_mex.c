@@ -10,10 +10,10 @@ An example is made in RGFLibTest.m
 Currently we will write a mex for the following function(s):
 
 		void RobustSingleGaussianVec(float *vec, 
-								float *modelParams, float theta, 
-								unsigned int N,
-								float topKthPerc, float bottomKthPerc, 
-								float MSSE_LAMBDA, unsigned char optIters)
+					float *modelParams, float theta, 
+					unsigned int N,
+					float topKthPerc, float bottomKthPerc, 
+					float MSSE_LAMBDA, unsigned char optIters)
 
 Written by Alireza Sadri, arsadri@gmail.com 
 */
@@ -30,10 +30,10 @@ Written by Alireza Sadri, arsadri@gmail.com
 	typedef int mwSize;
 	typedef int mwIndex;
 	typedef int mwSignedIndex;
-	# define MWSIZE_MAX    2147483647UL
-	# define MWINDEX_MAX   2147483647UL
-	# define MWSINDEX_MAX  2147483647L
-	# define MWSINDEX_MIN -2147483647L
+	#define MWSIZE_MAX    2147483647UL
+	#define MWINDEX_MAX   2147483647UL
+	#define MWSINDEX_MAX  2147483647L
+	#define MWSINDEX_MIN -2147483647L
 	#define MWSIZE_MIN    0UL
 	#define MWINDEX_MIN   0UL
 #endif
@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	double *topKthPerc;
 	double *bottomKthPerc;
 	double *MSSE_LAMBDA;
-    double *optIters;
+	double *optIters;
 
 	//associate inputs
 	inVec 			= mxGetPr(prhs[0]);
@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	float _topKthPerc;
 	float _bottomKthPerc;
 	float _MSSE_LAMBDA;
-    unsigned char _optIters;
+	unsigned char _optIters;
 		
 	_initModel = (float)(initModel[0]);
 	_N = (unsigned int)(N[0]);
