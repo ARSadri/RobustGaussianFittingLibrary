@@ -33,3 +33,5 @@ Many test funcitons are availble in the tests.py script. in the script, llok for
 ```
 make test
 ```
+# Usage from MATLAB #
+Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the ..._Test.m file
