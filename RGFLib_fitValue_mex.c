@@ -1,4 +1,4 @@
-﻿/*
+/*
 A Robust Gaussian Fitting Library
 	for ourlier detection and background subtraction
 
@@ -76,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	_optIters = (unsigned char)(optIters[0]);
 	
 	_inVec=(float *) malloc( _N*sizeof(float));
-	for(i=0; i<=_N; i++)
+	for(i=0; i<_N; i++)
 		_inVec[i] = (float)inVec[i];
 
 	float _mP[2];
@@ -87,6 +87,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 							_topKthPerc, _bottomKthPerc, 
 							_MSSE_LAMBDA, _optIters);
 
+	free(_inVec);
 	plhs[0] = mxCreateDoubleScalar(1);
 	*mxGetPr(plhs[0]) = _mP[0];	
 	plhs[1] = mxCreateDoubleScalar(1);
