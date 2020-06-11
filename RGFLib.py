@@ -3,7 +3,7 @@ Input arguments
 ~~~~~~~~~~~~~~~
     MSSE_LAMBDA
     topKthPerc
-    bottomKthPerc : set it to 0.95*topKthPerc and if smaller than 8 set it to 8, this number must be more than 12
+    bottomKthPerc : set it to 0.95*topKthPerc, this number must be more than 12
 Output
 ~~~~~~
     usually the mean and std of the Gaussian
