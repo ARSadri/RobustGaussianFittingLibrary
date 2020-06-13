@@ -187,6 +187,7 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 			estScale += tmp*tmp;
 		}
 		estScale = sqrt(estScale / (int)(N*topKthPerc));
+		estScale /= pow(topKthPerc, 1.4);
 	}
 	modelParams[0] = avg;
 	modelParams[1] = estScale;
