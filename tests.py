@@ -289,9 +289,17 @@ def test_fitValueTensor_MultiProc():
                                                            numClmSegs = 12)
     print(time.time() - nowtime)
     print(modelParamsMap)
-    
+
+def test_fitValueSmallSample():    
+    testData = np.array([1,2,3,4,5,6, 100])
+    np.random.shuffle(testData)
+    print('testing RobustSingleGaussianVecPy')
+    mP = RGFLib.fitValue(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=1.0)
+    print(mP)
+        
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitValueSmallSample()
     test_islandRemovalPy()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
