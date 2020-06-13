@@ -1,11 +1,11 @@
 """The list of accessible functions by importing the RGFLib itself
 I think some of the functions are used more often and should be provided here
 """
-from .RGFLib import MSSE
-from .RGFLib import fitValue
-from .RGFLib import fitValueTensor
-from .RGFLib import fitLine
-from .RGFLib import fitLineTensor
-from .RGFLib import fitPlane
-from .RGFLib import fitBackground
-from .RGFLib import fitBackgroundTensor
+from .basic import MSSE
+from .basic import fitValue
+from .basic import fitValueTensor
+from .basic import fitLine
+from .basic import fitLineTensor
+from .basic import fitPlane
+from .basic import fitBackground
+from .basic import fitBackgroundTensor
