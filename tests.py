@@ -23,10 +23,11 @@ def visOrderStat():
         for idx, k in enumerate(intervals):
             result[idx] = Data[inds[:int(k*N)]].std()
         plt.plot(intervals, result)
-    plt.plot(intervals, np.power(intervals, 0.7)*np.exp(intervals)/2.78)
+    plt.plot(intervals, np.power(intervals, 1.4))
     #x = np.erfinv(m)/(2*sqrt(2))
     plt.plot(intervals, intervals)
     plt.legend(allN)
+    plt.title('The estimated STD by the portion of \ninliers of a Gaussian structure')
     plt.show()
 
 def gkern(kernlen):
@@ -291,14 +292,19 @@ def test_fitValueTensor_MultiProc():
     print(modelParamsMap)
 
 def test_fitValueSmallSample():    
-    testData = np.array([1,2,3,4,5,6, 100])
+    inliers = np.random.randn(40)
+    outliers = np.array([-500, 1000])
+    testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
-    mP = RGFLib.fitValue(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=1.0)
+    mP = RGFLib.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
     print(mP)
+    inds = np.where(np.fabs(testData)<50)
+    print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
         
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    visOrderStat()
     test_fitValueSmallSample()
     test_islandRemovalPy()
     test_bigTensor2SmallsInds()
