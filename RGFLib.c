@@ -219,15 +219,18 @@ void RobustWeightedMean(float *vec, float *weights, float *modelParams, float th
 		tmp = 0;
 		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
 			theta += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-			tmp++;
+			tmp += weights[errorVec[i].indxs];
 		}
 		theta = theta / tmp;
 	}
 
 	avg = 0;
-	for(i=0; i<(int)(N*topKthPerc); i++)
+	tmp = 0;
+	for(i=0; i<(int)(N*topKthPerc); i++) {
 		avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-	avg = avg / (int)(N*topKthPerc);
+		tmp += weights[errorVec[i].indxs];
+	}
+	avg = avg / tmp;
 
 	modelParams[0] = avg;
 
