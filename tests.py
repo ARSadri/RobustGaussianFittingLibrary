@@ -10,6 +10,14 @@ import scipy.stats
 np.set_printoptions(suppress = True)
 np.set_printoptions(precision = 2)
  
+def test_for_textProgBar():
+    pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
+    for _ in range(60):
+        for _ in range(10000000):
+            pass
+        pBar.go(3)
+    del pBar 
+ 
 def visOrderStat():
     # std of a few closests samplse of a gaussian to its average
     # is less than the actual std:
@@ -65,7 +73,8 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
     return(inData, inMask, randomLocations)
 
 def test_islandRemovalPy():
-    inMask = np.ones((20,20), dtype='uint8')
+    #an island cannot be bigger than the stack size of your OS
+    inMask = np.ones((20, 21), dtype='uint8')
     
     inMask[0,1] = 0
     inMask[1,1] = 0
@@ -110,15 +119,8 @@ def test_islandRemovalPy():
     inMask[18,18] = 0
     inMask[18,19] = 0
     
-    inMask[0,:]=0
-    inMask[10,:]=0
-    inMask[-1,:]=0
-    inMask[:,0]=0
-    inMask[:,10]=0
-    inMask[:,-1]=0
-    
     plt.imshow(inMask), plt.show()
-    outMask = 1-RobustGaussianFittingLibrary.misc.islandRemovalPy(1 - inMask, minSize=2)
+    outMask = 1 - RobustGaussianFittingLibrary.misc.islandRemovalPy(1 - inMask, minSize=2)
     plt.imshow(outMask), plt.show()
     
 def test_bigTensor2SmallsInds():
@@ -311,8 +313,7 @@ def test_fitValueSmallSample():
         
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_islandRemovalPy()
-    exit()
+    test_for_textProgBar()
     visOrderStat()
     test_fitValueSmallSample()
     test_islandRemovalPy()

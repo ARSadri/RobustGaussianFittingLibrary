@@ -60,14 +60,6 @@ class textProgBar:
             print('~', end='')
         print(' ', flush = True)
 
-def test_for_textProgBar():
-    pBar = textProgBar(180)
-    for _ in range(60):
-        for _ in range(10000000):
-            pass
-        pBar.go(3)
-    del pBar
-
 def islandRemovalPy(inMask, 
                     minSize = 1):
     """
@@ -168,7 +160,4 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     #hist,bin_edges = np.histogram(modelVec, modelVec.shape[0])
     #plt.bar(bin_edges[:-1], hist, width =, color='g',alpha=0.5)
     plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
-    plt.show()    
-    
-if __name__ == '__main__':
-    test_for_textProgBar()
+    plt.show()

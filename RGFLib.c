@@ -28,8 +28,8 @@ void dfs(unsigned char* inMask, unsigned char* mask,
 }
 
 void islandRemoval(unsigned char* inMask, unsigned char* outMask, 
-					  unsigned int X, unsigned int Y, 
-					  unsigned int islandSizeThreshold){
+ 	 			   unsigned int X, unsigned int Y,
+				   unsigned int islandSizeThreshold) {
     unsigned int label = 1;
 	int i, j, cnt;
 	unsigned int islandSize[1];
@@ -42,12 +42,14 @@ void islandRemoval(unsigned char* inMask, unsigned char* outMask,
 	rowsToMask = (unsigned int*) malloc(X*Y * sizeof(unsigned int));
 	clmsToMask = (unsigned int*) malloc(X*Y * sizeof(unsigned int));
 	
-	for(i=0; i< X; i++)
-        for(j=0; j < Y; j++)
+	for(i=0; i< X; i++) {
+        for(j=0; j < Y; j++) {
 			mask[j + i*Y] = 0;
+        }
+	}
 	
-    for(i=0; i< X;i++)
-        for(j=0; j<Y; j++)
+    for(i=0; i< X;i++) {
+        for(j=0; j<Y; j++) {
             if((inMask[j + i*Y]>0) && (mask[j + i*Y]==0) ) {
 				islandSize[0] = 0;
                 dfs(inMask, mask, i, j, X, Y, label, islandSize, rowsToMask, clmsToMask);
@@ -57,6 +59,8 @@ void islandRemoval(unsigned char* inMask, unsigned char* outMask,
 							outMask[clmsToMask[cnt] + rowsToMask[cnt]*Y] = 1;
 				label++;
 			}
+        }
+    }
 			
 	free(rowsToMask);
 	free(clmsToMask);
