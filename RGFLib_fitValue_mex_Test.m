@@ -7,7 +7,7 @@ clear
 N = 1000
 topKthPerc = 0.5
 bottomKthPerc = 0.45
-MSSE_LAMBDA = 3.0	#std away from mean is still a guassians.
+MSSE_LAMBDA = 3.0	%std away from mean is still a guassians.
 optIters = 12
 
 Gaus_mean = 0
