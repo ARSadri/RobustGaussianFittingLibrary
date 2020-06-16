@@ -1,6 +1,6 @@
-import RGFLib
-import RGFLib.useMultiproc
-import RGFLib.misc
+import RobustGaussianFittingLibrary
+import RobustGaussianFittingLibrary.useMultiproc
+import RobustGaussianFittingLibrary.misc
 
 import numpy as np
 import time
@@ -66,7 +66,7 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
 
 def test_islandRemovalPy():
     inMask = np.ones((20,20), dtype='uint8')
-
+    '''
     inMask[0,1] = 0
     inMask[1,1] = 0
     inMask[1,0] = 0
@@ -109,6 +109,11 @@ def test_islandRemovalPy():
     inMask[18,17] = 0
     inMask[18,18] = 0
     inMask[18,19] = 0
+    '''
+    inMask[0,:]=0
+    inMask[-1,:]=0
+    inMask[:,0]=0
+    inMask[:,-1]=0
     
     plt.imshow(inMask), plt.show()
     outMask = RGFLib.misc.islandRemovalPy(1 - inMask, minSize=2)
@@ -304,6 +309,8 @@ def test_fitValueSmallSample():
         
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_islandRemovalPy
+    exit()
     visOrderStat()
     test_fitValueSmallSample()
     test_islandRemovalPy()
