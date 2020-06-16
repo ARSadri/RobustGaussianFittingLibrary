@@ -44,6 +44,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
 	unsigned int i;
 	double *inVec;
+	double *inWeights;
 	double *initModel;
 	double *N;
 	double *topKthPerc;
@@ -53,14 +54,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	//associate inputs
 	inVec 			= mxGetPr(prhs[0]);
-	initModel		= mxGetPr(prhs[1]);
-	N				= mxGetPr(prhs[2]);
-	topKthPerc		= mxGetPr(prhs[3]);
-	bottomKthPerc	= mxGetPr(prhs[4]);
-	MSSE_LAMBDA		= mxGetPr(prhs[5]);
-	optIters		= mxGetPr(prhs[6]);
+	inWeights	    = mxGetPr(prhs[1]);
+	initModel		= mxGetPr(prhs[2]);
+	N				= mxGetPr(prhs[3]);
+	topKthPerc		= mxGetPr(prhs[4]);
+	bottomKthPerc	= mxGetPr(prhs[5]);
+	MSSE_LAMBDA		= mxGetPr(prhs[6]);
+	optIters		= mxGetPr(prhs[7]);
     
 	float *_inVec;
+	float *_inWeights;
 	float _initModel;
 	unsigned int _N;
 	float _topKthPerc;
@@ -79,19 +82,19 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	for(i=0; i<_N; i++)
 		_inVec[i] = (float)inVec[i];
 
-	float _mP[2];
-	_mP[0] = 0;
-	_mP[1] = 0;
-	
-	RobustSingleGaussianVec(_inVec, _mP, _initModel, _N,
-							_topKthPerc, _bottomKthPerc, 
-							_MSSE_LAMBDA, _optIters);
+	_inWeights=(float *) malloc( _N*sizeof(float));
+	for(i=0; i<_N; i++)
+		_inWeights[i] = (float)inWeights[i];
 
+	float _mP[1];
+	_mP[0] = 0;
+	
+	RobustWeightedMean(_inVec, _inWeights, _mP, _initModel, _N,
+					   _topKthPerc, _bottomKthPerc,
+					   _MSSE_LAMBDA, _optIters);
 	free(_inVec);
 	plhs[0] = mxCreateDoubleScalar(1);
 	*mxGetPr(plhs[0]) = _mP[0];	
-	plhs[1] = mxCreateDoubleScalar(1);
-	*mxGetPr(plhs[1]) = _mP[1];	
 	
 	return;
 }

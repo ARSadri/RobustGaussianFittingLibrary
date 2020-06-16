@@ -200,6 +200,40 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 	free(errorVec);
 }
 
+void RobustWeightedMean(float *vec, float *weights, float *modelParams, float theta, unsigned int N,
+		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
+
+	float avg, tmp;
+	unsigned int i, iter;
+
+	struct sortStruct* errorVec;
+	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
+
+	for(iter=0; iter<optIters; iter++) {
+		for (i = 0; i < N; i++) {
+			errorVec[i].vecData  = fabs(vec[i] - theta);
+			errorVec[i].indxs = i;
+		}
+		quickSort(errorVec,0,N-1);
+		theta = 0;
+		tmp = 0;
+		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
+			theta += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+			tmp++;
+		}
+		theta = theta / tmp;
+	}
+
+	avg = 0;
+	for(i=0; i<(int)(N*topKthPerc); i++)
+		avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+	avg = avg / (int)(N*topKthPerc);
+
+	modelParams[0] = avg;
+
+	free(errorVec);
+}
+
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
 	unsigned int i;
 	double xsum,x2sum,ysum,xysum; 
