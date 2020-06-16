@@ -176,10 +176,10 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	estScale = 0;
 	tmp = 0;
 	for(q=0; q<i; q++) {
-		estScale += weights[sortedSqError[q].indxs]*sortedSqError[i].vecData;
-		tmp += weights[sortedSqError[q].indxs];
+		estScale += weights[sortedSqError[q].indxs]*weights[sortedSqError[q].indxs]*sortedSqError[q].vecData;
+		tmp += weights[sortedSqError[q].indxs]*weights[sortedSqError[q].indxs];
 	}
-	estScale = sqrt(estScale / tmp);
+	estScale = sqrt((i/(float)(i-1))*estScale / tmp);
 
 	free(sortedSqError);
 	return estScale;
@@ -288,7 +288,7 @@ void RobustWeightedGaussianVec(float *vec, float *weights, float *modelParams, f
 			estScale += weights[errorVec[i].indxs]*(vec[errorVec[i].indxs] - avg)*(vec[errorVec[i].indxs] - avg);
 			tmp += weights[errorVec[i].indxs];
 		}
-		estScale = sqrt(estScale / tmp;
+		estScale = sqrt(estScale / tmp);
 		//To understand the following, look at visOrderStat()
 		estScale /= pow(topKthPerc, 1.4);
 	}
