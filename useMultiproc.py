@@ -1,5 +1,4 @@
-import RGFLib
-from RGFLib.misc import textProgBar
+from misc import textProgBar
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
 

@@ -8,7 +8,7 @@ Output
 ~~~~~~
     usually the mean and std of the Gaussian
 """
-from RGFLib.cWrapper import RGFCLib
+from cWrapper import RGFCLib
 import numpy as np
  
 def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):

@@ -1,4 +1,4 @@
-import RobustGaussianFittingLibrary
+import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
 import RobustGaussianFittingLibrary.misc
 
@@ -66,7 +66,7 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
 
 def test_islandRemovalPy():
     inMask = np.ones((20,20), dtype='uint8')
-    '''
+    
     inMask[0,1] = 0
     inMask[1,1] = 0
     inMask[1,0] = 0
@@ -109,19 +109,21 @@ def test_islandRemovalPy():
     inMask[18,17] = 0
     inMask[18,18] = 0
     inMask[18,19] = 0
-    '''
+    
     inMask[0,:]=0
+    inMask[10,:]=0
     inMask[-1,:]=0
     inMask[:,0]=0
+    inMask[:,10]=0
     inMask[:,-1]=0
     
     plt.imshow(inMask), plt.show()
-    outMask = RGFLib.misc.islandRemovalPy(1 - inMask, minSize=2)
+    outMask = 1-RobustGaussianFittingLibrary.misc.islandRemovalPy(1 - inMask, minSize=2)
     plt.imshow(outMask), plt.show()
     
 def test_bigTensor2SmallsInds():
     a = (100*np.random.randn(20,16,11)).astype('int')
-    rowClmInds, segInds = RGFLib.useMultiproc.bigTensor2SmallsInds(a.shape, 2,3)
+    rowClmInds, segInds = RobustGaussianFittingLibrary.useMultiproc.bigTensor2SmallsInds(a.shape, 2,3)
     print(rowClmInds)
 
 def test_RobustAlgebraicPlaneFittingPy():
@@ -131,7 +133,7 @@ def test_RobustAlgebraicPlaneFittingPy():
     inY = 100*np.random.rand(N)-50
     inZ = 1*inX - 2 * inY + 50*np.random.randn(N) + 50
     inZ[((N-1)*np.random.rand(numOut)).astype('int')] = 100*np.random.rand(numOut) +500
-    mP = RGFLib.fitPlane(inX, inY, inZ, 0.8, 0.5)
+    mP = RobustGaussianFittingLibrary.fitPlane(inX, inY, inZ, 0.8, 0.5)
     print(mP)
     Xax = np.arange(inX.min(), inX.max())
     Yax = np.arange(inY.min(), inY.max())
@@ -153,7 +155,7 @@ def test_RobustAlgebraicLineFittingPy():
     inX = 100*np.random.rand(N)-50
     inY = 2*inX + 10 + 10*np.random.randn(N)
     inY[int(N/2)] = 100
-    mP = RGFLib.fitLine(inX, inY, 0.5, 0.3)
+    mP = RobustGaussianFittingLibrary.fitLine(inX, inY, 0.5, 0.3)
     Xax = np.arange(inX.min(), inX.max())
     Yax_U = mP[0]*Xax + mP[1] + 3*mP[2]
     Yax_M = mP[0]*Xax + mP[1]
@@ -177,9 +179,9 @@ def test_fitBackground():
     plt.imshow(inImage*inMask, vmin=0, vmax=1000)
     plt.show()
 
-    mP = RGFLib.fitBackground(inImage, inMask, winX = 64, winY = 64, stretch2CornersOpt=4, numModelParams = 4) \
-        + RGFLib.fitBackground(inImage, inMask, winX = 32, winY = 32, stretch2CornersOpt=2, numModelParams = 4) \
-        + RGFLib.fitBackground(inImage, inMask, winX = 16, winY = 16, stretch2CornersOpt=1, numModelParams = 4)
+    mP = RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 64, winY = 64, stretch2CornersOpt=4, numModelParams = 4) \
+        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 32, winY = 32, stretch2CornersOpt=2, numModelParams = 4) \
+        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 16, winY = 16, stretch2CornersOpt=1, numModelParams = 4)
     mP = mP/3
     
     plt.imshow(mP[0], vmin=0, vmax=1000)
@@ -194,23 +196,23 @@ def test_fitBackgroundTensor():
     Yax = np.arange(imgDimY)
     inX, inY = np.meshgrid(Xax, Yax)
     img1 = np.random.randn(1, imgDimX,imgDimY)
-    mP = RGFLib.fitPlane(inX = inX.flatten(), 
+    mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
                                        inY = inY.flatten(),
                                        inZ = img1.flatten())
     print(mP)
     img2 = 10+np.random.randn(1, imgDimX,imgDimY)
-    mP = RGFLib.fitPlane(inX = inX.flatten(), 
+    mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
                                        inY = inY.flatten(),
                                        inZ = img2.flatten())
     print(mP)
     img3 = 100+10*np.random.randn(1, imgDimX,imgDimY)
-    mP = RGFLib.fitPlane(inX = inX.flatten(), 
+    mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
                                        inY = inY.flatten(),
                                        inZ = img3.flatten())
     print(mP)
     inTensor = np.concatenate((img1, img2, img3))
     print('input Tensor shape is: ', str(inTensor.shape))
-    modelParamsMap = RGFLib.fitBackgroundTensor(inTensor)
+    modelParamsMap = RobustGaussianFittingLibrary.fitBackgroundTensor(inTensor)
     print(modelParamsMap)
 
 def test_fitBackgroundTensor_multiproc():
@@ -220,7 +222,7 @@ def test_fitBackgroundTensor_multiproc():
         inTensor[frmCnt] = frmCnt+frmCnt**0.5*np.random.randn(r_N,c_N)
 
     print('input Tensor shape is: ', str(inTensor.shape))
-    modelParamsMap = RGFLib.useMultiproc.fitBackgroundTensor_multiproc(inTensor,
+    modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitBackgroundTensor_multiproc(inTensor,
                                                               winX = 64,
                                                               winY = 64)
     for frmCnt in list([f_N-1]):
@@ -235,15 +237,15 @@ def test_SginleGaussianVec():
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
-    mP = RGFLib.fitValue(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=1.0)
-    RGFLib.misc.naiveHist(testData, mP)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=1.0)
+    RobustGaussianFittingLibrary.misc.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
     plt.plot(testData,'.'), 
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]-3*mP[1], mP[0]-3*mP[1]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
-    RGFLib.misc.sGHist(testData, mP)
+    RobustGaussianFittingLibrary.misc.sGHist(testData, mP)
     
 def test_flatField():    
     RNN0 =  0 + 1*np.random.randn(2048)
@@ -257,21 +259,21 @@ def test_flatField():
     testData = data.copy()
 
     modelCnt = 0
-    mP = RGFLib.fitValue(testData, 
+    mP = RobustGaussianFittingLibrary.fitValue(testData, 
                             topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=2.0)
-    RGFLib.misc.naiveHist(data, mP)
+    RobustGaussianFittingLibrary.misc.naiveHist(data, mP)
 
 
     for modelCnt in range(4):
-        mP = RGFLib.fitValue(testData, topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=1.0)
+        mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=1.0)
         probs = np.random.rand(testData.shape[0]) - np.exp(-(testData - mP[0])**2/(2*mP[1]**2))
         probs[testData<mP[0]] = 0
         probs[probs>mP[0]+3.0*mP[1]] = 1
         testData = testData[probs>0]
         mP_All[:, modelCnt] = mP
         
-    RGFLib.misc.naiveHist_multi_mP(data, mP_All)
-    RGFLib.misc.sGHist_multi_mP(data, mP_All, SNR=2.5)
+    RobustGaussianFittingLibrary.misc.naiveHist_multi_mP(data, mP_All)
+    RobustGaussianFittingLibrary.misc.sGHist_multi_mP(data, mP_All, SNR=2.5)
     
 def test_fitValueTensor_MultiProc():    
     SIGMA = 10
@@ -284,13 +286,13 @@ def test_fitValueTensor_MultiProc():
     
     print('testing RobustSingleGaussianTensorPy')
     nowtime = time.time()
-    modelParamsMap = RGFLib.fitValueTensor(testData)
+    modelParamsMap = RobustGaussianFittingLibrary.fitValueTensor(testData)
     print(time.time() - nowtime)
     print(modelParamsMap)
     
     print('testing fitValueTensor_MultiProc')
     nowtime = time.time()
-    modelParamsMap = RGFLib.useMultiproc.fitValueTensor_MultiProc(testData,
+    modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitValueTensor_MultiProc(testData,
                                                            numRowSegs = 6,
                                                            numClmSegs = 12)
     print(time.time() - nowtime)
@@ -302,14 +304,14 @@ def test_fitValueSmallSample():
     testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
-    mP = RGFLib.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
     print(mP)
     inds = np.where(np.fabs(testData)<50)
     print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
         
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_islandRemovalPy
+    test_islandRemovalPy()
     exit()
     visOrderStat()
     test_fitValueSmallSample()
