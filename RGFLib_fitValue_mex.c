@@ -86,15 +86,18 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	for(i=0; i<_N; i++)
 		_inWeights[i] = (float)inWeights[i];
 
-	float _mP[1];
+	float _mP[2];
 	_mP[0] = 0;
+	_mP[1] = 0;
 	
-	RobustWeightedMean(_inVec, _inWeights, _mP, _initModel, _N,
+	RobustWeightedGaussianVec(_inVec, _inWeights, _mP, _initModel, _N,
 					   _topKthPerc, _bottomKthPerc,
 					   _MSSE_LAMBDA, _optIters);
 	free(_inVec);
 	plhs[0] = mxCreateDoubleScalar(1);
 	*mxGetPr(plhs[0]) = _mP[0];	
+	plhs[1] = mxCreateDoubleScalar(1);
+	*mxGetPr(plhs[1]) = _mP[1];
 	
 	return;
 }
