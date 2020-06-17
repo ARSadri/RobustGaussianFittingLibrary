@@ -61,6 +61,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	bottomKthPerc	= mxGetPr(prhs[5]);
 	MSSE_LAMBDA		= mxGetPr(prhs[6]);
 	optIters		= mxGetPr(prhs[7]);
+	skewFactor      = mxGetPr(prhs[8]);
     
 	float *_inVec;
 	float *_inWeights;
@@ -95,9 +96,14 @@ void mexFunction(int nlhs, mxArray *plhs[],
 					   _MSSE_LAMBDA, _optIters);
 	free(_inVec);
 	plhs[0] = mxCreateDoubleScalar(1);
-	*mxGetPr(plhs[0]) = _mP[0];	
-	plhs[1] = mxCreateDoubleScalar(1);
-	*mxGetPr(plhs[1]) = _mP[1];
 	
+	float alpha, beta;
+	alpha = ((_mP[0])*(_mP[0])*(1-_mP[0])/_mP[1])-_mP[0];
+	beta = (((_mP[0]*(1-_mP[0]))/(_mP[1]))-1)*(1-_mP[0])
+	if((alpha>1) && (beta>1))
+		*mxGetPr(plhs[0]) = (alpha-1)/(alpha+beta-2);
+	else
+		*mxGetPr(plhs[0]) = _mP[0] - skewFactor*_mP[1];
+
 	return;
 }

@@ -27,4 +27,4 @@ N = numel(inVec)
 inWeights = 1+0*[inliers_W outliers_W];
 inWeights = inWeights/sum(inWeights)
 
-[Rmean, RStd] = RGFLib_fitValue_mex(inVec, inWeights, initModel, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters)
+Rmode = RGFLib_fitValue_mex(inVec, inWeights, initModel, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters)
