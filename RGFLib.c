@@ -145,46 +145,6 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 	return estScale;
 }
 
-float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
-	unsigned int i, q;
-	float estScale, cumulative_sum, cumulative_sum_perv, tmp;
-	struct sortStruct* sortedSqError;
-	estScale = 30000.0;
-
-	if((k < 12) || (vecLen<k))
-		return(-1);
-
-	sortedSqError = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
-
-	for (i = 0; i < vecLen; i++) {
-		sortedSqError[i].vecData  = error[i]*error[i];
-		sortedSqError[i].indxs = i;
-	}
-	quickSort(sortedSqError,0,vecLen-1);
-
-	cumulative_sum = 0;
-	for (i = 0; i < k; i++)	//finite sample bias of MSSE [RezaJMIJV'06]
-		cumulative_sum += sortedSqError[i].vecData;
-	cumulative_sum_perv = cumulative_sum;
-	for (i = k; i < vecLen; i++) {
-		if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqError[i].vecData )		// in (i-1), the 1 is the dimension of model
-			break;
-		cumulative_sum_perv = cumulative_sum;
-		cumulative_sum += sortedSqError[i].vecData ;
-	}
-
-	estScale = 0;
-	tmp = 0;
-	for(q=0; q<i; q++) {
-		estScale += (weights[sortedSqError[q].indxs])*sortedSqError[q].vecData;
-		tmp += weights[sortedSqError[q].indxs];
-	}
-	estScale = sqrt((i/(float)(i-1))*estScale / tmp);
-
-	free(sortedSqError);
-	return estScale;
-}
-
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
 		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
@@ -240,51 +200,187 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 	free(errorVec);
 }
 
-void RobustWeightedGaussianVec(float *vec, float *weights, float *modelParams, float theta, unsigned int N,
-		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
+float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
+	unsigned int i, q;
+	float estScale, cumulative_sum, cumulative_sum_perv, tmp;
+	struct sortStruct* sortedSqError;
+	estScale = 30000.0;
 
-	float avg, tmp, estScale;
-	unsigned int i, iter;
+	if((k < 12) || (vecLen<k))
+		return(-1);
 
+	sortedSqError = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
+
+	for (i = 0; i < vecLen; i++) {
+		sortedSqError[i].vecData  = error[i]*error[i];
+		sortedSqError[i].indxs = i;
+	}
+	quickSort(sortedSqError,0,vecLen-1);
+
+	cumulative_sum = 0;
+	for (i = 0; i < k; i++)	//finite sample bias of MSSE [RezaJMIJV'06]
+		cumulative_sum += sortedSqError[i].vecData;
+	cumulative_sum_perv = cumulative_sum;
+	for (i = k; i < vecLen; i++) {
+		if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqError[i].vecData )		// in (i-1), the 1 is the dimension of model
+			break;
+		cumulative_sum_perv = cumulative_sum;
+		cumulative_sum += sortedSqError[i].vecData ;
+	}
+
+	estScale = 0;
+	tmp = 0;
+	for(q=0; q<i; q++) {
+		estScale += (weights[sortedSqError[q].indxs])*sortedSqError[q].vecData;
+		tmp += weights[sortedSqError[q].indxs];
+	}
+	estScale = sqrt((i/(float)(i-1))*estScale / tmp);
+
+	free(sortedSqError);
+	return estScale;
+}
+
+void RobustWeightedGaussianVec(float *vec, float *weights, 
+					float *modelParams, float theta, unsigned int N,
+					float topKthPerc, float bottomKthPerc, 
+					float MSSE_LAMBDA, unsigned char optIters) {
+
+	float avg, tmp, estScale, theta_new;
+	unsigned int topk, botk;
+	unsigned int i, iter, numPointsSide;
+
+	if(N==3){
+		topk = 2;
+		botk = 0;
+	}
+	
 	float *residual;
 
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 
 	for(iter=0; iter<optIters; iter++) {
+		
+		theta_new = 0;
+		tmp = 0;
+		numPointsSide = 0;
 		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(vec[i] - theta);
+			if(vec[i] >= theta) {
+				errorVec[i].vecData  = vec[i] - theta;
+				numPointsSide++;
+			}
+			else {
+				errorVec[i].vecData  = 1e+9;
+			}
 			errorVec[i].indxs = i;
 		}
+		
+		if((int)(numPointsSide*topKthPerc)>0) {
+			quickSort(errorVec,0,N-1);
+			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
+				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+				tmp += weights[errorVec[i].indxs];
+			}
+		}		
+		numPointsSide = 0;
+		for (i = 0; i < N; i++) {
+			if(vec[i] < theta) {
+				errorVec[i].vecData  = theta - vec[i];
+				numPointsSide++;
+			}
+			else {
+				errorVec[i].vecData  = 1e+8;
+			}
+			errorVec[i].indxs = i;
+		}
+		if((int)(numPointsSide*topKthPerc)>0) {
+			quickSort(errorVec,0,N-1);
+			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
+				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+				tmp += weights[errorVec[i].indxs];
+			}
+		}
+		
+		if(tmp==0) {
+			theta_new = 0;
+			tmp = 0;
+			for (i = 0; i < N; i++) {
+				errorVec[i].vecData = fabs(vec[i] - theta);
+				errorVec[i].indxs = i;
+			}
+			quickSort(errorVec,0,N-1);
+			theta = 0;
+			tmp = 0;
+			for(i=botk; i<topk; i++) {
+				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+				tmp += weights[errorVec[i].indxs];
+			}
+		}
+		if(tmp==0) {
+			theta_new = 0;
+			tmp = 0;
+			for(i=botk; i<topk; i++) {
+				theta_new += vec[errorVec[i].indxs];
+				tmp += 1;
+			}
+		}
+		theta = theta_new / tmp;
+	}
+	
+	/////////////////////////////////////
+	theta_new = 0;
+	tmp = 0;
+	numPointsSide = 0;
+	for (i = 0; i < N; i++) {
+		if(vec[i] >= theta) {
+			errorVec[i].vecData  = vec[i] - theta;
+			numPointsSide++;
+		}
+		else {
+			errorVec[i].vecData  = 1e+8;
+		}
+		errorVec[i].indxs = i;
+	}
+	if(numPointsSide>0) {
 		quickSort(errorVec,0,N-1);
-		theta = 0;
-		tmp = 0;
-		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
-			theta += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+		for(i=0; i<(int)(numPointsSide*topKthPerc); i++) {
+			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 			tmp += weights[errorVec[i].indxs];
 		}
-		theta = theta / tmp;
 	}
-
-	avg = 0;
-	tmp = 0;
-	for(i=0; i<(int)(N*topKthPerc); i++) {
-		avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-		tmp += weights[errorVec[i].indxs];
+	
+	numPointsSide = 0;
+	for (i = 0; i < N; i++) {
+		if(vec[i] < theta) {
+			errorVec[i].vecData  = theta - vec[i];
+			numPointsSide++;
+		}
+		else {
+			errorVec[i].vecData  = 1e+8;
+		}
+		errorVec[i].indxs = i;
 	}
-	avg = avg / tmp;
-
-	if((int)(N*topKthPerc)>12) {
+	if(numPointsSide>0) {
+		quickSort(errorVec,0,N-1);
+		for(i=0; i<(int)(numPointsSide*topKthPerc); i++) {
+			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+			tmp += weights[errorVec[i].indxs];
+		}
+	}	
+	avg = theta_new / tmp;
+	///////////////////////////////////////
+	
+	if(topk>12) {
 		residual = (float*) malloc(N * sizeof(float));
 		for (i = 0; i < N; i++)
 			residual[i]  = vec[i] - avg;// + ((double) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
 		free(residual);
 	}
 	else {	//finite sample bias of MSSE is 12[RezaJMIJV'06]
 		estScale = 0;
 		tmp = 0;
-		for(i=0; i<(int)(N*topKthPerc); i++) {
+		for(i=0; i<topk; i++) {
 			estScale += weights[errorVec[i].indxs]*(vec[errorVec[i].indxs] - avg)*(vec[errorVec[i].indxs] - avg);
 			tmp += weights[errorVec[i].indxs];
 		}
@@ -297,8 +393,8 @@ void RobustWeightedGaussianVec(float *vec, float *weights, float *modelParams, f
 
 	free(errorVec);
 }
-
-void RobustWeightedMean(float *vec, float *weights, float *modelParams, float theta, unsigned int N,
+/*
+void RobustWeightedMean(float *vec, float *weights, float *modelParams, float avg, unsigned int N,
 		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
 	float avg, tmp;
@@ -309,17 +405,17 @@ void RobustWeightedMean(float *vec, float *weights, float *modelParams, float th
 
 	for(iter=0; iter<optIters; iter++) {
 		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(vec[i] - theta);
+			errorVec[i].vecData  = fabs(vec[i] - avg);
 			errorVec[i].indxs = i;
 		}
 		quickSort(errorVec,0,N-1);
-		theta = 0;
+		avg = 0;
 		tmp = 0;
 		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
-			theta += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+			avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 			tmp += weights[errorVec[i].indxs];
 		}
-		theta = theta / tmp;
+		avg = avg / tmp;
 	}
 
 	avg = 0;
@@ -334,7 +430,7 @@ void RobustWeightedMean(float *vec, float *weights, float *modelParams, float th
 
 	free(errorVec);
 }
-
+*/
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
 	unsigned int i;
 	double xsum,x2sum,ysum,xysum; 
