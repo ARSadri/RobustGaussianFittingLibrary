@@ -301,21 +301,24 @@ def test_fitValueTensor_MultiProc():
     print(modelParamsMap)
 
 def test_fitValueSmallSample():    
-    inliers = np.random.randn(40)
-    outliers = np.array([-500, 1000])
+    inliers = np.random.randn(30)
+    outliers = np.array([1000])
     testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
     mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
     print(mP)
-    inds = np.where(np.fabs(testData)<50)
-    print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
-        
+    #inds = np.where(np.fabs(testData)<50)
+    #print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
+    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
+    
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitValueSmallSample()
+    exit()
+    
     test_for_textProgBar()
     visOrderStat()
-    test_fitValueSmallSample()
     test_islandRemovalPy()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
