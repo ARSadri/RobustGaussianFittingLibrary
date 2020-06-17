@@ -176,8 +176,8 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	estScale = 0;
 	tmp = 0;
 	for(q=0; q<i; q++) {
-		estScale += weights[sortedSqError[q].indxs]*weights[sortedSqError[q].indxs]*sortedSqError[q].vecData;
-		tmp += weights[sortedSqError[q].indxs]*weights[sortedSqError[q].indxs];
+		estScale += (weights[sortedSqError[q].indxs])*sortedSqError[q].vecData;
+		tmp += weights[sortedSqError[q].indxs];
 	}
 	estScale = sqrt((i/(float)(i-1))*estScale / tmp);
 
