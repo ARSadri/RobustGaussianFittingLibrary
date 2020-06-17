@@ -51,6 +51,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	double *bottomKthPerc;
 	double *MSSE_LAMBDA;
 	double *optIters;
+	double *skewFlag;
 
 	//associate inputs
 	inVec 			= mxGetPr(prhs[0]);
@@ -61,6 +62,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	bottomKthPerc	= mxGetPr(prhs[5]);
 	MSSE_LAMBDA		= mxGetPr(prhs[6]);
 	optIters		= mxGetPr(prhs[7]);
+	skewFlag		= mxGetPr(prhs[8]);
 	
 	float *_inVec;
 	float *_inWeights;
@@ -90,7 +92,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	_mP[0] = 0;
 	_mP[1] = 0;
 	
-	RobustWeightedGaussianVec(_inVec, _inWeights, _mP, _initModel, _N,
+	if(skewFlag[0]==1)
+		RobustWeightedGaussianVec(_inVec, _inWeights, _mP, _initModel, _N,
+					   _topKthPerc, _bottomKthPerc,
+					   _MSSE_LAMBDA, _optIters);
+	else				   
+		RobustWeightedMean(_inVec, _inWeights, _mP, _initModel, _N,
 					   _topKthPerc, _bottomKthPerc,
 					   _MSSE_LAMBDA, _optIters);
 	free(_inVec);
