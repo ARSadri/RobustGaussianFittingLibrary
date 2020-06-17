@@ -1,6 +1,5 @@
 %uncomment for MEX compile and then comment again for MATLAB use
 %mex RGFLib_fitValue_mex.c, return
-clear
 close all
 numTests = 1000;
 Rmean_rec=zeros(1,numTests);
