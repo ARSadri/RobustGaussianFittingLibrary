@@ -179,7 +179,7 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 	if((int)(N*topKthPerc)>12) {	
 		residual = (float*) malloc(N * sizeof(float));
 		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;// + ((double) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
+			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
 		estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
 		free(residual);
 	}
@@ -248,7 +248,8 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 	float avg, tmp, estScale, theta_new;
 	unsigned int topk, botk;
 	unsigned int i, iter, numPointsSide;
-
+	float a, b, inliersMinValue, inliersMaxValue, maxVec, maxWeight, alpha, sumVec;
+	
 	if(N==3){
 		topk = 2;
 		botk = 0;
@@ -300,7 +301,6 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 				tmp += weights[errorVec[i].indxs];
 			}
 		}
-		
 		if(tmp==0) {
 			theta_new = 0;
 			tmp = 0;
@@ -326,7 +326,7 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 		}
 		theta = theta_new / tmp;
 	}
-	
+	avg = theta;
 	/////////////////////////////////////
 	theta_new = 0;
 	tmp = 0;
@@ -369,11 +369,11 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 	}	
 	avg = theta_new / tmp;
 	///////////////////////////////////////
-	
+
 	if(topk>12) {
 		residual = (float*) malloc(N * sizeof(float));
 		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;// + ((double) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
+			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
 		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
 		free(residual);
 	}
@@ -388,34 +388,74 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 		//To understand the following, look at visOrderStat()
 		estScale /= pow(topKthPerc, 1.4);
 	}
+	
 	modelParams[0] = avg;
 	modelParams[1] = estScale;
 
+	////////////////////////////////////////////////////////////////////////
+	//////////// find the mode by looking at a naive histogram /////////////
+	////////////////////////////////////////////////////////////////////////
+	
+	
+	a = avg - 3.0*estScale;
+	b = avg + 3.0*estScale;
+	inliersMinValue = avg;
+	inliersMaxValue = avg;
+	for(i=0; i<N; i++) {
+		if((vec[i]>a) && (vec[i]<b)) {
+			if(vec[i]<inliersMinValue)
+				inliersMinValue = vec[i];
+			if(vec[i]>inliersMaxValue)
+				inliersMaxValue = vec[i];
+		}
+	}
+	a = inliersMinValue;
+	b = inliersMaxValue;
+	maxVec = 0;
+	maxWeight = 0;
+	for(alpha=0; alpha<1; alpha+=0.1){
+		tmp = 0;
+		sumVec = 0;
+		for(i=0; i<N; i++)
+			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+0.1))+b*(alpha+0.1)) ) {
+				tmp += weights[i];
+				sumVec += vec[i];
+			}
+		if(tmp>maxWeight) {
+			maxVec = sumVec;
+			maxWeight = tmp;
+		}
+	}
+	modelParams[0] = maxVec/maxWeight;	
+	
 	free(errorVec);
 }
-/*
-void RobustWeightedMean(float *vec, float *weights, float *modelParams, float avg, unsigned int N,
+
+void RobustWeightedMean(float *vec, float *weights, float *modelParams, float theta, unsigned int N,
 		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
-	float avg, tmp;
+	float avg, tmp, theta_new, estScale;
+	float a, b, inliersMinValue, inliersMaxValue, maxVec, maxWeight, alpha, sumVec;
 	unsigned int i, iter;
 
+	float *residual;
+	
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 
 	for(iter=0; iter<optIters; iter++) {
 		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(vec[i] - avg);
+			errorVec[i].vecData  = fabs(vec[i] - theta);
 			errorVec[i].indxs = i;
 		}
 		quickSort(errorVec,0,N-1);
-		avg = 0;
+		theta_new = 0;
 		tmp = 0;
 		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
-			avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 			tmp += weights[errorVec[i].indxs];
 		}
-		avg = avg / tmp;
+		theta = theta_new / tmp;
 	}
 
 	avg = 0;
@@ -426,14 +466,63 @@ void RobustWeightedMean(float *vec, float *weights, float *modelParams, float av
 	}
 	avg = avg / tmp;
 
-	modelParams[0] = avg;
-
+	if((int)(N*topKthPerc)>12) {
+		residual = (float*) malloc(N * sizeof(float));
+		for (i = 0; i < N; i++)
+			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
+		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+		free(residual);
+	}
+	else {	//finite sample bias of MSSE is 12[RezaJMIJV'06]
+		estScale = 0;
+		tmp = 0;
+		for(i=0; i<(int)(N*topKthPerc); i++) {
+			estScale += weights[errorVec[i].indxs]*(vec[errorVec[i].indxs] - avg)*(vec[errorVec[i].indxs] - avg);
+			tmp += weights[errorVec[i].indxs];
+		}
+		estScale = sqrt(estScale / tmp);
+		//To understand the following, look at visOrderStat()
+		estScale /= pow(topKthPerc, 1.4);
+	}	
+	
+	
+	a = avg - 3.0*estScale;
+	b = avg + 3.0*estScale;
+	inliersMinValue = avg;
+	inliersMaxValue = avg;
+	for(i=0; i<N; i++) {
+		if((vec[i]>a) && (vec[i]<b)) {
+			if(vec[i]<inliersMinValue)
+				inliersMinValue = vec[i];
+			if(vec[i]>inliersMaxValue)
+				inliersMaxValue = vec[i];
+		}
+	}
+	a = inliersMinValue;
+	b = inliersMaxValue;
+	maxVec = 0;
+	maxWeight = 0;
+	for(alpha=0; alpha<1; alpha+=0.1){
+		tmp = 0;
+		sumVec = 0;
+		for(i=0; i<N; i++)
+			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+0.1))+b*(alpha+0.1)) ) {
+				tmp += weights[i];
+				sumVec += vec[i];
+			}
+		if(tmp>maxWeight) {
+			maxVec = sumVec;
+			maxWeight = tmp;
+		}
+	}
+	modelParams[0] = maxVec/maxWeight;
+	//modelParams[0] = avg;
 	free(errorVec);
 }
-*/
+
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
 	unsigned int i;
-	double xsum,x2sum,ysum,xysum; 
+	float xsum,x2sum,ysum,xysum; 
 	xsum=0;
 	x2sum=0;
 	ysum=0;
@@ -493,7 +582,7 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 	mP[1] = model[1];
 	residual = (float*) malloc(N * sizeof(float));
 	for (i = 0; i < N; i++)
-		residual[i]  = y[i] - (model[0]*x[i] + model[1]) + ((double) rand() / (RAND_MAX))/4;	
+		residual[i]  = y[i] - (model[0]*x[i] + model[1]) + ((float) rand() / (RAND_MAX))/4;	
 		//Noise stabilizes MSSE
 	mP[2] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
 
