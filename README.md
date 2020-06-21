@@ -16,6 +16,7 @@ A Python wrapper is also provided. Tha wrapper will be looking for the .so share
 * __RGFLib__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
 	* MSSE : Given set of residuals, it finds the scale of a gaussian
 	* fitValue : Given a vector, it finds average and standard deviation of the gaussian.
+	* fitValue2Skewed : Given a vector (and weights are accepted too), it finds the mode by (Median of inliers) and reports it along with a scale which is the distance of the mode from the edges of the Gaussian (by 3 STDs) divided by 3.
 	* fitValueTensor : Given a tensor of size n_F, n_R, n_C, it finds the gaussian mean and std for each pixel in n_R and n_C.
 	* fitLine : Given vectors X and Y, it finds three parameters describing a line by slope, intercept and scale of noise.
 	* fitLineTensor : Given a tensor, it fits a line for each pixel
