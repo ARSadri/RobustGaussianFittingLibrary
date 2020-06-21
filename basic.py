@@ -65,6 +65,44 @@ def fitValue(inVec,
                                                    optimizerNumIteration)
     return (modelParams[0], modelParams[1])
 
+def fitValue2Skewed(inVec, 
+                    inWeights = None,
+                    topKthPerc = 0.5,
+                    bottomKthPerc = 0.45,
+                    MSSE_LAMBDA = 3.0,
+                    modelValueInit = 0,
+                    optimizerNumIteration = 10):
+    """Fit a skewed bell shaped unimodal sharp density robustly:
+    The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inVec (numpy.1darray): a float32 input vector of values to fit the model to
+        inWeight (numpy.1darray): a float32 input vector of weights for each data point, doesn't need to sum to 1
+        MSSE_LAMBDA: how far by std, a Guassian is a Guassian, must be above 2 for MSSE.
+        topKthPerc, bottomKthPerc: a float32 scalar, roughly guess maximum size of the structure between 0 and 1, the bottomKthPerc is the minimum of it.
+            Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+            After you chose the bottomKthPerc, make sure that the remaining number of data points is more than 12.
+            For example: Choose the bottomKthPerc so that the sample size remains above 5 [TPAMI16].
+            If number of data points is 100, and you are sure that 
+    Output
+    ~~~~~~
+        tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
+    """
+    if(inWeights is None):
+        inWeights = np.ones(inVec.shape, dtype='float32')
+    modelParams = np.zeros(2, dtype='float32')
+    RGFCLib.fitValue2Skewed((inVec.copy()).astype('float32'),
+                              (inWeights.copy()).astype('float32'),
+                               modelParams, 
+                               modelValueInit,
+                               inVec.shape[0],
+                               topKthPerc,
+                               bottomKthPerc,
+                               MSSE_LAMBDA,
+                               optimizerNumIteration)
+    return (modelParams[0], modelParams[1])
+    
+    
 def fitValueTensor(inTensor,
                   topKthPerc = 0.5,
                   bottomKthPerc=0.45,

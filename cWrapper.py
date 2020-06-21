@@ -45,6 +45,18 @@ RGFCLib.RobustSingleGaussianVec.argtypes = [
                 ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
 
 '''
+void fitValue2Skewed(float *vec, float *weights, 
+					float *modelParams, float theta, unsigned int N,
+					float topKthPerc, float bottomKthPerc, 
+					float MSSE_LAMBDA, unsigned char optIters)
+'''                    
+RGFCLib.fitValue2Skewed.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_float, ctypes.c_uint32, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_float, ctypes.c_uint8]                
+'''
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N,
 							  float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
 '''                

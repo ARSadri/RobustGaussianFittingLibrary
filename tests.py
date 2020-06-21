@@ -249,6 +249,22 @@ def test_SginleGaussianVec():
     plt.show()
     RobustGaussianFittingLibrary.misc.sGHist(testData, mP)
     
+def test_fitValue2Skewed():    
+    RNN0 = 50 + 5*np.random.randn(50)
+    RNN1 = 200*(np.random.rand(100)-0.5)
+    testData = np.concatenate((RNN0, RNN1)).flatten()
+    np.random.shuffle(testData)
+    print('testing fitValue2Skewed')
+    mP = RobustGaussianFittingLibrary.fitValue2Skewed(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=3.0)
+    RobustGaussianFittingLibrary.misc.naiveHist(testData, mP)
+    plt.plot(testData,'.'), plt.show()
+    plt.plot(testData,'.'), 
+    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]-3*mP[1], mP[0]-3*mP[1]]))
+    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
+    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
+    plt.show()
+    RobustGaussianFittingLibrary.misc.sGHist(testData, mP)    
+    
 def test_flatField():    
     RNN0 =  0 + 1*np.random.randn(2048)
     RNN1 =  6 + 6**0.5*np.random.randn(1024)
@@ -301,8 +317,8 @@ def test_fitValueTensor_MultiProc():
     print(modelParamsMap)
 
 def test_fitValueSmallSample():    
-    inliers = np.random.randn(30)
-    outliers = np.array([1000])
+    inliers = np.random.randn(3)
+    outliers = np.array([10])
     testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
@@ -314,12 +330,12 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_fitValueSmallSample()
+    test_fitValue2Skewed()
     exit()
-    
     test_for_textProgBar()
     visOrderStat()
     test_islandRemovalPy()
+    test_fitValueSmallSample()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
     test_RobustAlgebraicLineFittingPy()

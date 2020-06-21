@@ -135,7 +135,8 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 		cumulative_sum += sortedSqError[i].vecData;
 	cumulative_sum_perv = cumulative_sum;
 	for (i = k; i < vecLen; i++) {
-		if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqError[i].vecData )		// in (i-1), the 1 is the dimension of model
+		// in (i-1), the 1 is the dimension of model
+		if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqError[i].vecData )		
 			break;
 		cumulative_sum_perv = cumulative_sum;
 		cumulative_sum += sortedSqError[i].vecData ;
@@ -240,15 +241,17 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	return estScale;
 }
 
-void RobustWeightedGaussianVec(float *vec, float *weights, 
+void fitValue2Skewed(float *vec, float *weights, 
 					float *modelParams, float theta, unsigned int N,
 					float topKthPerc, float bottomKthPerc, 
 					float MSSE_LAMBDA, unsigned char optIters) {
 
 	float avg, tmp, estScale, theta_new;
+	float upperScale, lowerScale;
 	unsigned int topk, botk;
 	unsigned int i, iter, numPointsSide;
-	float a, b, inliersMinValue, inliersMaxValue, maxVec, maxWeight, alpha, sumVec;
+	float a, b, inliersMinValue, inliersMaxValue;
+	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
 	
 	if(N==3){
 		topk = 2;
@@ -259,7 +262,7 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-
+	// lets do a symmetric fitting, half of the sample data points must come from either side
 	for(iter=0; iter<optIters; iter++) {
 		
 		theta_new = 0;
@@ -290,7 +293,7 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 				numPointsSide++;
 			}
 			else {
-				errorVec[i].vecData  = 1e+8;
+				errorVec[i].vecData  = 1e+9;
 			}
 			errorVec[i].indxs = i;
 		}
@@ -368,8 +371,8 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 		}
 	}	
 	avg = theta_new / tmp;
-	///////////////////////////////////////
-
+	///////////////////////////////////////		
+	
 	if(topk>12) {
 		residual = (float*) malloc(N * sizeof(float));
 		for (i = 0; i < N; i++)
@@ -388,15 +391,12 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 		//To understand the following, look at visOrderStat()
 		estScale /= pow(topKthPerc, 1.4);
 	}
-	
-	modelParams[0] = avg;
 	modelParams[1] = estScale;
-
 	////////////////////////////////////////////////////////////////////////
 	//////////// find the mode by looking at a naive histogram /////////////
 	////////////////////////////////////////////////////////////////////////
 	
-	
+	/*
 	a = avg - 3.0*estScale;
 	b = avg + 3.0*estScale;
 	inliersMinValue = avg;
@@ -411,6 +411,7 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 	}
 	a = inliersMinValue;
 	b = inliersMaxValue;
+	
 	maxVec = 0;
 	maxWeight = 0;
 	for(alpha=0; alpha<1; alpha+=0.1){
@@ -419,104 +420,74 @@ void RobustWeightedGaussianVec(float *vec, float *weights,
 		for(i=0; i<N; i++)
 			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+0.1))+b*(alpha+0.1)) ) {
 				tmp += weights[i];
-				sumVec += vec[i];
+				sumVec += weights[i]*vec[i];
 			}
 		if(tmp>maxWeight) {
 			maxVec = sumVec;
 			maxWeight = tmp;
 		}
 	}
-	modelParams[0] = maxVec/maxWeight;	
+	if(maxWeight>0)
+		modelParams[0] = maxVec/maxWeight;	
+
+	modelParams[0] = avg;
+	modelParams[1] = estScale;
+	*/
+
+	////////////////////////////////////////////////////////////////
+	/////mode seeking Using median of inlier intensities ///////////
+	////////////////////////////////////////////////////////////////
+	/*
+	numPointsSide = 0;
+	for (i = 0; i < N; i++) {
+		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
+			errorVec[i].vecData  = vec[i];
+			numPointsSide++;
+		}
+		else {
+			errorVec[i].vecData  = 1e+8;
+		}
+		errorVec[i].indxs = i;
+	}
+	quickSort(errorVec,0,N-1);
 	
+	modelParams[0] = errorVec[(int)(numPointsSide/2)].vecData;
 	free(errorVec);
-}
+	*/
 
-void RobustWeightedMean(float *vec, float *weights, float *modelParams, float theta, unsigned int N,
-		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
-
-	float avg, tmp, theta_new, estScale;
-	float a, b, inliersMinValue, inliersMaxValue, maxVec, maxWeight, alpha, sumVec;
-	unsigned int i, iter;
-
-	float *residual;
+	////////////////////////////////////////////////////////////////
+	/////mode seeking Using weighted median of inlier intensities //
+	////////////////////////////////////////////////////////////////
+	numPointsSide = 0;
+	sumWeights = 0;
+	for (i = 0; i < N; i++) {
+		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
+			errorVec[i].vecData  = vec[i];
+			numPointsSide++;
+			sumWeights += weights[i];
+		}
+		else {
+			errorVec[i].vecData  = 1e+8;
+		}
+		errorVec[i].indxs = i;
+	}
+	quickSort(errorVec,0,N-1);
 	
-	struct sortStruct* errorVec;
-	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-
-	for(iter=0; iter<optIters; iter++) {
-		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(vec[i] - theta);
-			errorVec[i].indxs = i;
-		}
-		quickSort(errorVec,0,N-1);
-		theta_new = 0;
-		tmp = 0;
-		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
-			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-			tmp += weights[errorVec[i].indxs];
-		}
-		theta = theta_new / tmp;
+	i=0;
+	local_sumWeights = weights[errorVec[i].indxs];
+	while((local_sumWeights<sumWeights/2) && (i<numPointsSide)) {
+		i++;
+		local_sumWeights += weights[errorVec[i].indxs];
 	}
-
-	avg = 0;
-	tmp = 0;
-	for(i=0; i<(int)(N*topKthPerc); i++) {
-		avg += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-		tmp += weights[errorVec[i].indxs];
-	}
-	avg = avg / tmp;
-
-	if((int)(N*topKthPerc)>12) {
-		residual = (float*) malloc(N * sizeof(float));
-		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, (int)(N*topKthPerc));
-		free(residual);
-	}
-	else {	//finite sample bias of MSSE is 12[RezaJMIJV'06]
-		estScale = 0;
-		tmp = 0;
-		for(i=0; i<(int)(N*topKthPerc); i++) {
-			estScale += weights[errorVec[i].indxs]*(vec[errorVec[i].indxs] - avg)*(vec[errorVec[i].indxs] - avg);
-			tmp += weights[errorVec[i].indxs];
-		}
-		estScale = sqrt(estScale / tmp);
-		//To understand the following, look at visOrderStat()
-		estScale /= pow(topKthPerc, 1.4);
-	}	
 	
+	modelParams[0] = errorVec[i].vecData;
 	
-	a = avg - 3.0*estScale;
-	b = avg + 3.0*estScale;
-	inliersMinValue = avg;
-	inliersMaxValue = avg;
-	for(i=0; i<N; i++) {
-		if((vec[i]>a) && (vec[i]<b)) {
-			if(vec[i]<inliersMinValue)
-				inliersMinValue = vec[i];
-			if(vec[i]>inliersMaxValue)
-				inliersMaxValue = vec[i];
-		}
-	}
-	a = inliersMinValue;
-	b = inliersMaxValue;
-	maxVec = 0;
-	maxWeight = 0;
-	for(alpha=0; alpha<1; alpha+=0.1){
-		tmp = 0;
-		sumVec = 0;
-		for(i=0; i<N; i++)
-			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+0.1))+b*(alpha+0.1)) ) {
-				tmp += weights[i];
-				sumVec += vec[i];
-			}
-		if(tmp>maxWeight) {
-			maxVec = sumVec;
-			maxWeight = tmp;
-		}
-	}
-	modelParams[0] = maxVec/maxWeight;
-	//modelParams[0] = avg;
+	upperScale = ((avg + 3.0*modelParams[1]) - modelParams[0])/3.0;
+	lowerScale = (modelParams[0] - (avg - 3.0*modelParams[1]))/3.0;
+	if(lowerScale<upperScale)
+		modelParams[1] = fabs(upperScale);	//hopefully never negative
+	else
+		modelParams[1] = fabs(lowerScale);
 	free(errorVec);
 }
 
