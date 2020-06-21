@@ -53,7 +53,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	double *bottomKthPerc;
 	double *MSSE_LAMBDA;
 	double *optIters;
-	double *giveRStd;
 
 	//associate inputs
 	inVec 			= mxGetPr(prhs[0]);
@@ -64,7 +63,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	bottomKthPerc	= mxGetPr(prhs[5]);
 	MSSE_LAMBDA		= mxGetPr(prhs[6]);
 	optIters		= mxGetPr(prhs[7]);
-	giveRStd		= mxGetPr(prhs[8]);
 	
 	float *_inVec;
 	float *_inWeights;
@@ -98,12 +96,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
 					   _topKthPerc, _bottomKthPerc,
 					   _MSSE_LAMBDA, _optIters);
 	free(_inVec);
-
+	free(_inWeights);
+	
 	plhs[0] = mxCreateDoubleScalar(1);
 	*mxGetPr(plhs[0]) = _mP[0];
-	if(giveRStd) {
-		plhs[1] = mxCreateDoubleScalar(1);
-		*mxGetPr(plhs[1]) = _mP[1];
-	}	
-	return;
+
 }

@@ -2,7 +2,7 @@
 mex RGFLib_mex_fitValue2Skewed.c, return
 
 numTests = 1000;
-Rmean_rec=zeros(1,numTests);
+Rmode_rec=zeros(1,numTests);
 for test = 1: numTests
 	N = 30;
 	inlierPerc = 0.51;
@@ -10,12 +10,11 @@ for test = 1: numTests
 	bottomKthPerc = 0.4;
 	MSSE_LAMBDA = 3.0;	%std away from mean is still a guassians.
 	optIters = 12;
-	giveRStd = 1;
 	
 	Gaus_mean = 0;
 	Gaus_std = 1;
-	uniform_spread = 10000000;
-	uniform_bias = 10;
+	uniform_spread = 3;
+	uniform_bias = 1;
 	initModel = 0;
 	
 	inliers = Gaus_mean + Gaus_std*randn(1, floor(N*inlierPerc));
@@ -34,7 +33,7 @@ for test = 1: numTests
 	%maybe you would like to help the optimization a bit if you think median is an inlier??? no?
 	%initModel = median(inVec)
 
-	Rmean, Rstd = RGFLib_mex_fitValue2Skewed(inVec, inWeights, initModel, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters, giveRStd);
-	Rmean_rec(test) = Rmean;
+	Rmode = RGFLib_mex_fitValue2Skewed(inVec, inWeights, initModel, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters);
+	Rmode_rec(test) = Rmode;
 end
-disp(median(Rmean_rec))
+disp(median(Rmode_rec))
