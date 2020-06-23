@@ -117,13 +117,11 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 	unsigned int i;
 	float estScale, cumulative_sum, cumulative_sum_perv;
 	struct sortStruct* sortedSqError;
-	estScale = 30000.0;
 
-	if((k < 12) || (vecLen<k))
+	if((vecLen < k) || (vecLen<=0))
 		return(-1);
-
+	
 	sortedSqError = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
-
 	for (i = 0; i < vecLen; i++) {
 		sortedSqError[i].vecData  = error[i]*error[i];
 		sortedSqError[i].indxs = i;
@@ -131,7 +129,7 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 	quickSort(sortedSqError,0,vecLen-1);
 
 	cumulative_sum = 0;
-	for (i = 0; i < k; i++)	//finite sample bias of MSSE [RezaJMIJV'06]
+	for (i = 0; i < k; i++)	//Note: finite sample bias of MSSE [RezaJMIJV'06]
 		cumulative_sum += sortedSqError[i].vecData;
 	cumulative_sum_perv = cumulative_sum;
 	for (i = k; i < vecLen; i++) {
@@ -177,24 +175,12 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 		avg += vec[errorVec[i].indxs];
 	avg = avg / (int)(N*topKthPerc);
 
-	if((int)(N*topKthPerc)>12) {	
-		residual = (float*) malloc(N * sizeof(float));
-		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-		estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
-		free(residual);
-	}
-	else {	//finite sample bias of MSSE is 12[RezaJMIJV'06]
-		estScale = 0;
-		tmp = 0;
-		for(i=0; i<(int)(N*topKthPerc); i++) {
-			tmp = vec[errorVec[i].indxs] - avg;
-			estScale += tmp*tmp;
-		}
-		estScale = sqrt(estScale / (int)(N*topKthPerc));
-		//To understand the following, look at visOrderStat()
-		estScale /= pow(topKthPerc, 1.4);
-	}
+	residual = (float*) malloc(N * sizeof(float));
+	for (i = 0; i < N; i++)
+		residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
+	estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+	free(residual);
+
 	modelParams[0] = avg;
 	modelParams[1] = estScale;
 
@@ -205,9 +191,8 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	unsigned int i, q;
 	float estScale, cumulative_sum, cumulative_sum_perv, tmp;
 	struct sortStruct* sortedSqError;
-	estScale = 30000.0;
 
-	if((k < 12) || (vecLen<k))
+	if((vecLen < k) || (vecLen<=0))
 		return(-1);
 
 	sortedSqError = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
@@ -248,62 +233,62 @@ void fitValue2Skewed(float *vec, float *weights,
 
 	float avg, tmp, estScale, theta_new;
 	float upperScale, lowerScale;
-	unsigned int topk, botk;
-	unsigned int i, iter, numPointsSide;
+	unsigned int topk, botk, sampleSize;
+	int iter, i, numPts;
 	float a, b, inliersMinValue, inliersMaxValue;
 	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
+	unsigned int sideFlag, sideFlag_perv;
+		
+	topk = (int)(N*topKthPerc);
+	botk = (int)(N*bottomKthPerc);
 	
-	if(N==3){
-		topk = 2;
+	if(N<3)
+		return;
+	if(N<12) {
+		if(topk<N/2)
+			topk = (int)(N/2)+1;
 		botk = 0;
 	}
+	sampleSize = topk - botk;	//Sample will not include topk
 	
 	float *residual;
-
+	residual = (float*) malloc(N * sizeof(float));
+	
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 	// lets do a symmetric fitting, half of the sample data points must come from either side
 	for(iter=0; iter<optIters; iter++) {
+		for (i = 0; i < N; i++) {
+			errorVec[i].vecData  = fabs(theta - vec[i]);
+			errorVec[i].indxs = i;
+		}
+		quickSort(errorVec,0,N-1);
+		for (i = 0; i < N; i++)
+			residual[i] = theta - vec[errorVec[i].indxs];
 		
 		theta_new = 0;
 		tmp = 0;
-		numPointsSide = 0;
-		for (i = 0; i < N; i++) {
-			if(vec[i] >= theta) {
-				errorVec[i].vecData  = vec[i] - theta;
-				numPointsSide++;
+		numPts = 0;
+		i = topk-1;
+		if(residual[i]>0)
+			sideFlag_perv = 0;
+		else
+			sideFlag_perv = 1;
+		
+		while((numPts<sampleSize) && (i>=0)) {
+			if(residual[i]>0)
+				sideFlag = 1;
+			else
+				sideFlag = 0;
+			if(sideFlag != sideFlag_perv) {
+				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+				tmp += weights[errorVec[i].indxs];
+				numPts++;
 			}
-			else {
-				errorVec[i].vecData  = 1e+9;
-			}
-			errorVec[i].indxs = i;
+			sideFlag_perv = sideFlag;
+			i--;
 		}
 		
-		if((int)(numPointsSide*topKthPerc)>0) {
-			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
-				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-				tmp += weights[errorVec[i].indxs];
-			}
-		}		
-		numPointsSide = 0;
-		for (i = 0; i < N; i++) {
-			if(vec[i] < theta) {
-				errorVec[i].vecData  = theta - vec[i];
-				numPointsSide++;
-			}
-			else {
-				errorVec[i].vecData  = 1e+9;
-			}
-			errorVec[i].indxs = i;
-		}
-		if((int)(numPointsSide*topKthPerc)>0) {
-			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
-				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-				tmp += weights[errorVec[i].indxs];
-			}
-		}
 		if(tmp==0) {
 			theta_new = 0;
 			tmp = 0;
@@ -329,74 +314,58 @@ void fitValue2Skewed(float *vec, float *weights,
 		}
 		theta = theta_new / tmp;
 	}
-	avg = theta;
-	/////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////
+	/////////// calculate the mean of symmetric inliers  ///////////
+	////////////////////////////////////////////////////////////////
+	
+	for (i = 0; i < N; i++) {
+		errorVec[i].vecData  = fabs(theta - vec[i]);
+		errorVec[i].indxs = i;
+	}
+	quickSort(errorVec,0,N-1);
+	for (i = 0; i < N; i++)
+		residual[i] = theta - vec[errorVec[i].indxs];
+	
 	theta_new = 0;
 	tmp = 0;
-	numPointsSide = 0;
-	for (i = 0; i < N; i++) {
-		if(vec[i] >= theta) {
-			errorVec[i].vecData  = vec[i] - theta;
-			numPointsSide++;
-		}
-		else {
-			errorVec[i].vecData  = 1e+8;
-		}
-		errorVec[i].indxs = i;
-	}
-	if(numPointsSide>0) {
-		quickSort(errorVec,0,N-1);
-		for(i=0; i<(int)(numPointsSide*topKthPerc); i++) {
+	numPts = 0;
+	i = topk-1;
+	if(residual[i]>0)
+		sideFlag_perv = 0;
+	else
+		sideFlag_perv = 1;
+	
+	while((numPts<sampleSize) && (i>=0)) {
+		if(residual[i]>0)
+			sideFlag = 1;
+		else
+			sideFlag = 0;
+		if(sideFlag != sideFlag_perv) {
 			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 			tmp += weights[errorVec[i].indxs];
+			numPts++;
 		}
+		sideFlag_perv = sideFlag;
+		i--;
 	}
 	
-	numPointsSide = 0;
-	for (i = 0; i < N; i++) {
-		if(vec[i] < theta) {
-			errorVec[i].vecData  = theta - vec[i];
-			numPointsSide++;
-		}
-		else {
-			errorVec[i].vecData  = 1e+8;
-		}
-		errorVec[i].indxs = i;
-	}
-	if(numPointsSide>0) {
-		quickSort(errorVec,0,N-1);
-		for(i=0; i<(int)(numPointsSide*topKthPerc); i++) {
-			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-			tmp += weights[errorVec[i].indxs];
-		}
-	}	
 	avg = theta_new / tmp;
-	///////////////////////////////////////		
-	
-	if(topk>12) {
-		residual = (float*) malloc(N * sizeof(float));
-		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
-		free(residual);
-	}
-	else {	//finite sample bias of MSSE is 12[RezaJMIJV'06]
-		estScale = 0;
-		tmp = 0;
-		for(i=0; i<topk; i++) {
-			estScale += weights[errorVec[i].indxs]*(vec[errorVec[i].indxs] - avg)*(vec[errorVec[i].indxs] - avg);
-			tmp += weights[errorVec[i].indxs];
-		}
-		estScale = sqrt(estScale / tmp);
-		//To understand the following, look at visOrderStat()
-		estScale /= pow(topKthPerc, 1.4);
-	}
+		
+	for (i = 0; i < N; i++)
+		residual[i]  = fabs(avg - vec[i]);
+	estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
+	free(residual);
+
+	modelParams[0] = avg;
 	modelParams[1] = estScale;
+	/////////////////////////////////////////////////////////////////////////		
+
+		
 	////////////////////////////////////////////////////////////////////////
 	//////////// find the mode by looking at a naive histogram /////////////
 	////////////////////////////////////////////////////////////////////////
 	
-	/*
 	a = avg - 3.0*estScale;
 	b = avg + 3.0*estScale;
 	inliersMinValue = avg;
@@ -432,17 +401,16 @@ void fitValue2Skewed(float *vec, float *weights,
 
 	modelParams[0] = avg;
 	modelParams[1] = estScale;
-	*/
-
+	
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using median of inlier intensities ///////////
 	////////////////////////////////////////////////////////////////
 	/*
-	numPointsSide = 0;
+	numPts = 0;
 	for (i = 0; i < N; i++) {
 		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
 			errorVec[i].vecData  = vec[i];
-			numPointsSide++;
+			numPts++;
 		}
 		else {
 			errorVec[i].vecData  = 1e+8;
@@ -451,19 +419,20 @@ void fitValue2Skewed(float *vec, float *weights,
 	}
 	quickSort(errorVec,0,N-1);
 	
-	modelParams[0] = errorVec[(int)(numPointsSide/2)].vecData;
-	free(errorVec);
+	modelParams[0] = errorVec[(int)(numPts/2)].vecData;
 	*/
 
+	
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using weighted median of inlier intensities //
 	////////////////////////////////////////////////////////////////
-	numPointsSide = 0;
+	/*
+	numPts = 0;
 	sumWeights = 0;
 	for (i = 0; i < N; i++) {
 		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
 			errorVec[i].vecData  = vec[i];
-			numPointsSide++;
+			numPts++;
 			sumWeights += weights[i];
 		}
 		else {
@@ -475,19 +444,20 @@ void fitValue2Skewed(float *vec, float *weights,
 	
 	i=0;
 	local_sumWeights = weights[errorVec[i].indxs];
-	while((local_sumWeights<sumWeights/2) && (i<numPointsSide)) {
+	while((local_sumWeights<sumWeights/2) && (i<numPts)) {
 		i++;
 		local_sumWeights += weights[errorVec[i].indxs];
 	}
 	
 	modelParams[0] = errorVec[i].vecData;
 	
-	upperScale = ((avg + 3.0*modelParams[1]) - modelParams[0])/3.0;
-	lowerScale = (modelParams[0] - (avg - 3.0*modelParams[1]))/3.0;
+	upperScale = fabs((avg + 3.0*modelParams[1]) - modelParams[0])/3.0;
+	lowerScale = fabs(modelParams[0] - (avg - 3.0*modelParams[1]))/3.0;
 	if(lowerScale<upperScale)
-		modelParams[1] = fabs(upperScale);	//hopefully never negative
+		modelParams[1] = upperScale;	//hopefully never negative
 	else
-		modelParams[1] = fabs(lowerScale);
+		modelParams[1] = lowerScale;
+	*/
 	free(errorVec);
 }
 

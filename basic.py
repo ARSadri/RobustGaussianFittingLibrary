@@ -8,7 +8,7 @@ Output
 ~~~~~~
     usually the mean and std of the Gaussian
 """
-from cWrapper import RGFCLib
+from .cWrapper import RGFCLib
 import numpy as np
  
 def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):
@@ -71,7 +71,7 @@ def fitValue2Skewed(inVec,
                     bottomKthPerc = 0.45,
                     MSSE_LAMBDA = 3.0,
                     modelValueInit = 0,
-                    optimizerNumIteration = 10):
+                    optimizerNumIteration = 12):
     """Fit a skewed bell shaped unimodal sharp density robustly:
     The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
     Input arguments

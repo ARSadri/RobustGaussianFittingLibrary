@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from cWrapper import RGFCLib
+from .cWrapper import RGFCLib
 
 class textProgBar:
     """
@@ -40,7 +40,10 @@ class textProgBar:
         cProg = int(self.numTicks*self.ck/self.length/3)
         while (self.prog < cProg):
             self.prog += 1
-            remTimeS = self.startTime + (time.time() - self.startTime)/(self.ck/self.length) - time.time()
+            remTimeS = self.startTime + \
+                       (time.time() - self.startTime)/(self.ck/self.length) - time.time()
+            time_correct = 2-2*(self.ck/self.length)
+            remTimeS *= time_correct
             if(remTimeS>=3600):
                 progStr = "%02d" % int(remTimeS/3600)
                 print(progStr, end='')

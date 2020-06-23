@@ -1,6 +1,7 @@
-from misc import textProgBar
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
+from .basic import fitValueTensor, fitLineTensor, fitBackgroundTensor
+from .misc import textProgBar
 
 def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
     """
@@ -44,7 +45,7 @@ def fitValueTensor_MultiProcFunc(aQ,
                             partCnt, inTensor,
                             topKthPerc, bottomKthPerc, MSSE_LAMBDA):
 
-    modelParams = RGFLib.fitValueTensor(inTensor=inTensor,
+    modelParams = fitValueTensor(inTensor=inTensor,
                         topKthPerc=topKthPerc,
                         bottomKthPerc=bottomKthPerc,
                         MSSE_LAMBDA = MSSE_LAMBDA)
@@ -113,15 +114,15 @@ def fitValueTensor_MultiProc(inTensor,
 ################################### Line fitting library #######################################
 
 def fitLineTensor_MultiProcFunc(aQ, partCnt, 
-                                                        inX, inY,
-                                                        topKthPerc,
-                                                        bottomKthPerc,
-                                                        MSSE_LAMBDA):
+                                inX, inY,
+                                topKthPerc,
+                                bottomKthPerc,
+                                MSSE_LAMBDA):
 
-    modelParams = RGFLib.fitLineTensor(inX, inY,
-                                                    topKthPerc,
-                                                    bottomKthPerc,
-                                                    MSSE_LAMBDA)
+    modelParams = fitLineTensor(inX, inY,
+                                topKthPerc,
+                                bottomKthPerc,
+                                MSSE_LAMBDA)
     aQ.put(list([partCnt, modelParams]))
 
 def fitLineTensor_MultiProc(inTensorX, inTensorY,
@@ -193,7 +194,7 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             stretch2CornersOpt,
                             numModelParams,
                             optIters):
-    modelParamsMap = RGFLib.fitBackgroundTensor(inImage_Tensor, 
+    modelParamsMap = fitBackgroundTensor(inImage_Tensor, 
                                                 inMask_Tensor,
                                                 winX,
                                                 winY,

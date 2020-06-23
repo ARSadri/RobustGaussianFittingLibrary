@@ -17,22 +17,27 @@ def test_for_textProgBar():
             pass
         pBar.go(3)
     del pBar 
- 
+
 def visOrderStat():
     # std of a few closests samplse of a gaussian to its average
     # is less than the actual std:
-    allN = list([6000])
+    allN = list([2000])
     intervals = np.arange(0.01,1.01,0.01)
     for N in allN:
         Data = np.random.randn(N)
         res = np.fabs(Data - Data.mean())
         inds = np.argsort(res)
-        result = np.zeros(intervals.shape[0])
+        result_STD = np.zeros(intervals.shape[0])
+        result_MSSE = np.zeros(intervals.shape[0])
+        pBar = RobustGaussianFittingLibrary.misc.textProgBar(intervals.shape[0])
         for idx, k in enumerate(intervals):
-            result[idx] = Data[inds[:int(k*N)]].std()
-        plt.plot(intervals, result)
+            result_STD[idx] = Data[inds[:int(k*N)]].std()
+            result_MSSE[idx] = RobustGaussianFittingLibrary.MSSE(Data[inds[:int(k*N)]], k=2)
+            pBar.go()
+        del pBar
+        plt.plot(intervals, result_STD)
+        plt.plot(intervals, result_MSSE)
     plt.plot(intervals, np.power(intervals, 1.4))
-    #x = np.erfinv(m)/(2*sqrt(2))
     plt.plot(intervals, intervals)
     plt.legend(allN)
     plt.title('The estimated STD by the portion of \ninliers of a Gaussian structure')
@@ -249,7 +254,7 @@ def test_SginleGaussianVec():
     plt.show()
     RobustGaussianFittingLibrary.misc.sGHist(testData, mP)
     
-def test_fitValue2Skewed():    
+def test_fitValue2Skewed():
     RNN0 = 50 + 5*np.random.randn(50)
     RNN1 = 200*(np.random.rand(100)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
@@ -264,6 +269,54 @@ def test_fitValue2Skewed():
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
     RobustGaussianFittingLibrary.misc.sGHist(testData, mP)    
+    
+def test_fitValue2Skewed_sweep_over_N():
+    print('testing fitValue2Skewed sweep over N')
+    numIter = 100
+    maxN = 300
+    minN = 2
+    mode_all = np.zeros((maxN-minN, numIter))
+    std_all = np.zeros((maxN-minN, numIter))
+    std_base = np.zeros((maxN-minN, numIter))
+    rmod_all = np.zeros((maxN-minN, numIter))
+    rstd_all = np.zeros((maxN-minN, numIter))
+    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
+    x = np.zeros(maxN-minN)
+    for N in range(minN,maxN):
+        for iter in range(numIter):
+            RNN0 = np.random.randn(N)
+            RNN1 = 15+5*(np.random.rand(int(N*0.5))-0.5)
+            testData = np.concatenate((RNN0, RNN1)).flatten()
+            #testData = RNN0.flatten()
+            np.random.shuffle(testData)
+            rmode, rstd = RobustGaussianFittingLibrary.fitValue2Skewed(testData, 
+                                                                topKthPerc=0.5, 
+                                                                bottomKthPerc=0.4,
+                                                                MSSE_LAMBDA=3.0)
+            mode_all[N-minN, iter] = RNN0.mean()
+            std_all[N-minN, iter] = RobustGaussianFittingLibrary.MSSE(np.squeeze(RNN0), MSSE_LAMBDA = 3.0, k=int(0.5*N))
+            std_base[N-minN, iter] = RNN0.std()
+            rmod_all[N-minN, iter] = rmode
+            rstd_all[N-minN, iter] = rstd
+        x[N-minN] = testData.shape[0]
+        pBar.go()
+    del pBar
+    
+    mode_all = mode_all.mean(1)
+    std_all = std_all.mean(1)
+    std_base = std_base.mean(1)
+    rmod_all = rmod_all.mean(1)
+    rstd_all = rstd_all.mean(1)
+    
+    plt.plot(x, mode_all, '.')
+    plt.plot(x, rmod_all, '.')
+    plt.show()
+    
+    plt.plot(x, std_base, '.')
+    plt.plot(x, std_all, '.')
+    plt.plot(x, rstd_all, '.')
+    plt.grid()
+    plt.show()
     
 def test_flatField():    
     RNN0 =  0 + 1*np.random.randn(2048)
@@ -330,10 +383,11 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_fitValue2Skewed()
+    test_fitValue2Skewed_sweep_over_N()
     exit()
-    test_for_textProgBar()
     visOrderStat()
+    test_fitValue2Skewed()
+    test_for_textProgBar()
     test_islandRemovalPy()
     test_fitValueSmallSample()
     test_bigTensor2SmallsInds()
