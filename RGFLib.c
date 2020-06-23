@@ -403,7 +403,7 @@ void fitValue2Skewed(float *vec, float *weights,
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using weighted median of inlier intensities //
 	////////////////////////////////////////////////////////////////
-	/*
+	
 	numPtsTotal = 0;
 	sumWeights = 0;
 	for (i = 0; i < N; i++) {
@@ -434,7 +434,7 @@ void fitValue2Skewed(float *vec, float *weights,
 		modelParams[1] = upperScale;	//hopefully never negative
 	else
 		modelParams[1] = lowerScale;
-	*/
+	
 	free(errorVec);
 }
 
