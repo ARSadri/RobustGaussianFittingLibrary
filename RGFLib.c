@@ -189,7 +189,7 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 
 float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
 	unsigned int i, q;
-	float estScale, cumulative_sum, cumulative_sum_perv, tmp;
+	float estScale, cumulative_sum, tmp;
 	struct sortStruct* sortedSqError;
 
 	if((vecLen < k) || (vecLen<=0))
@@ -206,11 +206,9 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	cumulative_sum = 0;
 	for (i = 0; i < k; i++)	//finite sample bias of MSSE [RezaJMIJV'06]
 		cumulative_sum += sortedSqError[i].vecData;
-	cumulative_sum_perv = cumulative_sum;
 	for (i = k; i < vecLen; i++) {
 		if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqError[i].vecData )		// in (i-1), the 1 is the dimension of model
 			break;
-		cumulative_sum_perv = cumulative_sum;
 		cumulative_sum += sortedSqError[i].vecData ;
 	}
 
@@ -234,8 +232,8 @@ void fitValue2Skewed(float *vec, float *weights,
 	float avg, tmp, estScale, theta_new;
 	float upperScale, lowerScale;
 	unsigned int topk, botk, sampleSize;
-	int iter, i, numPts;
-	float a, b, inliersMinValue, inliersMaxValue;
+	int iter, i, numPointsSide, numPtsTotal;
+	float a, b, inliersMinValue, inliersMaxValue, errAtTopk;
 	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
 	unsigned int sideFlag, sideFlag_perv;
 		
@@ -258,35 +256,51 @@ void fitValue2Skewed(float *vec, float *weights,
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 	// lets do a symmetric fitting, half of the sample data points must come from either side
 	for(iter=0; iter<optIters; iter++) {
+		
 		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(theta - vec[i]);
+			errorVec[i].vecData = fabs(vec[i] - theta);
 			errorVec[i].indxs = i;
 		}
 		quickSort(errorVec,0,N-1);
-		for (i = 0; i < N; i++)
-			residual[i] = theta - vec[errorVec[i].indxs];
+		errAtTopk = errorVec[topk-1].vecData;
 		
 		theta_new = 0;
 		tmp = 0;
-		numPts = 0;
-		i = topk-1;
-		if(residual[i]>0)
-			sideFlag_perv = 0;
-		else
-			sideFlag_perv = 1;
-		
-		while((numPts<sampleSize) && (i>=0)) {
-			if(residual[i]>0)
-				sideFlag = 1;
-			else
-				sideFlag = 0;
-			if(sideFlag != sideFlag_perv) {
+		numPointsSide = 0;
+		for (i = 0; i < N; i++) {
+			if((vec[i] >= theta) && (vec[i] <=  theta + errAtTopk)) {
+				errorVec[i].vecData  = vec[i] - theta;
+				numPointsSide++;
+			}
+			else {
+				errorVec[i].vecData  = 1e+9;
+			}
+			errorVec[i].indxs = i;
+		}
+		if((int)(numPointsSide*topKthPerc)>0) {
+			quickSort(errorVec,0,N-1);
+			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
 				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 				tmp += weights[errorVec[i].indxs];
-				numPts++;
 			}
-			sideFlag_perv = sideFlag;
-			i--;
+		}		
+		numPointsSide = 0;
+		for (i = 0; i < N; i++) {
+			if((vec[i] < theta) && (vec[i] >= theta - errAtTopk) ) {
+				errorVec[i].vecData  = theta - vec[i];
+				numPointsSide++;
+			}
+			else {
+				errorVec[i].vecData  = 1e+9;
+			}
+			errorVec[i].indxs = i;
+		}
+		if((int)(numPointsSide*topKthPerc)>0) {
+			quickSort(errorVec,0,N-1);
+			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
+				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+				tmp += weights[errorVec[i].indxs];
+			}
 		}
 		
 		if(tmp==0) {
@@ -318,58 +332,22 @@ void fitValue2Skewed(float *vec, float *weights,
 	////////////////////////////////////////////////////////////////
 	/////////// calculate the mean of symmetric inliers  ///////////
 	////////////////////////////////////////////////////////////////
-	
-	for (i = 0; i < N; i++) {
-		errorVec[i].vecData  = fabs(theta - vec[i]);
-		errorVec[i].indxs = i;
-	}
-	quickSort(errorVec,0,N-1);
 	for (i = 0; i < N; i++)
-		residual[i] = theta - vec[errorVec[i].indxs];
-	
-	theta_new = 0;
-	tmp = 0;
-	numPts = 0;
-	i = topk-1;
-	if(residual[i]>0)
-		sideFlag_perv = 0;
-	else
-		sideFlag_perv = 1;
-	
-	while((numPts<sampleSize) && (i>=0)) {
-		if(residual[i]>0)
-			sideFlag = 1;
-		else
-			sideFlag = 0;
-		if(sideFlag != sideFlag_perv) {
-			theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-			tmp += weights[errorVec[i].indxs];
-			numPts++;
-		}
-		sideFlag_perv = sideFlag;
-		i--;
-	}
-	
-	avg = theta_new / tmp;
-		
-	for (i = 0; i < N; i++)
-		residual[i]  = fabs(avg - vec[i]);
+		residual[i]  = fabs(theta - vec[i]);
 	estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
 	free(residual);
-
-	modelParams[0] = avg;
+	modelParams[0] = theta;
 	modelParams[1] = estScale;
-	/////////////////////////////////////////////////////////////////////////		
+	////////////////////////////////////////////////////////////////
 
-		
 	////////////////////////////////////////////////////////////////////////
 	//////////// find the mode by looking at a naive histogram /////////////
 	////////////////////////////////////////////////////////////////////////
-	
-	a = avg - 3.0*estScale;
-	b = avg + 3.0*estScale;
-	inliersMinValue = avg;
-	inliersMaxValue = avg;
+	/*
+	a = theta - 3.0*estScale;
+	b = theta + 3.0*estScale;
+	inliersMinValue = theta;
+	inliersMaxValue = theta;
 	for(i=0; i<N; i++) {
 		if((vec[i]>a) && (vec[i]<b)) {
 			if(vec[i]<inliersMinValue)
@@ -399,18 +377,18 @@ void fitValue2Skewed(float *vec, float *weights,
 	if(maxWeight>0)
 		modelParams[0] = maxVec/maxWeight;	
 
-	modelParams[0] = avg;
+	modelParams[0] = theta;
 	modelParams[1] = estScale;
-	
+	*/
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using median of inlier intensities ///////////
 	////////////////////////////////////////////////////////////////
 	/*
-	numPts = 0;
+	numPtsTotal = 0;
 	for (i = 0; i < N; i++) {
-		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
+		if(fabs(vec[i] - theta) < MSSE_LAMBDA*estScale) {
 			errorVec[i].vecData  = vec[i];
-			numPts++;
+			numPtsTotal++;
 		}
 		else {
 			errorVec[i].vecData  = 1e+8;
@@ -419,20 +397,19 @@ void fitValue2Skewed(float *vec, float *weights,
 	}
 	quickSort(errorVec,0,N-1);
 	
-	modelParams[0] = errorVec[(int)(numPts/2)].vecData;
+	modelParams[0] = errorVec[(int)(numPtsTotal/2)].vecData;
 	*/
-
 	
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using weighted median of inlier intensities //
 	////////////////////////////////////////////////////////////////
 	/*
-	numPts = 0;
+	numPtsTotal = 0;
 	sumWeights = 0;
 	for (i = 0; i < N; i++) {
-		if(fabs(vec[i] - avg) < MSSE_LAMBDA*estScale) {
+		if(fabs(vec[i] - theta) < MSSE_LAMBDA*estScale) {
 			errorVec[i].vecData  = vec[i];
-			numPts++;
+			numPtsTotal++;
 			sumWeights += weights[i];
 		}
 		else {
@@ -444,15 +421,15 @@ void fitValue2Skewed(float *vec, float *weights,
 	
 	i=0;
 	local_sumWeights = weights[errorVec[i].indxs];
-	while((local_sumWeights<sumWeights/2) && (i<numPts)) {
+	while((local_sumWeights<sumWeights/2) && (i<numPtsTotal)) {
 		i++;
 		local_sumWeights += weights[errorVec[i].indxs];
 	}
 	
 	modelParams[0] = errorVec[i].vecData;
 	
-	upperScale = fabs((avg + 3.0*modelParams[1]) - modelParams[0])/3.0;
-	lowerScale = fabs(modelParams[0] - (avg - 3.0*modelParams[1]))/3.0;
+	upperScale = fabs((theta + 3.0*modelParams[1]) - modelParams[0])/3.0;
+	lowerScale = fabs(modelParams[0] - (theta - 3.0*modelParams[1]))/3.0;
 	if(lowerScale<upperScale)
 		modelParams[1] = upperScale;	//hopefully never negative
 	else

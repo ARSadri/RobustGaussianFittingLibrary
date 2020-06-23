@@ -285,7 +285,7 @@ def test_fitValue2Skewed_sweep_over_N():
     for N in range(minN,maxN):
         for iter in range(numIter):
             RNN0 = np.random.randn(N)
-            RNN1 = 15+5*(np.random.rand(int(N*0.5))-0.5)
+            RNN1 = 7+5*(np.random.rand(int(N*0.5))-0.5)
             testData = np.concatenate((RNN0, RNN1)).flatten()
             #testData = RNN0.flatten()
             np.random.shuffle(testData)
