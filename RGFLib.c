@@ -233,7 +233,7 @@ void fitValue2Skewed(float *vec, float *weights,
 	float upperScale, lowerScale;
 	unsigned int topk, botk, sampleSize;
 	int iter, i, numPointsSide, numPtsTotal;
-	float a, b, inliersMinValue, inliersMaxValue, errAtTopk;
+	float a, b, inliersMinValue, inliersMaxValue, errAtTopk, winL;
 	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
 	unsigned int sideFlag, sideFlag_perv;
 		
@@ -302,7 +302,6 @@ void fitValue2Skewed(float *vec, float *weights,
 				tmp += weights[errorVec[i].indxs];
 			}
 		}
-		
 		if(tmp==0) {
 			theta_new = 0;
 			tmp = 0;
@@ -361,11 +360,12 @@ void fitValue2Skewed(float *vec, float *weights,
 	
 	maxVec = 0;
 	maxWeight = 0;
-	for(alpha=0; alpha<1; alpha+=0.1){
+	winL = 0.2;
+	for(alpha=0; alpha<1; alpha+=winL){
 		tmp = 0;
 		sumVec = 0;
 		for(i=0; i<N; i++)
-			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+0.1))+b*(alpha+0.1)) ) {
+			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+winL/2))+b*(alpha+winL/2)) ) {
 				tmp += weights[i];
 				sumVec += weights[i]*vec[i];
 			}
@@ -378,32 +378,12 @@ void fitValue2Skewed(float *vec, float *weights,
 		modelParams[0] = maxVec/maxWeight;	
 
 	modelParams[0] = theta;
-	modelParams[1] = estScale;
-	*/
-	////////////////////////////////////////////////////////////////
-	/////mode seeking Using median of inlier intensities ///////////
-	////////////////////////////////////////////////////////////////
-	/*
-	numPtsTotal = 0;
-	for (i = 0; i < N; i++) {
-		if(fabs(vec[i] - theta) < MSSE_LAMBDA*estScale) {
-			errorVec[i].vecData  = vec[i];
-			numPtsTotal++;
-		}
-		else {
-			errorVec[i].vecData  = 1e+8;
-		}
-		errorVec[i].indxs = i;
-	}
-	quickSort(errorVec,0,N-1);
-	
-	modelParams[0] = errorVec[(int)(numPtsTotal/2)].vecData;
 	*/
 	
 	////////////////////////////////////////////////////////////////
 	/////mode seeking Using weighted median of inlier intensities //
 	////////////////////////////////////////////////////////////////
-	
+	/*
 	numPtsTotal = 0;
 	sumWeights = 0;
 	for (i = 0; i < N; i++) {
@@ -420,21 +400,22 @@ void fitValue2Skewed(float *vec, float *weights,
 	quickSort(errorVec,0,N-1);
 	
 	i=0;
-	local_sumWeights = weights[errorVec[i].indxs];
-	while((local_sumWeights<sumWeights/2) && (i<numPtsTotal)) {
-		i++;
-		local_sumWeights += weights[errorVec[i].indxs];
+	local_sumWeights = 0;
+	while(i<numPtsTotal) {
+		local_sumWeights += weights[errorVec[i++].indxs];
+		if(local_sumWeights>=sumWeights/2)
+			break;
 	}
 	
 	modelParams[0] = errorVec[i].vecData;
 	
-	upperScale = fabs((theta + 3.0*modelParams[1]) - modelParams[0])/3.0;
-	lowerScale = fabs(modelParams[0] - (theta - 3.0*modelParams[1]))/3.0;
+	upperScale = fabs((theta + 3.0*estScale) - modelParams[0])/3.0;
+	lowerScale = fabs(modelParams[0] - (theta - 3.0*estScale))/3.0;
 	if(lowerScale<upperScale)
 		modelParams[1] = upperScale;	//hopefully never negative
 	else
 		modelParams[1] = lowerScale;
-	
+	*/
 	free(errorVec);
 }
 
