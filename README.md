@@ -3,16 +3,16 @@ A C Library for Robust Gaussian Fitting using geometric models in presence of ou
 
 In robust segmentation, the main assumtion is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem.
 
-# Compilation into shared library #
+## Compilation into shared library
 Run the following command to generate a shared .so library:
 ```
 make
 ```
 **Note**: if you are using windows, you can used mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make.
-# Usage from Python #
+## Usage from Python
 A Python wrapper is also provided. Tha wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 
-## importable libraries ##
+### importable libraries ###
 * __RGFLib__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
 	* MSSE : Given set of residuals, it finds the scale of a gaussian
 	* fitValue : Given a vector, it finds average and standard deviation of the gaussian.
@@ -29,10 +29,10 @@ A Python wrapper is also provided. Tha wrapper will be looking for the .so share
 	* fitLineTensor_MultiProc : Does fitLineTensor using multiprocessing
 	* fitBackgroundTensor_multiproc : Does fitBackgroundTensor using multiprocessing
 
-## Examples in Python ##
+### Examples in Python ###
 Many test funcitons are availble in the tests.py script. in the script, llok for the main function and choose one of them to run or Simply type in:
 ```
 make test
 ```
-# Usage from MATLAB #
+## Usage from MATLAB ##
 Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the ..._Test.m file
