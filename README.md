@@ -8,7 +8,7 @@ Run the following command to generate a shared .so library:
 ```
 make
 ```
-**Note**: if you are using windows, you can used mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make.
+**Note**: if you are using windows, you can used mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils.
 ## Usage from Python
 A Python wrapper is also provided. Tha wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 
