@@ -10,3 +10,4 @@ from .basic import fitLineTensor
 from .basic import fitPlane
 from .basic import fitBackground
 from .basic import fitBackgroundTensor
+from .misc import textProgBar
