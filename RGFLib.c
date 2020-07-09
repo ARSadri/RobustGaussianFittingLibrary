@@ -145,7 +145,7 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 }
 
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
-		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters) {
+		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
 	float avg, tmp, estScale;
 	unsigned int i, iter;
@@ -160,7 +160,7 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 		errorVec[i].indxs = i;
 	}
 	quickSort(errorVec,0,N-1);
-	theta += vec[errorVec[(int)(N*topKthPerc)-1].indxs];
+	theta += vec[errorVec[(int)(N*topkPerc)-1].indxs];
 
 	for(iter=0; iter<optIters-1; iter++) {
 		for (i = 0; i < N; i++) {
@@ -170,7 +170,7 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 		quickSort(errorVec,0,N-1);
 		theta = 0;
 		tmp = 0;
-		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
+		for(i=(int)(N*botkPerc); i<(int)(N*topkPerc); i++) {
 			theta += vec[errorVec[i].indxs];
 			tmp++;
 		}
@@ -178,14 +178,14 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 	}
 
 	avg = 0;
-	for(i=0; i<(int)(N*topKthPerc); i++)
+	for(i=0; i<(int)(N*topkPerc); i++)
 		avg += vec[errorVec[i].indxs];
-	avg = avg / (int)(N*topKthPerc);
+	avg = avg / (int)(N*topkPerc);
 
 	residual = (float*) malloc(N * sizeof(float));
 	for (i = 0; i < N; i++)
 		residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-	estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+	estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
 	free(residual);
 
 	modelParams[0] = avg;
@@ -233,7 +233,7 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 
 void fitValue2Skewed(float *vec, float *weights, 
 					float *modelParams, float theta, unsigned int N,
-					float topKthPerc, float bottomKthPerc, 
+					float topkPerc, float botkPerc,
 					float MSSE_LAMBDA, unsigned char optIters) {
 
 	float avg, tmp, estScale, theta_new;
@@ -244,8 +244,8 @@ void fitValue2Skewed(float *vec, float *weights,
 	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
 	unsigned int sideFlag, sideFlag_perv;
 		
-	topk = (int)(N*topKthPerc);
-	botk = (int)(N*bottomKthPerc);
+	topk = (int)(N*topkPerc);
+	botk = (int)(N*botkPerc);
 	
 	if(N<3)
 		return;
@@ -284,9 +284,9 @@ void fitValue2Skewed(float *vec, float *weights,
 			}
 			errorVec[i].indxs = i;
 		}
-		if((int)(numPointsSide*topKthPerc)>0) {
+		if((int)(numPointsSide*topkPerc)>0) {
 			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
+			for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
 				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 				tmp += weights[errorVec[i].indxs];
 			}
@@ -302,9 +302,9 @@ void fitValue2Skewed(float *vec, float *weights,
 			}
 			errorVec[i].indxs = i;
 		}
-		if((int)(numPointsSide*topKthPerc)>0) {
+		if((int)(numPointsSide*topkPerc)>0) {
 			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*bottomKthPerc); i<(int)(numPointsSide*topKthPerc); i++) {
+			for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
 				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
 				tmp += weights[errorVec[i].indxs];
 			}
@@ -450,7 +450,7 @@ void lineAlgebraicModelEval(float* x, float* y_fit, float* mP, unsigned int N) {
 }
 
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
-							unsigned int N, float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA) {
+							unsigned int N, float topkPerc, float botkPerc, float MSSE_LAMBDA) {
 	float model[2];
 	unsigned int i, iter, cnt;
 	unsigned int sampleSize;
@@ -460,7 +460,7 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 
-	sampleSize = (unsigned int)(N*topKthPerc)- (unsigned int)(N*bottomKthPerc);
+	sampleSize = (unsigned int)(N*topkPerc)- (unsigned int)(N*botkPerc);
 
 	sample_x = (float*) malloc(sampleSize * sizeof(float));
 	sample_y = (float*) malloc(sampleSize * sizeof(float));
@@ -476,7 +476,7 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 		quickSort(errorVec,0,N-1);
 		
 		cnt = 0;
-		for(i=(int)(N*bottomKthPerc); i<(int)(N*topKthPerc); i++) {
+		for(i=(int)(N*botkPerc); i<(int)(N*topkPerc); i++) {
 			sample_x[cnt] = x[errorVec[i].indxs];
 			sample_y[cnt] = y[errorVec[i].indxs];
 			cnt++;
@@ -490,7 +490,7 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 	for (i = 0; i < N; i++)
 		residual[i]  = y[i] - (model[0]*x[i] + model[1]) + ((float) rand() / (RAND_MAX))/4;	
 		//Noise stabilizes MSSE
-	mP[2] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+	mP[2] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
 
 	free(sample_x);
 	free(sample_y);
@@ -501,7 +501,7 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY,
 									float *modelParamsMap, unsigned int N,
 									unsigned int X, unsigned int Y, 
-									float topKthPerc, float bottomKthPerc, 
+									float topkPerc, float botkPerc,
 									float MSSE_LAMBDA) {
 
 	float* xVals;
@@ -520,7 +520,7 @@ void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY,
 				yVals[i]=inTensorY[cCnt + rCnt*Y + i*X*Y];
 			}
 			
-			RobustAlgebraicLineFitting(xVals, yVals, mP, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA);
+			RobustAlgebraicLineFitting(xVals, yVals, mP, N, topkPerc, botkPerc, MSSE_LAMBDA);
 			modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0];
 			modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP[1];
 			modelParamsMap[cCnt + rCnt*Y + 2*X*Y] = mP[2];
@@ -579,7 +579,7 @@ int stretch2CornersFunc(float* x, float* y, unsigned int N,
 }
 
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
-							unsigned int N, float topKthPerc, float bottomKthPerc, 
+							unsigned int N, float topkPerc, float botkPerc,
 							float MSSE_LAMBDA, unsigned char stretch2CornersOpt) {
 	float model[3];
 	unsigned int i, iter, cnt;
@@ -600,14 +600,14 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 	sortedY = (float*) malloc(N * sizeof(float));
 	residual = (float*) malloc(N * sizeof(float));
 	
-	sampleSize = (unsigned int)(N*topKthPerc)- (unsigned int)(N*bottomKthPerc);
+	sampleSize = (unsigned int)(N*topkPerc)- (unsigned int)(N*botkPerc);
 	sample_x = (float*) malloc(sampleSize * sizeof(float));
 	sample_y = (float*) malloc(sampleSize * sizeof(float));
 	sample_z = (float*) malloc(sampleSize * sizeof(float));
 	sample_inds = (unsigned int*) malloc(sampleSize * sizeof(unsigned int));
 
 	cnt = 0;
-	for(i=(unsigned int)(N*bottomKthPerc); i<(unsigned int)(N*topKthPerc); i++)
+	for(i=(unsigned int)(N*botkPerc); i<(unsigned int)(N*topkPerc); i++)
 		sample_inds[cnt++] = i;
 	
 	model[0] = 0;
@@ -623,15 +623,15 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 		
 		
 		if(stretch2CornersOpt>0) {
-			for(i=0; i<(unsigned int)(N*topKthPerc); i++) {
+			for(i=0; i<(unsigned int)(N*topkPerc); i++) {
 				sortedX[i] = x[errorVec[i].indxs];
 				sortedY[i] = y[errorVec[i].indxs];
 			}
-			isStretchingPossible = stretch2CornersFunc(sortedX, sortedY, (unsigned int)(N*topKthPerc), 
+			isStretchingPossible = stretch2CornersFunc(sortedX, sortedY, (unsigned int)(N*topkPerc),
 														stretch2CornersOpt, sample_inds, sampleSize);
 			if(isStretchingPossible==0) {
 				cnt = 0;
-				for(i=(unsigned int)(N*bottomKthPerc); i<(unsigned int)(N*topKthPerc); i++)
+				for(i=(unsigned int)(N*botkPerc); i<(unsigned int)(N*topkPerc); i++)
 					sample_inds[cnt++] = i;
 			}
 		}
@@ -651,7 +651,7 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 	for (i = 0; i < N; i++)
 		residual[i]  = z[i] - (model[0]*x[i] + model[1]*y[i] + model[2]);
 	
-	mP[3] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topKthPerc));
+	mP[3] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
 
 	free(residual);
 	free(errorVec);
@@ -664,7 +664,7 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 }
 
 void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap, unsigned int N,
-		unsigned int X, unsigned int Y, float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA) {
+		unsigned int X, unsigned int Y, float topkPerc, float botkPerc, float MSSE_LAMBDA) {
 
 	float* vec;
 	vec = (float*) malloc(N * sizeof(float));
@@ -677,7 +677,7 @@ void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap, unsigned
 			for(i=0; i<N; i++)
 				vec[i]=inTensor[cCnt + rCnt*Y + i*X*Y];
 			
-			RobustSingleGaussianVec(vec, mP, 0, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, 10);
+			RobustSingleGaussianVec(vec, mP, 0, N, topkPerc, botkPerc, MSSE_LAMBDA, 10);
 			modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0];
 			modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP[1];
 		}
@@ -688,7 +688,7 @@ void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap, unsigned
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
 				unsigned int X, unsigned int Y, 
-				float topKthPerc, float bottomKthPerc, 
+				float topkPerc, float botkPerc,
 				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 				unsigned char numModelParams, unsigned char optIters) {
 
@@ -717,8 +717,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 							z[numElem] = inImage[cCnt + rCnt*Y];
 							numElem++;
 						}
-				if((int) (bottomKthPerc*numElem)>12) {
-					RobustSingleGaussianVec(z, mP_Oone, 0, numElem, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters);
+				if((int) (botkPerc*numElem)>12) {
+					RobustSingleGaussianVec(z, mP_Oone, 0, numElem, topkPerc, botkPerc, MSSE_LAMBDA, optIters);
 
 					for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
 						for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
@@ -739,9 +739,9 @@ void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 							z[numElem] = inImage[cCnt + rCnt*Y];
 							numElem++;
 						}
-				if((int) (bottomKthPerc*numElem)>12) {
-					RobustAlgebraicPlaneFitting(x, y, z, mP, numElem, topKthPerc, 
-												bottomKthPerc, MSSE_LAMBDA, stretch2CornersOpt);
+				if((int) (botkPerc*numElem)>12) {
+					RobustAlgebraicPlaneFitting(x, y, z, mP, numElem, topkPerc,
+												botkPerc, MSSE_LAMBDA, stretch2CornersOpt);
 
 					for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
 						for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
@@ -775,7 +775,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						float *model_mean, float *model_std,
 						unsigned int winX, unsigned int winY,
 						unsigned int N, unsigned int X, unsigned int Y, 
-						float topKthPerc, float bottomKthPerc, 
+						float topkPerc, float botkPerc,
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 						unsigned char numModelParams, unsigned char optIters) {
 
@@ -798,7 +798,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 		
 		RSGImage(inImage, inMask, modelParamsMap,
 					winX, winY,	X, Y, 
-					topKthPerc, bottomKthPerc, 
+					topkPerc, botkPerc,
 					MSSE_LAMBDA, stretch2CornersOpt,
 					numModelParams, optIters);
 		
