@@ -155,7 +155,14 @@ void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsign
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 	
-	for(iter=0; iter<optIters; iter++) {
+	for (i = 0; i < N; i++) {
+		errorVec[i].vecData  = theta;
+		errorVec[i].indxs = i;
+	}
+	quickSort(errorVec,0,N-1);
+	theta += vec[errorVec[(int)(N*topKthPerc)-1].indxs];
+
+	for(iter=0; iter<optIters-1; iter++) {
 		for (i = 0; i < N; i++) {
 			errorVec[i].vecData  = fabs(vec[i] - theta);
 			errorVec[i].indxs = i;
