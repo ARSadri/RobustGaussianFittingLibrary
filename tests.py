@@ -178,23 +178,35 @@ def test_fitBackground():
     XSZ = 512
     YSZ = 512
     WINSIZE = 7
-    inputPeaksNumber = 25
-    numOutliers = 5
+    inputPeaksNumber = 50
+    numOutliers = 0
     print("Generating a pattern with " + str(inputPeaksNumber) + " peaks...")
     inImage, inMask, randomLocations = diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers)
-    
-    plt.imshow(inImage*inMask, vmin=0, vmax=1000)
-    plt.show()
+    fig, axes = plt.subplots(1, 3)
+    winXL = 200
+    winXU = 300
+    winYL = 200
+    winYU = 300
+    im0 = axes[0].imshow(inImage*inMask, vmin=0, vmax=1000)
+    axes[0].set_xlim([winXL, winXU])
+    axes[0].set_ylim([winYL, winYU])
+    fig.colorbar(im0, ax=axes[0], shrink =0.5)
 
     mP = RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 64, winY = 64, stretch2CornersOpt=4, numModelParams = 4) \
         + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 32, winY = 32, stretch2CornersOpt=2, numModelParams = 4) \
         + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 16, winY = 16, stretch2CornersOpt=1, numModelParams = 4)
     mP = mP/3
     
-    plt.imshow(mP[0], vmin=0, vmax=1000)
+    im1 = axes[1].imshow(inMask*mP[0], vmin=0, vmax=1000)
+    axes[1].set_xlim([winXL, winXU])
+    axes[1].set_ylim([winYL, winYU])
+    fig.colorbar(im1, ax=axes[1], shrink = 0.5)
+    im2 = axes[2].imshow(inMask*(inImage - mP[0])/mP[1])
+    axes[2].set_xlim([winXL, winXU])
+    axes[2].set_ylim([winYL, winYU])
+    fig.colorbar(im2, ax=axes[2], shrink = 0.5)
     plt.show()
-    plt.imshow(inMask*(inImage - mP[0])/mP[1])
-    plt.show()
+
 
 def test_fitBackgroundTensor():
     imgDimX = 100

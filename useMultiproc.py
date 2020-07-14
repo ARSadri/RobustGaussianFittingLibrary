@@ -222,7 +222,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
     c_N = inDataSet.shape[2]
     
     if(inMask is None):
-        inMask = np.zeros(inDataSet.shape, dtype='uint8')
+        inMask = np.ones(inDataSet.shape, dtype='uint8')
     if(winX is None):
         winX = r_N
     if(winY is None):
