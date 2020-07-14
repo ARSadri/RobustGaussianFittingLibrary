@@ -388,7 +388,7 @@ void fitValue2Skewed(float *vec, float *weights,
 	*/
 	
 	////////////////////////////////////////////////////////////////
-	/////mode seeking Using weighted median of inlier intensities //
+	/////mode seeking Using weighted median of inlier values //
 	////////////////////////////////////////////////////////////////
 	/*
 	numPtsTotal = 0;
@@ -627,8 +627,11 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 				sortedX[i] = x[errorVec[i].indxs];
 				sortedY[i] = y[errorVec[i].indxs];
 			}
-			isStretchingPossible = stretch2CornersFunc(sortedX, sortedY, (unsigned int)(N*topkPerc),
-														stretch2CornersOpt, sample_inds, sampleSize);
+			isStretchingPossible = stretch2CornersFunc(sortedX, sortedY, 
+													(unsigned int)(N*topkPerc),
+													stretch2CornersOpt, 
+													sample_inds, 
+													sampleSize);
 			if(isStretchingPossible==0) {
 				cnt = 0;
 				for(i=(unsigned int)(N*botkPerc); i<(unsigned int)(N*topkPerc); i++)
