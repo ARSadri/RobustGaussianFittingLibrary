@@ -37,13 +37,13 @@ class textProgBar:
         print(' ', end='')
     def go(self, ck=1):
         self.ck += ck
-        cProg = int(self.numTicks*self.ck/self.length/3)
+        cProg = int(self.numTicks*self.ck/self.length/3)    #3: because 3 charachters are used
         while (self.prog < cProg):
             self.prog += 1
             remTimeS = self.startTime + \
                        (time.time() - self.startTime)/(self.ck/self.length) - time.time()
             time_correct = 2-2*(self.ck/self.length)
-            remTimeS *= time_correct
+            #remTimeS *= time_correct
             if(remTimeS>=3600):
                 progStr = "%02d" % int(remTimeS/3600)
                 print(progStr, end='')
