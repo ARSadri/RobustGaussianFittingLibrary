@@ -1,4 +1,4 @@
-from distutils.core import setup
+from distutils.core import setup, Extension
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
