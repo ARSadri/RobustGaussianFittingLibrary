@@ -1,7 +1,6 @@
 from distutils.core import setup, Extension
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
-  packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
   version = '0.1',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'A library for robust Gaussian fitting using geometric models in presence of outliers. ',   # Give a short description about your library
@@ -12,10 +11,6 @@ setup(
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
   install_requires=[ 
           'numpy',
-          'ctypes',
-          'os',
-          'multiprocessing',
-          'time',
           'matplotlib',
           'scipy'
       ],
