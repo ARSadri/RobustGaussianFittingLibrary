@@ -22,6 +22,7 @@ params = {'legend.fontsize': 'x-large',
  
  
 def test_for_textProgBar():
+    print('test_for_textProgBar')
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
     for _ in range(60):
         for _ in range(10000000):
@@ -30,6 +31,7 @@ def test_for_textProgBar():
     del pBar 
 
 def visOrderStat():
+    print('visOrderStat')
     # std of a few closests samplse of a gaussian to its average
     # is less than the actual std:
     allN = list([2000])
@@ -89,6 +91,7 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
     return(inData, inMask, randomLocations)
 
 def test_islandRemovalPy():
+    print('test_islandRemovalPy')
     #an island cannot be bigger than the stack size of your OS
     inMask = np.ones((20, 21), dtype='uint8')
     
@@ -140,11 +143,13 @@ def test_islandRemovalPy():
     plt.imshow(outMask), plt.show()
     
 def test_bigTensor2SmallsInds():
+    print('test_bigTensor2SmallsInds')
     a = (100*np.random.randn(20,16,11)).astype('int')
     rowClmInds, segInds = RobustGaussianFittingLibrary.useMultiproc.bigTensor2SmallsInds(a.shape, 2,3)
     print(rowClmInds)
 
 def test_RobustAlgebraicPlaneFittingPy():
+    print('test_RobustAlgebraicPlaneFittingPy')
     N = 500
     numOut = 20
     inX = 100*np.random.rand(N)-50
@@ -169,6 +174,7 @@ def test_RobustAlgebraicPlaneFittingPy():
     plt.show()
 
 def test_RobustAlgebraicLineFittingPy():
+    print('test_RobustAlgebraicLineFittingPy')
     n_in = 100
     inSigma = 3
     inX = 200*(np.random.rand(n_in)-0.5)
@@ -205,6 +211,7 @@ def test_RobustAlgebraicLineFittingPy():
     RobustGaussianFittingLibrary.misc.naiveHistTwoColors(_errors, np.array([0, mP[2]]))
     
 def test_fitBackground():
+    print('test_fitBackground')
     XSZ = 512
     YSZ = 512
     WINSIZE = 7
@@ -239,6 +246,7 @@ def test_fitBackground():
 
 
 def test_fitBackgroundTensor():
+    print('test_fitBackgroundTensor')
     imgDimX = 100
     imgDimY = 100
     Xax = np.arange(imgDimX)
@@ -265,6 +273,7 @@ def test_fitBackgroundTensor():
     print(modelParamsMap)
 
 def test_fitBackgroundTensor_multiproc():
+    print('test_fitBackgroundTensor_multiproc')
     f_N, r_N, c_N = (100, 128, 512)
     inTensor = np.zeros((f_N, r_N, c_N), dtype='float32')
     for frmCnt in range(f_N):
@@ -280,7 +289,8 @@ def test_fitBackgroundTensor_multiproc():
         axes[1].imshow(modelParamsMap[1,frmCnt])
         plt.show()
 
-def test_SginleGaussianVec():    
+def test_SginleGaussianVec():
+    print('test_SginleGaussianVec')
     RNN0 = 50 + 5*np.random.randn(12)
     RNN1 = 200*(np.random.rand(24)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
@@ -297,6 +307,7 @@ def test_SginleGaussianVec():
     RobustGaussianFittingLibrary.misc.sGHist(testData, mP)
     
 def test_fitValue2Skewed():
+    print('test_fitValue2Skewed')
     RNN0 = 50 + 5*np.random.randn(50)
     RNN1 = 200*(np.random.rand(100)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
@@ -313,7 +324,7 @@ def test_fitValue2Skewed():
     RobustGaussianFittingLibrary.misc.sGHist(testData, mP)    
     
 def test_fitValue2Skewed_sweep_over_N():
-    print('testing fitValue2Skewed sweep over N')
+    print('test_fitValue2Skewed_sweep_over_N')
     numIter = 100
     maxN = 300
     minN = 2
@@ -361,6 +372,7 @@ def test_fitValue2Skewed_sweep_over_N():
     plt.show()
     
 def test_flatField():    
+    print('test_flatField')
     RNN0 =  0 + 1*np.random.randn(2048)
     RNN1 =  6 + 6**0.5*np.random.randn(1024)
     RNN2 =  12 + 12**0.5*np.random.randn(512)
@@ -388,7 +400,8 @@ def test_flatField():
     RobustGaussianFittingLibrary.misc.naiveHist_multi_mP(data, mP_All)
     RobustGaussianFittingLibrary.misc.sGHist_multi_mP(data, mP_All, SNR=2.5)
     
-def test_fitValueTensor_MultiProc():    
+def test_fitValueTensor_MultiProc():
+    print('test_fitValueTensor_MultiProc')
     SIGMA = 10
     RNN1 = SIGMA*np.random.randn(500-50-3, 18, 38)
     RNN2 = 5*SIGMA + 5*SIGMA*np.random.randn(50, 18, 38)
@@ -411,7 +424,8 @@ def test_fitValueTensor_MultiProc():
     print(time.time() - nowtime)
     print(modelParamsMap)
 
-def test_fitValueSmallSample():    
+def test_fitValueSmallSample(): 
+    print('test_fitValueSmallSample')
     inliers = np.random.randn(3)
     outliers = np.array([10])
     testData = np.hstack((inliers, outliers))
@@ -424,6 +438,7 @@ def test_fitValueSmallSample():
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
 
 def test_fitLineTensor_MultiProc():
+    print('test_fitLineTensor_MultiProc')
     n_F, n_R, n_C = (500, 32, 32)
     dataX = np.zeros((n_F, n_R, n_C), dtype='float32')
     dataY = np.zeros((n_F, n_R, n_C), dtype='float32')
@@ -442,7 +457,8 @@ def test_fitLineTensor_MultiProc():
     plt.imshow(lP[1]), plt.show()
     plt.imshow(lP[2]), plt.show()
     
-def test_fitValueSmallSample():    
+def test_fitValueSmallSample():
+    print('test_fitValueSmallSample')
     inliers = np.random.randn(3)
     outliers = np.array([10])
     testData = np.hstack((inliers, outliers))
