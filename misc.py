@@ -114,6 +114,59 @@ def naiveHist_multi_mP(vec, mP):
         plt.plot(x,y, 'r')
     plt.show()
 
+def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
+    LWidth = 3
+    font = {
+            'weight' : 'bold',
+            'size'   : 8}
+    params = {'legend.fontsize': 'x-large',
+             'axes.labelsize': 'x-large',
+             'axes.titlesize':'x-large',
+             'xtick.labelsize':'x-large',
+             'ytick.labelsize':'x-large'}
+
+
+    tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
+    tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()
+    tmpH  = (inVec[  (inVec>=mP[0]+SNR_ACCEPT*mP[1]) & (inVec<=mP[0]+4*SNR_ACCEPT*mP[1]) ]).copy()
+    _xlimMin = tmpM.min()
+    _xlimMax = tmpM.max()
+
+    plt.figure()
+    plt.rc('font', **font)
+    plt.rcParams.update(params)
+
+    if (tmpL.any()):
+        hist,bin_edges = np.histogram(tmpL, tmpL.shape[0])
+        plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
+        _xlimMin = tmpL.min()
+    hist,bin_edges = np.histogram(tmpM, 20)
+    tmpMmax = hist.max()
+    plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='blue',alpha=0.5)
+    if (tmpH.any()):
+        hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
+        plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
+        _xlimMax = tmpH.max()
+    x = np.linspace(mP[0]-SNR_ACCEPT*mP[1], mP[0]+SNR_ACCEPT*mP[1], 1000)
+    y = tmpMmax * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
+    
+    plt.plot(np.array([mP[0] - SNR_ACCEPT*mP[1], mP[0] - SNR_ACCEPT*mP[1]]) ,
+             np.array([0, tmpMmax]), linewidth = LWidth, color = 'm')
+    plt.plot(np.array([mP[0] - 0*SNR_ACCEPT*mP[1], mP[0] - 0*SNR_ACCEPT*mP[1]]) ,
+             np.array([0, tmpMmax]), linewidth = LWidth, color = 'g')
+    plt.plot(np.array([mP[0] + SNR_ACCEPT*mP[1], mP[0] + SNR_ACCEPT*mP[1]]) ,
+             np.array([0, tmpMmax]), linewidth = LWidth, color = 'r')
+    plt.plot(x,y, 'orange', linewidth = LWidth)
+
+    
+    plt.xlim(_xlimMin, _xlimMax)
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlabel('Fitting error of line to points',fontsize=15)
+    plt.ylabel('Histogram',fontsize=15)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.show()
+
 def sGHist(inVec, mP, SNR_ACCEPT=3.0):
     tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
     tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()

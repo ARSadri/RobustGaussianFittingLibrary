@@ -10,6 +10,17 @@ import scipy.stats
 np.set_printoptions(suppress = True)
 np.set_printoptions(precision = 2)
  
+LWidth = 3
+font = {
+        'weight' : 'bold',
+        'size'   : 8}
+params = {'legend.fontsize': 'x-large',
+         'axes.labelsize': 'x-large',
+         'axes.titlesize':'x-large',
+         'xtick.labelsize':'x-large',
+         'ytick.labelsize':'x-large'}
+ 
+ 
 def test_for_textProgBar():
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
     for _ in range(60):
@@ -158,21 +169,40 @@ def test_RobustAlgebraicPlaneFittingPy():
     plt.show()
 
 def test_RobustAlgebraicLineFittingPy():
-    N = 50
-    inX = 100*np.random.rand(N)-50
-    inY = 2*inX + 10 + 10*np.random.randn(N)
-    inY[int(N/2)] = 100
-    mP = RobustGaussianFittingLibrary.fitLine(inX, inY, 0.5, 0.3)
-    Xax = np.arange(inX.min(), inX.max())
+    n_in = 100
+    inSigma = 3
+    inX = 200*(np.random.rand(n_in)-0.5)
+    inY = 0.5*inX + 10 + inSigma*np.random.randn(n_in)
+    n_out = 80
+    outX = 200*(np.random.rand(n_out)-0.5)
+    outY = 200*(np.random.rand(n_out)-0.25)
+    X = np.concatenate((inX, outX))
+    Y = np.concatenate((inY, outY))
+    
+    label = np.ones(X.shape[0], dtype='uint8')
+    _errors = Y - (0.5*X + 10)
+    label[np.fabs(_errors) >= 3*inSigma] = 0
+    
+    print(X.shape)
+    mP = RobustGaussianFittingLibrary.fitLine(X, Y, 0.5, 0.3)
+    Xax = np.arange(X.min(), X.max())
     Yax_U = mP[0]*Xax + mP[1] + 3*mP[2]
     Yax_M = mP[0]*Xax + mP[1]
     Yax_L = mP[0]*Xax + mP[1] - 3*mP[2]
-    plt.scatter(inX, inY)
-    plt.plot(Xax, Yax_M)
-    plt.plot(Xax, Yax_U)
-    plt.plot(Xax, Yax_L)
+    
+    plt.rc('font', **font)
+    plt.rcParams.update(params)
+    plt.scatter(X[label==0], Y[label==0], color='royalblue', label='outliers', marker='o')
+    plt.scatter(X[label==1], Y[label==1], color='mediumblue', label='outliers', marker='o')
+    plt.plot(Xax, Yax_M, linewidth = 3, color = 'purple')
+    plt.plot(Xax, Yax_U, linewidth = 3, color = 'green')
+    plt.plot(Xax, Yax_L, linewidth = 3, color = 'red')
+    plt.xlabel('X')
+    plt.ylabel('Y').set_rotation(0)
+    plt.ylabel('Y')
     plt.show()
     print(mP)
+    RobustGaussianFittingLibrary.misc.naiveHistTwoColors(_errors, np.array([0, mP[2]]))
     
 def test_fitBackground():
     XSZ = 512
@@ -426,6 +456,7 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_RobustAlgebraicLineFittingPy()
     test_fitLineTensor_MultiProc()
     test_fitValue2Skewed_sweep_over_N()
     visOrderStat()
@@ -435,7 +466,6 @@ if __name__ == '__main__':
     test_fitValueSmallSample()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
-    test_RobustAlgebraicLineFittingPy()
     test_fitBackground()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()
