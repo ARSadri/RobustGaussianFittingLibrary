@@ -4,6 +4,7 @@ Nothing to look for in this file, its just a wrapper
 import numpy as np
 import ctypes
 import os
+import fnmatch
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 fileNameTemplate = 'RGFLib*.so'
