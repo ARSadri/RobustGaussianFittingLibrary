@@ -90,8 +90,8 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
     
     return(inData, inMask, randomLocations)
 
-def test_islandRemovalPy():
-    print('test_islandRemovalPy')
+def test_removeIslands():
+    print('test_removeIslands')
     #an island cannot be bigger than the stack size of your OS
     inMask = np.ones((20, 21), dtype='uint8')
     
@@ -139,7 +139,7 @@ def test_islandRemovalPy():
     inMask[18,19] = 0
     
     plt.imshow(inMask), plt.show()
-    outMask = 1 - RobustGaussianFittingLibrary.misc.islandRemovalPy(1 - inMask, minSize=2)
+    outMask = 1 - RobustGaussianFittingLibrary.misc.removeIslands(1 - inMask, minSize=2)
     plt.imshow(outMask), plt.show()
     
 def test_bigTensor2SmallsInds():
