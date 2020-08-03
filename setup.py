@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
-  version = '0.1',      # Start with a small number and increase it with every change you make
+  version = '0.1.1',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'A library for robust Gaussian fitting using geometric models in presence of outliers. ',   # Give a short description about your library
   author = 'Alireza Sadri',                   # Type in your name
