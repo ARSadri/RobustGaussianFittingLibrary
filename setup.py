@@ -17,7 +17,7 @@ setup(
       ],
   #cmdclass={'install': 'make all'},
   ext_modules=[Extension(name = 'RGFLib', 
-                         sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
+                         sources = ['./RobustGaussianFittingLibrary/RGFLib.c'],
                          language = 'c',
                          extra_compile_args = ['-shared'])],
   classifiers=[
