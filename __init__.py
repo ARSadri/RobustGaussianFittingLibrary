@@ -1,5 +1,6 @@
 """The list of accessible functions by importing the RGFLib itself
-I think some of the functions are used more often and should be provided here
+I think some of the functions are used more often 
+and should be provided here
 """
 from .basic import MSSE
 from .basic import fitValue

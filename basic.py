@@ -1,9 +1,24 @@
 """ fit a Gaussian to recover vector value, lines, plane,...
 Input arguments
 ~~~~~~~~~~~~~~~
-    MSSE_LAMBDA
-    topKthPerc
-    bottomKthPerc : set it to 0.95*topKthPerc, this number must be more than 12
+    MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+    topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, you have a problem of estimating structure size
+                    That can be solved by the MCNC method which develops covariance of data. 
+                    One simpler solution (that maybe slower and less accurate) is to try many and 
+                    ensemble the models by their median.
+                default : 0.5
+    bottomKthPerc : set it to 0.9*topKthPerc, 
+                    if N is number of data points, then make sure that
+                    (topKthPerc - bottomKthPerc)*N>p+4 [RuwanAliTPAMI16], where p is 
+                    number of parameters of the model, 
+                    p_valuefitting = 1
+                    p_linefitting = 2
+                    p_planefitting = 3
+                    it is best if bottomKthPerc*N>12 then MSSE makes sense
+                    otherwise the code returns non-robust results.
 Output
 ~~~~~~
     usually the mean and std of the Gaussian
@@ -17,7 +32,8 @@ def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):
         Input arguments
         ~~~~~~~~~~~~~~~
         inVec : the residuals verctor
-        MSSE_LAMBDA : How far from mean of the Gaussian, data is inlier normalized by STD of the Gaussian
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
         k : minimum number of inliers, 12 is the least.
         
         Output
@@ -45,12 +61,18 @@ def fitValue(inVec,
     Input arguments
     ~~~~~~~~~~~~~~~
         inVec (numpy.1darray): a float32 input vector
-        MSSE_LAMBDA: how far by std, a Guassian is a Guassian, must be above 2 for MSSE.
-        topKthPerc, bottomKthPerc: a float32 scalar, roughly guess maximum size of the structure between 0 and 1, the bottomKthPerc is the minimum of it.
-            Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
-            After you chose the bottomKthPerc, make sure that the remaining number of data points is more than 12.
-            For example: Choose the bottomKthPerc so that the sample size remains above 5 [TPAMI16].
-            If number of data points is 100, and you are sure that 
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust average and standard deviation of the guassian
@@ -78,12 +100,18 @@ def fitValue2Skewed(inVec,
     ~~~~~~~~~~~~~~~
         inVec (numpy.1darray): a float32 input vector of values to fit the model to
         inWeight (numpy.1darray): a float32 input vector of weights for each data point, doesn't need to sum to 1
-        MSSE_LAMBDA: how far by std, a Guassian is a Guassian, must be above 2 for MSSE.
-        topKthPerc, bottomKthPerc: a float32 scalar, roughly guess maximum size of the structure between 0 and 1, the bottomKthPerc is the minimum of it.
-            Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
-            After you chose the bottomKthPerc, make sure that the remaining number of data points is more than 12.
-            For example: Choose the bottomKthPerc so that the sample size remains above 5 [TPAMI16].
-            If number of data points is 100, and you are sure that 
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
@@ -111,6 +139,18 @@ def fitValueTensor(inTensor,
     Input arguments
     ~~~~~~~~~~~~~~~
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
@@ -139,6 +179,18 @@ def fitLine(inX, inY,
     ~~~~~~~~~~~~~~~
         inX: vector of data points x
         inY: vector of data points y
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         3 parameters, a, Rmean, RSTD (your line would be out[0]x + out[1]) 
@@ -164,6 +216,18 @@ def fitLineTensor(inX, inY,
     ~~~~~~~~~~~~~~~
         inX: Tensor of data points x, n_F x n_R x n_C
         inY: vector of data points y, n_F x n_R x n_C
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         3 x n_R x n_C, a, Rmean, RSTD fpr each pixel 
@@ -197,6 +261,18 @@ def fitPlane(inX, inY, inZ,
         inX: vector of data points x
         inY: vector of data points y
         inZ: vector of data points z
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         4 parameters, a, b, Rmean, RSTD (your plane would be out[0]x + out[1]y + out[2]) 
@@ -237,6 +313,18 @@ def fitBackground(inImage,
             set it to 4 for a reasonable performance.
         numModelParams: takes either 0, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
@@ -283,6 +371,18 @@ def fitBackgroundTensor(inImage_Tensor,
     ~~~~~~~~~~~~~~~
         inImage_Tensor: n_F x n_R x n_C input Tensor, each image has size n_R x n_C
         inMask_Tensor: same size of inImage_Tensor
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
     Output
     ~~~~~~
         2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.

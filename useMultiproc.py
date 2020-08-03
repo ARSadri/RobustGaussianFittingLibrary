@@ -64,7 +64,24 @@ def fitValueTensor_MultiProc(inTensor,
     """"Does fitValueTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
-        numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value. 
+        inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
+        numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.         
+    Output
+    ~~~~~~
+        2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
+
     """
     rowClmInds, segInds = bigTensor2SmallsInds(inTensor.shape, numRowSegs, numClmSegs)
 
@@ -138,7 +155,25 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
     """"Does fitLineTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
-        numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value. 
+        inX: Tensor of data points x, n_F x n_R x n_C
+        inY: vector of data points y, n_F x n_R x n_C
+        numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.         
+    Output
+    ~~~~~~
+        3 x n_R x n_C, a, Rmean, RSTD fpr each pixel 
+
     """
 
     rowClmInds, _ = bigTensor2SmallsInds(inTensorX.shape, numRowSegs, numClmSegs)
@@ -227,7 +262,28 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                                         numModelParams = 4,
                                         optIters = 10,
                                         showProgress = False):
-    """"Does fitBackgroundTensor in RGFLib.py using multiprocessing"""
+    """"Does fitBackgroundTensor in RGFLib.py using multiprocessing
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inImage_Tensor: n_F x n_R x n_C input Tensor, each image has size n_R x n_C
+        inMask_Tensor: same size of inImage_Tensor
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.        
+    Output
+    ~~~~~~
+        2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
+
+    """
     
     f_N = inDataSet.shape[0]
     r_N = inDataSet.shape[1]
