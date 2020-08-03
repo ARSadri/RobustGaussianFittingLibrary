@@ -1,6 +1,6 @@
 CC = gcc
 #CFLAGS = -fPIC -Wall -g
-CFLAGS = -fPIC -O3
+CFLAGS = -fPIC -O2
 LDFLAGS = -shared
 RM = rm -rf
 TARGET_LIB = RGFLib.so
