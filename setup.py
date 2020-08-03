@@ -19,6 +19,11 @@ setup(
           'matplotlib',
           'scipy'
       ],
+  #cmdclass={'install': 'make all'},
+  ext_modules=[Extension('RGFLib', 
+                         sources = ['RGFLib.c'],
+                         language='c',
+                         extra_compile_args = ['-fPIC -O2 -shared'])],
   classifiers=[
     'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
     'Intended Audience :: Science/Research',      # Define that your audience are developers
