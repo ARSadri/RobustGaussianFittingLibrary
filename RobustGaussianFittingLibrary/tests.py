@@ -477,7 +477,7 @@ if __name__ == '__main__':
     visOrderStat()
     test_fitValue2Skewed()
     test_for_textProgBar()
-    test_islandRemovalPy()
+    test_removeIslands()
     test_fitValueSmallSample()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
