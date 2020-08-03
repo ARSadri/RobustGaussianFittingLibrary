@@ -392,11 +392,41 @@ def test_fitValueSmallSample():
     #inds = np.where(np.fabs(testData)<50)
     #print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
+
+def test_fitLineTensor_MultiProc():
+    n_F, n_R, n_C = (500, 32, 32)
+    dataX = np.zeros((n_F, n_R, n_C), dtype='float32')
+    dataY = np.zeros((n_F, n_R, n_C), dtype='float32')
+    for imgCnt in range(n_F):
+        dataX[imgCnt] = imgCnt
+        dataY[imgCnt] = imgCnt + np.random.randn(n_R, n_C)
+    lP = RobustGaussianFittingLibrary.useMultiproc.fitLineTensor_MultiProc(inTensorX = dataX, 
+                                                                            inTensorY = dataY,
+                                                                            numRowSegs = 2,
+                                                                            numClmSegs = 2,
+                                                                            topKthPerc = 0.5,
+                                                                            bottomKthPerc = 0.4,
+                                                                            MSSE_LAMBDA = 3.0,
+                                                                            showProgress = True)
+    plt.imshow(lP[0]), plt.show()
+    plt.imshow(lP[1]), plt.show()
+    plt.imshow(lP[2]), plt.show()
+def test_fitValueSmallSample():    
+    inliers = np.random.randn(3)
+    outliers = np.array([10])
+    testData = np.hstack((inliers, outliers))
+    np.random.shuffle(testData)
+    print('testing RobustSingleGaussianVecPy')
+    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
+    print(mP)
+    #inds = np.where(np.fabs(testData)<50)
+    #print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
+    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))                                   
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitLineTensor_MultiProc()
     test_fitValue2Skewed_sweep_over_N()
-    exit()
     visOrderStat()
     test_fitValue2Skewed()
     test_for_textProgBar()

@@ -274,7 +274,7 @@ def fitBackgroundTensor(inImage_Tensor,
                 topKthPerc = 0.5,
                 bottomKthPerc = 0.45,
                 MSSE_LAMBDA = 3.0,
-                stretch2CornersOpt = 2,
+                stretch2CornersOpt = 0,
                 numModelParams = 4,
                 optIters = 12):
     """ fit a plane to each image in the input Tensor and reportbackground values and STD for each pixel for each plane

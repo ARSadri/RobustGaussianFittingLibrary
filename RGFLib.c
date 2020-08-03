@@ -236,13 +236,8 @@ void fitValue2Skewed(float *vec, float *weights,
 					float topkPerc, float botkPerc,
 					float MSSE_LAMBDA, unsigned char optIters) {
 
-	float avg, tmp, estScale, theta_new;
-	float upperScale, lowerScale;
-	unsigned int topk, botk, sampleSize;
-	int iter, i, numPointsSide, numPtsTotal;
-	float a, b, inliersMinValue, inliersMaxValue, errAtTopk, winL;
-	float maxVec, maxWeight, alpha, sumVec, sumWeights, local_sumWeights;
-	unsigned int sideFlag, sideFlag_perv;
+	float tmp, estScale, theta_new, upperScale, lowerScale, errAtTopk;
+	int i, topk, botk, iter, numPointsSide;
 		
 	topk = (int)(N*topkPerc);
 	botk = (int)(N*botkPerc);
@@ -254,7 +249,6 @@ void fitValue2Skewed(float *vec, float *weights,
 			topk = (int)(N/2)+1;
 		botk = 0;
 	}
-	sampleSize = topk - botk;	//Sample will not include topk
 	
 	float *residual;
 	residual = (float*) malloc(N * sizeof(float));
@@ -344,91 +338,24 @@ void fitValue2Skewed(float *vec, float *weights,
 	free(residual);
 	modelParams[0] = theta;
 	modelParams[1] = estScale;
-	////////////////////////////////////////////////////////////////
 
-	////////////////////////////////////////////////////////////////////////
-	//////////// find the mode by looking at a naive histogram /////////////
-	////////////////////////////////////////////////////////////////////////
-	/*
-	a = theta - 3.0*estScale;
-	b = theta + 3.0*estScale;
-	inliersMinValue = theta;
-	inliersMaxValue = theta;
-	for(i=0; i<N; i++) {
-		if((vec[i]>a) && (vec[i]<b)) {
-			if(vec[i]<inliersMinValue)
-				inliersMinValue = vec[i];
-			if(vec[i]>inliersMaxValue)
-				inliersMaxValue = vec[i];
-		}
-	}
-	a = inliersMinValue;
-	b = inliersMaxValue;
-	
-	maxVec = 0;
-	maxWeight = 0;
-	winL = 0.2;
-	for(alpha=0; alpha<1; alpha+=winL){
-		tmp = 0;
-		sumVec = 0;
-		for(i=0; i<N; i++)
-			if( (vec[i]>=a*(1 - alpha)+b*(alpha)) && (vec[i]<a*(1 - (alpha+winL/2))+b*(alpha+winL/2)) ) {
-				tmp += weights[i];
-				sumVec += weights[i]*vec[i];
-			}
-		if(tmp>maxWeight) {
-			maxVec = sumVec;
-			maxWeight = tmp;
-		}
-	}
-	if(maxWeight>0)
-		modelParams[0] = maxVec/maxWeight;	
 
-	modelParams[0] = theta;
-	*/
-	
 	////////////////////////////////////////////////////////////////
-	/////mode seeking Using weighted median of inlier values //
+	//////////////// calculate the std by inliers  /////////////////
 	////////////////////////////////////////////////////////////////
-	/*
-	numPtsTotal = 0;
-	sumWeights = 0;
-	for (i = 0; i < N; i++) {
-		if(fabs(vec[i] - theta) < MSSE_LAMBDA*estScale) {
-			errorVec[i].vecData  = vec[i];
-			numPtsTotal++;
-			sumWeights += weights[i];
-		}
-		else {
-			errorVec[i].vecData  = 1e+8;
-		}
-		errorVec[i].indxs = i;
-	}
-	quickSort(errorVec,0,N-1);
-	
-	i=0;
-	local_sumWeights = 0;
-	while(i<numPtsTotal) {
-		local_sumWeights += weights[errorVec[i++].indxs];
-		if(local_sumWeights>=sumWeights/2)
-			break;
-	}
-	
-	modelParams[0] = errorVec[i].vecData;
-	
 	upperScale = fabs((theta + 3.0*estScale) - modelParams[0])/3.0;
 	lowerScale = fabs(modelParams[0] - (theta - 3.0*estScale))/3.0;
 	if(lowerScale<upperScale)
 		modelParams[1] = upperScale;	//hopefully never negative
 	else
 		modelParams[1] = lowerScale;
-	*/
+	
 	free(errorVec);
 }
 
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
 	unsigned int i;
-	float xsum,x2sum,ysum,xysum; 
+	float xsum,x2sum,ysum,xysum, D; 
 	xsum=0;
 	x2sum=0;
 	ysum=0;
@@ -439,8 +366,15 @@ void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
         x2sum += x[i]*x[i];
         xysum += x[i]*y[i];
     }
-    mP[0]=(N*xysum-xsum*ysum)/(N*x2sum-xsum*xsum);
-    mP[1]=(x2sum*ysum-xsum*xysum)/(x2sum*N-xsum*xsum);
+	D = (N*x2sum-xsum*xsum);
+	if(fabs(D)>0.0000001) {
+		mP[0]=(N*xysum-xsum*ysum)/D;
+		mP[1]=(x2sum*ysum-xsum*xysum)/D;
+	}
+	else {
+		mP[0] = 0;
+		mP[1] = 0;
+	}
 }
 
 void lineAlgebraicModelEval(float* x, float* y_fit, float* mP, unsigned int N) {
@@ -558,7 +492,7 @@ void TLS_AlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, unsigned
 		y_z_sum += (y[i] - y_mean) * (z[i] - z_mean);
     }
 	D = x_x_sum*y_y_sum - x_y_sum * x_y_sum;
-	if(fabs(D)>0.0001) {
+	if(fabs(D)>0.00001) {
 		a = (y_y_sum * x_z_sum - x_y_sum * y_z_sum)/D;
 		b = (x_x_sum * y_z_sum - x_y_sum * x_z_sum)/D;
 	}

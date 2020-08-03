@@ -63,7 +63,7 @@ class textProgBar:
             print('~', end='')
         print(' ', flush = True)
 
-def islandRemovalPy(inMask, 
+def removeIslands(inMask, 
                     minSize = 1):
     """
     Given a mask in the input where the background is zero and bad areas are 1,

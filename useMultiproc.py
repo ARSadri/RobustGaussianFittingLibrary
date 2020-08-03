@@ -41,6 +41,9 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
     #print('meshgrid number of parts: ' + str(segCnt))
     return(rowClmInds, segInds)
 
+################################################################################################
+################################### Value fitting library #######################################
+
 def fitValueTensor_MultiProcFunc(aQ, 
                             partCnt, inTensor,
                             topKthPerc, bottomKthPerc, MSSE_LAMBDA):
@@ -87,7 +90,7 @@ def fitValueTensor_MultiProc(inTensor,
             numBusyCores -= 1
             if(showProgress):
                 if(firstProcessed==0):
-                    pBar = textProgBar(numProc-1, title = 'Calculationg background')
+                    pBar = textProgBar(numProc-1, title = 'Calculationg Values')
                     firstProcessed = 1
                 else:
                     pBar.go(1)
@@ -130,7 +133,8 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
                               numClmSegs = 1,
                               topKthPerc = 0.5,
                               bottomKthPerc = 0.4,
-                              MSSE_LAMBDA = 3.0):
+                              MSSE_LAMBDA = 3.0,
+                              showProgress = False):
     """"Does fitLineTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -148,7 +152,7 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
     numWiating = numSegs
     numDone = 0
     partCnt = 0
-    
+    firstProcessed = 0
     modelParamsMap = np.zeros((3, inTensorX.shape[1], inTensorX.shape[2]), dtype='float32')
     while(numDone<numProc):
         if (not aQ.empty()):
@@ -159,6 +163,13 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
                            rowClmInds[_partCnt, 2]: rowClmInds[_partCnt, 3] ] = aQElement[1]
             numDone += 1
             numBusyCores -= 1
+            if(showProgress):
+                if(firstProcessed==0):
+                    pBar = textProgBar(numProc-1, title = 'Calculationg line parameters')
+                    firstProcessed = 1
+                else:
+                    pBar.go(1)
+
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
             
@@ -177,7 +188,8 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
 
             numWiating -= 1
             numBusyCores += 1
-
+    if(showProgress):
+        del pBar
     return (modelParamsMap)
     
 ################################################################################################
@@ -232,13 +244,14 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
 
     aQ = Queue()
     mycpucount = cpu_count() - 1
-    print('Multiprocessing ' + str(f_N) + ' frames...')
+    if(showProgress):
+        print('Multiprocessing background ' + str(f_N) + ' frames...')
     numProc = f_N
     numSubmitted = 0
     numProcessed = 0
     numBusyCores = 0
     firstProcessed = 0
-    default_stride = np.maximum(mycpucount, int(np.floor(numProc/mycpucount)))
+    default_stride = int(np.ceil(numProc/(2*mycpucount)))
     while(numProcessed<numProc):
         if (not aQ.empty()):
             qElement = aQ.get()
