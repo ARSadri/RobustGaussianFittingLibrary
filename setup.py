@@ -7,7 +7,7 @@ setup(
   author = 'Alireza Sadri',                   # Type in your name
   author_email = 'ARSadri@domain.com',      # Type in your E-Mail
   url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary/archive/v0.1.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary/archive/v0.1.1.tar.gz',    # I explain this later on
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
   install_requires=[ 
           'numpy',
