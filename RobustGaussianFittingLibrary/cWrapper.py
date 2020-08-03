@@ -6,7 +6,9 @@ import ctypes
 import os
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-RGFCLib = ctypes.cdll.LoadLibrary(dir_path + os.path.sep + 'RGFLib.so')
+fileNameTemplate = 'RGFLib*.so'
+flist = fnmatch.filter(os.listdir(dir_path + os.path.sep), fileNameTemplate)
+RGFCLib = ctypes.cdll.LoadLibrary(dir_path + os.path.sep + flist[0])
 
 '''
 void islandRemoval(unsigned char* inMask, unsigned char* outMask, 
