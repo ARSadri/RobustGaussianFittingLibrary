@@ -411,6 +411,7 @@ def test_fitLineTensor_MultiProc():
     plt.imshow(lP[0]), plt.show()
     plt.imshow(lP[1]), plt.show()
     plt.imshow(lP[2]), plt.show()
+    
 def test_fitValueSmallSample():    
     inliers = np.random.randn(3)
     outliers = np.array([10])

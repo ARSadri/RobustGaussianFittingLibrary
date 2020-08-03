@@ -1,14 +1,17 @@
-# Robust Gaussian Fitting Library #
-A C Library for Robust Gaussian Fitting using geometric models in presence of outliers. This library is based on two main algorithms, FLKOS for finding the average of Gaussians, and MSSE for finding the scale.
+# Robust Gaussian Fitting Library
+A Library for Robust Gaussian Fitting using geometric models in presence of outliers. This library is based on two main algorithms, FLKOS for finding the average of Gaussians, and MSSE for finding the scales.
 
-In robust segmentation, the main assumtion is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem.
+## Prior knowledge: Rough estimate of structure size
+In robust segmentation, the main assumption is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem. Exceptionally, if the structure does not have the majority of data and the outliers do not form a structure (which is a huge constraint, this reduces the problem back to segmentaiton where the structure size is smaller than half. 
+
+If the structure size cannot be gussed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are the most efficient and yet accurate methods.
 
 ## Compilation into shared library
 Run the following command to generate a shared .so library:
 ```
 make
 ```
-**Note**: if you are using windows, you can used mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils.
+**Note**: if you are using windows, you can use mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils for windows.
 ## Usage from Python
 A Python wrapper is also provided. Tha wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 
@@ -35,4 +38,4 @@ Many test funcitons are availble in the tests.py script. in the script, llok for
 make test
 ```
 ## Usage from MATLAB ##
-Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the ..._Test.m file
+Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the RGFLib_mex_fitValue2Skewed_Test.m file
