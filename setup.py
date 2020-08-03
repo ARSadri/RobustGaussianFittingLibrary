@@ -15,10 +15,10 @@ setup(
           'scipy'
       ],
   #cmdclass={'install': 'make all'},
-  ext_modules=[Extension('RGFLib', 
+  ext_modules=[Extension(name = 'RGFLib', 
                          sources = ['RGFLib.c'],
-                         language='gcc',
-                         extra_compile_args = ['-fPIC -O2 -shared'])],
+                         language = 'c',
+                         extra_compile_args = ['-shared'])],
   classifiers=[
     'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
     'Intended Audience :: Science/Research',      # Define that your audience are developers
