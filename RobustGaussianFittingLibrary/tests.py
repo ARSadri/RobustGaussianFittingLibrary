@@ -1,3 +1,8 @@
+#################################################################################################
+# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
+# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
+#################################################################################################
+
 import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
 import RobustGaussianFittingLibrary.misc
