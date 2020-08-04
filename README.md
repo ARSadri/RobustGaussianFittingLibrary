@@ -41,6 +41,6 @@ make test
 Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the RGFLib_mex_fitValue2Skewed_Test.m file
 
 # Credits
-This library is an effort to implement a set of mathematical oporations. However, historically, the core of the RGFLib.c, (MSSE and FLKOS) was implemented as part of the package RobustPeakFinder for crystallography in Unievrsity of LaTrobe Melbourne, Australia in 2017. It can be found [here](https://github.com/MarjanHJ/RobustPeakFinder). Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into this library and it belongs to CFEL/DESY Hamburg. The RPF project now inherits this library as it well serves the purpose of that project.
+This library is an effort to implement a set of mathematical oporations. However, historically,par of the core of the RGFLib.c, (MSSE) was implemented as part of the package RobustPeakFinder for crystallography in Unievrsity of LaTrobe Melbourne, Australia in 2017 under free license. It can be found [here](https://github.com/MarjanHJ/RobustPeakFinder). Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into the current library and it belongs to CFEL/DESY Hamburg. The RPF project now inherits this library as it well serves the purpose of that project.
 ##Authors: Alireza Sadri
            Marjan Hadian Jazi
