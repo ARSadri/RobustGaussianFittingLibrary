@@ -1,3 +1,7 @@
+#################################################################################################
+# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
+# Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
+#################################################################################################
 from distutils.core import setup, Extension
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
