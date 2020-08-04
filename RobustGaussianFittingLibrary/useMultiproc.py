@@ -1,3 +1,8 @@
+#################################################################################################
+# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
+# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
+#################################################################################################
+
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
 from .basic import fitValueTensor, fitLineTensor, fitBackgroundTensor
