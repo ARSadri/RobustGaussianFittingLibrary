@@ -1,3 +1,8 @@
+#################################################################################################
+# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
+# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
+#################################################################################################
+
 """ A ctypes wrapper for the Robust Gaussian Fitting Library C file
 Nothing to look for in this file, its just a wrapper
 """
