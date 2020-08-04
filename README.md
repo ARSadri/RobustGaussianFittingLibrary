@@ -42,5 +42,6 @@ Currently, only the fitValue funciton is supported by a mex C code for MATLAB. H
 
 # Credits
 This library is an effort to implement a set of statistical functions. However, part of the core of the RGFLib.c, (MSSE) was implemented as part of the package RobustPeakFinder for crystallography data analysis in 2017 under free license. It can be found [here](https://github.com/MarjanHJ/RobustPeakFinder). Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into the current library.The RPF project now inherits this library as it well serves the purpose of that project.
-##Authors: Alireza Sadri, 
+
+## Authors: Alireza Sadri, 
            Marjan Hadian Jazi
