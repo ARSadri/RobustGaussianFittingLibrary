@@ -1,5 +1,5 @@
 # Robust Gaussian Fitting Library
-A Library for Robust Gaussian Fitting using geometric models in presence of outliers. This library is based on two main algorithms, FLKOS for finding the average of Gaussians, and MSSE for finding the scales.
+A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussians, and MSSE for finding the scales. The intension is to provide more methods and convenient solutions.
 
 ## Prior knowledge: Rough estimate of structure size
 In robust segmentation, the main assumption is that the Gaussian we are looking for has the majority of data points. If it doesn't, it turns the problem into a clustering problem. Exceptionally, if the structure does not have the majority of data and the outliers do not form a structure (which is a huge constraint, this reduces the problem back to segmentaiton where the structure size is smaller than half. 
