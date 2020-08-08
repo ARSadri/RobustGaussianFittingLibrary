@@ -7,13 +7,11 @@ In this robust model fitting method, the main assumption is that, the Gaussian w
 
 If the structure size cannot be guessed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are the most efficient and yet accurate methods.
 
-## Compilation into shared library
-Run the following command to generate a shared .so library:
-```
-make
-```
-**Note**: if you are using windows, you can use mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils for windows.
 ## Usage from Python
+You can install this library via pip.
+```
+pip3 install RobustGaussianFittingLibrary
+```
 A Python wrapper is also provided. The wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 
 ### importable libraries ###
@@ -38,6 +36,13 @@ Many test functions are availble in the tests.py script. in the script, look for
 ```
 make test
 ```
+## Compilation into shared library
+Run the following command to generate a shared .so library:
+```
+make
+```
+**Note**: if you are using windows, you can use mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils for windows.
+
 ## Usage from MATLAB ##
 Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the RGFLib_mex_fitValue2Skewed_Test.m file
 
