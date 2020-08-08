@@ -31,10 +31,18 @@ pip3 install RobustGaussianFittingLibrary
 	* fitBackgroundTensor_multiproc : Does fitBackgroundTensor using multiprocessing
 
 ### Examples in Python ###
-Many test functions are availble in the tests.py script. in the script, look for the main function and choose one of them to run or Simply type in:
+Many test functions are availble in the tests.py script. in the script, look for the main function and choose one of them to run. 
+
+## fitting a single value to a vector of data
 ```
-make test
+import RobustGaussianFittingLibrary 
+import numpy as np
+inliers = np.random.randn(30)
+outliers = np.array([10, 20, 1000])
+inVec = np.random.shuffle(np.hstack((inliers, outliers)))
+print(RobustGaussianFittingLibrary.fitValue(inVec))
 ```
+
 ## Compilation into shared library
 Run the following command to generate a shared .so library:
 ```
@@ -43,11 +51,16 @@ make
 The python wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 **Note**: if you are using windows, you can use mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils for windows.
 
+To test the shared library, simply type in:
+```
+make test
+```
+
 ## Usage from MATLAB ##
 Currently, only the fitValue funciton is supported by a mex C code for MATLAB. However, you can request for more, or implement it yourself accordingly. Look at the RGFLib_mex_fitValue2Skewed_Test.m file
 
 # Credits
-This library is an effort to implement a set of statistical functions. However, part of the core of the RGFLib.c, (MSSE) was implemented as part of the package RobustPeakFinder for crystallography data analysis in 2017 under free license. It can be found [here](https://github.com/MarjanHJ/RobustPeakFinder). Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into the current library.The RPF project now inherits this library as it well serves the purpose of that project.
+This library is an effort to implement a set of robsut statistical functions. However, part of the core of the RGFLib.c, (MSSE) was implemented as part of the package [RobustPeakFinder](https://github.com/MarjanHJ/RobustPeakFinder) for crystallography data analysis in 2017 under free license in LaTrobe University Australia. Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into the current library in CFEL/DESY Hamburg. The RPF project now imports this library as it well serves the purpose of that project.
 
 ## Authors
 * Alireza Sadri <Alireza[Dot]Sadri[At]desy[Dot]de>
