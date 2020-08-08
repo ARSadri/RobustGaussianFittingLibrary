@@ -12,7 +12,6 @@ You can install this library via pip.
 ```
 pip3 install RobustGaussianFittingLibrary
 ```
-A Python wrapper is also provided. The wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 
 ### importable libraries ###
 * __RGFLib__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
@@ -41,6 +40,7 @@ Run the following command to generate a shared .so library:
 ```
 make
 ```
+The python wrapper will be looking for the .so shared library file. The wrapper is in the file cWrapper.py and is used by other python files.
 **Note**: if you are using windows, you can use mingwin and it has a make in its bin folder with a different name. Copy it and rename it to make. Also you would need rm from coreutils for windows.
 
 ## Usage from MATLAB ##
