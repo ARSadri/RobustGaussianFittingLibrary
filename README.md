@@ -14,7 +14,7 @@ pip3 install RobustGaussianFittingLibrary
 ```
 
 ### importable libraries ###
-* __RGFLib__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
+* __from RobustGaussianFittingLibrary import__: Basic functions can be found here for 1D and 2D data. Also for Tensors.
 	* MSSE : Given set of residuals, it finds the scale of a Gaussian (Reference :Robust segmentation of visual data using ranked unbiased scale estimate, A. Bab-Hadiashar and D. Suter)
 	* fitValue : Given a vector, it finds average and standard deviation of the Gaussian.
 	* fitValue2Skewed : Given a vector (and weights are accepted too), it finds the mode by (Median of inliers) and reports it along with a scale which is the distance of the mode from the edges of the Gaussian (by 3 STDs) divided by 3.
