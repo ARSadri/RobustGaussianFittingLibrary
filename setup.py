@@ -3,16 +3,17 @@
 # Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
 #################################################################################################
 from distutils.core import setup, Extension
+_version = 'v0.1.5'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
-  version = '0.1.4',      # Start with a small number and increase it with every change you make
+  version = _version,      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'A library for robust Gaussian fitting using geometric models in presence of outliers. ',   # Give a short description about your library
   author = 'Alireza Sadri',                   # Type in your name
   author_email = 'ARSadri@domain.com',      # Type in your E-Mail
   url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary/archive/v0.1.4.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary/archive/'+_version+'.tar.gz',    # I explain this later on
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
   install_requires=[ 
           'numpy',
