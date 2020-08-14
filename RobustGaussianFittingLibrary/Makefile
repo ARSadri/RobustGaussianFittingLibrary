@@ -1,19 +1,23 @@
+#ar -r RGFLib.a RGFLib.o
 CC = gcc
-#CFLAGS = -fPIC -Wall -g
-CFLAGS = -fPIC -O2
+SL = ar
+SLFLAGS = -r
+CFLAGS = -fPIC -Wall -O2 #-g
 LDFLAGS = -shared
 RM = rm -rf
 TARGET_LIB = RGFLib.so
 
 SRCS = RGFLib.c
 OBJS = $(SRCS:.c=.o)
+SLFILE = $(SRCS:.o=.a)
 
 .PHONY: all
 all: ${TARGET_LIB}
 
 $(TARGET_LIB): $(OBJS)
 	$(CC) ${LDFLAGS} -o $@ $^
-
+        $(SL) $(SLFLAGS) $(SLFILE) $(OBJS)
+	
 $(SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) -MM $< >$@
 
