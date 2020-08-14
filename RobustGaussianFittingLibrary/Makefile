@@ -9,14 +9,14 @@ TARGET_LIB = RGFLib.so
 
 SRCS = RGFLib.c
 OBJS = $(SRCS:.c=.o)
-SLFILE = $(SRCS:.o=.a)
+SLFILE = $(SRCS:.c=.a)
 
 .PHONY: all
 all: ${TARGET_LIB}
 
 $(TARGET_LIB): $(OBJS)
 	$(CC) ${LDFLAGS} -o $@ $^
-        $(SL) $(SLFLAGS) $(SLFILE) $(OBJS)
+	$(SL) $(SLFLAGS) $(SLFILE) $(OBJS)
 	
 $(SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) -MM $< >$@
