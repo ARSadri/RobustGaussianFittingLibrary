@@ -49,7 +49,7 @@ inVec = np.random.shuffle(np.hstack((inliers, outliers)))
 print(RobustGaussianFittingLibrary.fitValue(inVec))
 ```
 
-## Compilation into shared library
+## Compilation into static and shared library
 Run the following command to generate a shared .so library:
 ```
 make
