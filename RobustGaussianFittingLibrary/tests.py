@@ -314,7 +314,7 @@ def test_SginleGaussianVec():
 def test_fitValue2Skewed():
     print('test_fitValue2Skewed')
     RNN0 = 50 + 5*np.random.randn(50)
-    RNN1 = 200*(np.random.rand(100)-0.5)
+    RNN1 = 200*(np.random.rand(50)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing fitValue2Skewed')
