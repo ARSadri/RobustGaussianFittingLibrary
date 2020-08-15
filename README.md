@@ -24,7 +24,7 @@ pip3 install RobustGaussianFittingLibrary
 	* fitLine : Given vectors X and Y, it finds three parameters describing a line by slope, intercept and scale of noise.
 	<img src="images/use_of_lib_lineFitting.jpg" width="400">
 	
-	* fitLineTensor : Given a tensor, it fits a line for each pixel
+	* fitLineTensor : Given a tensor, it fits a line for each pixel.
 	* fitPlane : Given an image, returns four parameters of for algebraic fitting of a plane.
 	<img src="images/use_of_lib_planeFitting.jpg" width="400">
 	
