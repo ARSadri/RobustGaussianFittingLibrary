@@ -1,5 +1,5 @@
 # Robust Gaussian Fitting Library
-<img src="images/use_of_lib_lineFitting_2.jpg" width="400">
+<img src="images/use_of_lib_lineFitting_2.jpg" width="200">
 A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. The intention is to provide more methods and convenient solutions.
 
 ## Prior knowledge: Rough estimate of structure size
