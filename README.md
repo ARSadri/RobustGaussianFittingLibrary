@@ -18,13 +18,16 @@ pip3 install RobustGaussianFittingLibrary
 	* MSSE : Given set of residuals, it finds the scale of a Gaussian (Reference :Robust segmentation of visual data using ranked unbiased scale estimate, A. Bab-Hadiashar and D. Suter)
 	* fitValue : Given a vector, it finds average and standard deviation of the Gaussian.
 	<img src="images/use_of_lib_valueFitting.jpg" width="400">
+	
 	* fitValue2Skewed : Given a vector (and weights are accepted too), it finds the mode by (Median of inliers) and reports it along with a scale which is the distance of the mode from the edges of the Gaussian (by 3 STDs) divided by 3.
 	* fitValueTensor : Given a tensor of size n_F, n_R, n_C, it finds the Gaussian mean and std for each pixel in n_R and n_C.
 	* fitLine : Given vectors X and Y, it finds three parameters describing a line by slope, intercept and scale of noise.
 	<img src="images/use_of_lib_lineFitting.jpg" width="400">
+	
 	* fitLineTensor : Given a tensor, it fits a line for each pixel
 	* fitPlane : Given an image, returns four parameters of for algebraic fitting of a plane.
 	<img src="images/use_of_lib_planeFitting.jpg" width="400">
+	
 	* fitBackground : Given an image, returns the mean and std of background at each pixel.
 	* fitBackgroundTensor : Given a tensor of images n_F x n_R x n_C, returns the background mean and std for each pixel for each frame in n_F.
 
