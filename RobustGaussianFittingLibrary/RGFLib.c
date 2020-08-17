@@ -2,10 +2,9 @@
 //# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
 //# Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
 //#################################################################################################
-
-#include <math.h>
-#include <stdlib.h>
 // gcc -fPIC -shared -o RobustGausFitLib.c RobustGausFitLib.so
+
+#include <RGFLib.h>
 
 void dfs(unsigned char* inMask, unsigned char* mask, 
 			 int x,  int y, unsigned int X, unsigned int Y,
