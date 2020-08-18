@@ -8,6 +8,7 @@ Input arguments
 ~~~~~~~~~~~~~~~
     MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
     topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, you have a problem of estimating structure size
@@ -39,6 +40,7 @@ def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):
         inVec : the residuals verctor
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         k : minimum number of inliers, 12 is the least.
         
         Output
@@ -68,6 +70,7 @@ def fitValue(inVec,
         inVec (numpy.1darray): a float32 input vector
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -107,6 +110,7 @@ def fitValue2Skewed(inVec,
         inWeight (numpy.1darray): a float32 input vector of weights for each data point, doesn't need to sum to 1
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -146,6 +150,7 @@ def fitValueTensor(inTensor,
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -186,6 +191,7 @@ def fitLine(inX, inY,
         inY: vector of data points y
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -223,6 +229,7 @@ def fitLineTensor(inX, inY,
         inY: vector of data points y, n_F x n_R x n_C
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -268,6 +275,7 @@ def fitPlane(inX, inY, inZ,
         inZ: vector of data points z
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -320,6 +328,7 @@ def fitBackground(inImage,
         optIters: number of iterations of FLKOS for this fitting
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -370,7 +379,7 @@ def fitBackgroundTensor(inImage_Tensor,
                 stretch2CornersOpt = 0,
                 numModelParams = 4,
                 optIters = 12):
-    """ fit a plane to each image in the input Tensor and reportbackground values and STD for each pixel for each plane
+    """ fit a plane to each image in the input Tensor and report background values and STD for each pixel for each plane
     
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -378,6 +387,7 @@ def fitBackgroundTensor(inImage_Tensor,
         inMask_Tensor: same size of inImage_Tensor
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+                        default: 3.0
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -421,3 +431,79 @@ def fitBackgroundTensor(inImage_Tensor,
                                                 optIters)
     
     return ( np.array([model_mean, model_std]))
+
+def fitBackgroundTensorConv(inImage_Tensor, 
+                            inMask_Tensor = None,
+                            winX = None,
+                            winY = None,
+                            topKthPerc = 0.5,
+                            bottomKthPerc = 0.45,
+                            MSSE_LAMBDA = 3.0,
+                            stretch2CornersOpt = 0,
+                            numModelParams = 4,
+                            optIters = 12,
+                            numStrides = 1):
+    """ fit a plane by convolving the model to each image in the input Tensor and report background values and STD for each pixel for each plane
+    
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inImage_Tensor: n_F x n_R x n_C input Tensor, each image has size n_R x n_C
+        inMask_Tensor: same size of inImage_Tensor
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
+        numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
+                    and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
+                    will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
+                    will be analysed and averaged. This means that the method will run 7 times.
+    Output
+    ~~~~~~
+        2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
+    """
+    
+    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
+    if(inMask_Tensor is None):
+        inMask_Tensor = np.ones(inImage_Tensor.shape, dtype='uint8')
+    if(winX is None):
+        winX = inImage_Tensor.shape[1]
+    if(winY is None):
+        winY = inImage_Tensor.shape[2]
+    model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
+    model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
+    
+    n_F = inImage_Tensor.shape[0]
+    n_R = inImage_Tensor.shape[1]
+    n_C = inImage_Tensor.shape[2]
+        
+    bckParam = np.zeros((2, n_F, n_R, n_C), dtype='float32')
+    bckParam += fitBckTM(inImage_Tensor, winX=winX, winY=winY, showProgress=True)
+    _sums = np.ones((2, n_F, n_R, n_C), dtype='uint8')
+    wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
+    wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
+    for wSDRow in wSDListRows:
+        for wSDClm in wSDListClms:
+            _data = inImage_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm]
+            _inMask = inMask_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm]
+            _bck = fitBackgroundTensorConv(_data, 
+                                           _inMask,
+                                           winX,
+                                           winY,
+                                           topKthPerc,
+                                           bottomKthPerc,
+                                           MSSE_LAMBDA,
+                                           stretch2CornersOpt,
+                                           numModelParams,
+                                           optIters)
+            bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += _bck
+            _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
+    return(bckParam / _sums)
