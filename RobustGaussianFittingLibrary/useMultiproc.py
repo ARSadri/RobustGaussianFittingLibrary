@@ -245,7 +245,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             MSSE_LAMBDA,
                             stretch2CornersOpt,
                             numModelParams,
-                            optIters):
+                            optIters,
+                            numStrides):
     modelParamsMap = fitBackgroundTensor(inImage_Tensor, 
                                                 inMask_Tensor,
                                                 winX,
@@ -255,18 +256,20 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                                                 MSSE_LAMBDA,
                                                 stretch2CornersOpt,
                                                 numModelParams,
-                                                optIters)
+                                                optIters,
+                                                numStrides)
     aQ.put(list([imgCnt, modelParamsMap]))
     
 def fitBackgroundTensor_multiproc(inDataSet, inMask = None, 
                                         winX = None, winY = None,
                                         topKthPerc = 0.5,
-                                        bottomKthPerc = 0.4,
+                                        bottomKthPerc = 0.3,
                                         MSSE_LAMBDA = 3.0,
                                         stretch2CornersOpt = 0,
                                         numModelParams = 4,
-                                        optIters = 10,
-                                        showProgress = False):
+                                        optIters = 12,
+                                        showProgress = False,
+                                        numStrides = 1):
     """"Does fitBackgroundTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -283,7 +286,11 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                        set it to 0.9*topKthPerc, if N is number of data points, then make sure that
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.        
+                       otherwise the code may return non-robust results.     
+        numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
+                    and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
+                    will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
+                    will be analysed and averaged. This means that the method will run 7 times.
     Output
     ~~~~~~
         2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
@@ -342,7 +349,8 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                             MSSE_LAMBDA,
                             stretch2CornersOpt,
                             numModelParams,
-                            optIters)).start()
+                            optIters,
+                            numStrides)).start()
             numSubmitted += stride
             numBusyCores += 1
     if(showProgress):
