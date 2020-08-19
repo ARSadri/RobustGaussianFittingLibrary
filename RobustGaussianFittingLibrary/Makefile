@@ -2,7 +2,8 @@
 CC = gcc
 SL = ar
 SLFLAGS = -r
-CFLAGS = -fPIC -Wall -O2 #-g
+CFLAGS = -fPIC -Wall -O2
+#CFLAGS = -fPIC -Wall -g
 LDFLAGS = -shared
 RM = rm -rf
 TARGET_LIB = RGFLib.so
@@ -29,4 +30,4 @@ test:
 
 .PHONY: clean
 clean:
-	-${RM} ${TARGET_LIB} ${OBJS} $(SRCS:.c=.d)
+	-${RM} ${TARGET_LIB} ${OBJS} $(SRCS:.c=.d) $(SLFILE)
