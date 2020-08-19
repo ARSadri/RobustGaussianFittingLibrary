@@ -259,55 +259,62 @@ void fitValue2Skewed(float *vec, float *weights,
 	
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-	// lets do a symmetric fitting, half of the sample data points must come from either side
 	for(iter=0; iter<optIters; iter++) {
 		
-		for (i = 0; i < N; i++) {
-			errorVec[i].vecData = fabs(vec[i] - theta);
-			errorVec[i].indxs = i;
-		}
-		quickSort(errorVec,0,N-1);
-		errAtTopk = errorVec[topk-1].vecData;
-		
-		theta_new = 0;
-		tmp = 0;
-		numPointsSide = 0;
-		for (i = 0; i < N; i++) {
-			if((vec[i] >= theta) && (vec[i] <=  theta + errAtTopk)) {
-				errorVec[i].vecData  = vec[i] - theta;
-				numPointsSide++;
+		tmpH = 0;
+		tmpL = 0;
+		if(iter>=optIters/2) {
+			// lets do a symmetric fitting, half of the sample data points must come from either side
+			for (i = 0; i < N; i++) {
+				errorVec[i].vecData = fabs(vec[i] - theta);
+				errorVec[i].indxs = i;
 			}
-			else {
-				errorVec[i].vecData  = 1e+9;
-			}
-			errorVec[i].indxs = i;
-		}
-		if((int)(numPointsSide*topkPerc)>0) {
 			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
-				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-				tmp += weights[errorVec[i].indxs];
+			errAtTopk = errorVec[topk-1].vecData;
+
+			//////////////////////////////////////////////////////////////////
+			theta_new = 0;
+			numPointsSide = 0;
+			for (i = 0; i < N; i++) {
+				if((vec[i] >= theta) && (vec[i] <=  theta + errAtTopk)) {
+					errorVec[i].vecData  = vec[i] - theta;
+					numPointsSide++;
+				}
+				else {
+					errorVec[i].vecData  = 1e+9;
+				}
+				errorVec[i].indxs = i;
 			}
-		}		
-		numPointsSide = 0;
-		for (i = 0; i < N; i++) {
-			if((vec[i] < theta) && (vec[i] >= theta - errAtTopk) ) {
-				errorVec[i].vecData  = theta - vec[i];
-				numPointsSide++;
+			if((int)(numPointsSide*topkPerc)>0) {
+				quickSort(errorVec,0,N-1);
+				for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
+					theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+					tmpH += weights[errorVec[i].indxs];
+				}
 			}
-			else {
-				errorVec[i].vecData  = 1e+9;
+			numPointsSide = 0;
+			for (i = 0; i < N; i++) {
+				if((vec[i] < theta) && (vec[i] >= theta - errAtTopk) ) {
+					errorVec[i].vecData  = theta - vec[i];
+					numPointsSide++;
+				}
+				else {
+					errorVec[i].vecData  = 1e+9;
+				}
+				errorVec[i].indxs = i;
 			}
-			errorVec[i].indxs = i;
+			if((int)(numPointsSide*topkPerc)>0) {
+				quickSort(errorVec,0,N-1);
+				for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
+					theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+					tmpL += weights[errorVec[i].indxs];
+				}
+			}
 		}
-		if((int)(numPointsSide*topkPerc)>0) {
-			quickSort(errorVec,0,N-1);
-			for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
-				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-				tmp += weights[errorVec[i].indxs];
-			}
-		}
-		if(tmp==0) {
+		tmp = tmpL + tmpH;
+
+		//////////////////////////////////////////////////////////////////
+		if((tmpL==0) || (tmpH==0)) {
 			theta_new = 0;
 			tmp = 0;
 			for (i = 0; i < N; i++) {
