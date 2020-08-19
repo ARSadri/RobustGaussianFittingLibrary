@@ -741,20 +741,22 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 		for(rCnt=0; rCnt<X; rCnt++) {
 			for(cCnt=0; cCnt<Y; cCnt++) {
 				inImage[cCnt + rCnt*Y] = inImage_Tensor[cCnt + rCnt*Y + frmCnt*X*Y];
-				inMask[cCnt + rCnt*Y] = inImage_Tensor[cCnt + rCnt*Y + frmCnt*X*Y];
+				inMask[cCnt + rCnt*Y]  = inMask_Tensor[cCnt + rCnt*Y + frmCnt*X*Y];
+				modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = 0;
+				modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = 0;
 			}
 		}
 		
 		RSGImage(inImage, inMask, modelParamsMap,
-					winX, winY,	X, Y, 
-					topkPerc, botkPerc,
-					MSSE_LAMBDA, stretch2CornersOpt,
-					numModelParams, optIters);
+				 winX, winY, X, Y,
+				 topkPerc, botkPerc,
+				 MSSE_LAMBDA, stretch2CornersOpt,
+				 numModelParams, optIters);
 		
 		for(rCnt=0; rCnt<X; rCnt++) {
 			for(cCnt=0; cCnt<Y; cCnt++) {
 				model_mean[cCnt + rCnt*Y + frmCnt*X*Y] = modelParamsMap[cCnt + rCnt*Y + 0*X*Y];
-				model_std[cCnt + rCnt*Y + frmCnt*X*Y] = modelParamsMap[cCnt + rCnt*Y + 1*X*Y];
+				model_std[cCnt + rCnt*Y + frmCnt*X*Y]  = modelParamsMap[cCnt + rCnt*Y + 1*X*Y];
 			}
 		}
 	}		

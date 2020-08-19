@@ -12,6 +12,7 @@ import time
 import matplotlib.pyplot as plt
 import os
 import scipy.stats
+from cProfile import label
 np.set_printoptions(suppress = True)
 np.set_printoptions(precision = 2)
  
@@ -234,9 +235,18 @@ def test_fitBackground():
     axes[0].set_ylim([winYL, winYU])
     fig.colorbar(im0, ax=axes[0], shrink =0.5)
 
-    mP = RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 64, winY = 64, stretch2CornersOpt=4, numModelParams = 4) \
-        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 32, winY = 32, stretch2CornersOpt=2, numModelParams = 4) \
-        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, winX = 16, winY = 16, stretch2CornersOpt=1, numModelParams = 4)
+    mP = RobustGaussianFittingLibrary.fitBackground(inImage, inMask, 
+                                                    winX = 64, 
+                                                    winY = 64, 
+                                                    numStrides=2) \
+        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, 
+                                                    winX = 32, 
+                                                    winY = 32, 
+                                                    numStrides=2) \
+        + RobustGaussianFittingLibrary.fitBackground(inImage, inMask, 
+                                                    winX = 16, 
+                                                    winY = 16, 
+                                                    numStrides=2)
     mP = mP/3
     
     im1 = axes[1].imshow(inMask*mP[0], vmin=0, vmax=1000)
@@ -257,24 +267,35 @@ def test_fitBackgroundTensor():
     Xax = np.arange(imgDimX)
     Yax = np.arange(imgDimY)
     inX, inY = np.meshgrid(Xax, Yax)
-    img1 = np.random.randn(1, imgDimX,imgDimY)
+    img1 = 0+1*np.random.randn(1, imgDimX,imgDimY)
     mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
-                                       inY = inY.flatten(),
-                                       inZ = img1.flatten())
+                                               inY = inY.flatten(),
+                                               inZ = img1.flatten())
     print(mP)
-    img2 = 10+np.random.randn(1, imgDimX,imgDimY)
+
+    mP = RobustGaussianFittingLibrary.fitBackground(np.squeeze(img1))
+    print(mP)
+    
+    img2 = 3+1*np.random.randn(1, imgDimX,imgDimY)
     mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
-                                       inY = inY.flatten(),
-                                       inZ = img2.flatten())
+                                               inY = inY.flatten(),
+                                               inZ = img2.flatten())
     print(mP)
+    mP = RobustGaussianFittingLibrary.fitBackground(np.squeeze(img2))
+    print(mP)
+
     img3 = 100+10*np.random.randn(1, imgDimX,imgDimY)
     mP = RobustGaussianFittingLibrary.fitPlane(inX = inX.flatten(), 
-                                       inY = inY.flatten(),
-                                       inZ = img3.flatten())
+                                               inY = inY.flatten(),
+                                               inZ = img3.flatten())
     print(mP)
+    mP = RobustGaussianFittingLibrary.fitBackground(np.squeeze(img3))
+    print(mP)
+    
+    
     inTensor = np.concatenate((img1, img2, img3))
     print('input Tensor shape is: ', str(inTensor.shape))
-    modelParamsMap = RobustGaussianFittingLibrary.fitBackgroundTensor(inTensor)
+    modelParamsMap = RobustGaussianFittingLibrary.fitBackgroundTensor(inTensor, numStrides=5)
     print(modelParamsMap)
 
 def test_fitBackgroundTensor_multiproc():
@@ -331,7 +352,7 @@ def test_fitValue2Skewed():
 def test_fitValue2Skewed_sweep_over_N():
     print('test_fitValue2Skewed_sweep_over_N')
     numIter = 100
-    maxN = 300
+    maxN = 500
     minN = 2
     mode_all = np.zeros((maxN-minN, numIter))
     std_all = np.zeros((maxN-minN, numIter))
@@ -349,7 +370,7 @@ def test_fitValue2Skewed_sweep_over_N():
             np.random.shuffle(testData)
             rmode, rstd = RobustGaussianFittingLibrary.fitValue2Skewed(testData, 
                                                                 topKthPerc=0.5, 
-                                                                bottomKthPerc=0.4,
+                                                                bottomKthPerc=0.25,
                                                                 MSSE_LAMBDA=3.0)
             mode_all[N-minN, iter] = RNN0.mean()
             std_all[N-minN, iter] = RobustGaussianFittingLibrary.MSSE(np.squeeze(RNN0), MSSE_LAMBDA = 3.0, k=int(0.5*N))
@@ -370,10 +391,11 @@ def test_fitValue2Skewed_sweep_over_N():
     plt.plot(x, rmod_all, '.')
     plt.show()
     
-    plt.plot(x, std_base, '.')
-    plt.plot(x, std_all, '.')
-    plt.plot(x, rstd_all, '.')
+    plt.plot(x, std_base, '.', label='std_base')
+    plt.plot(x, std_all, '.', label='std_all')
+    plt.plot(x, rstd_all, '.', label='rstd_all')
     plt.grid()
+    plt.legend()
     plt.show()
     
 def test_flatField():    
@@ -477,9 +499,10 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitBackgroundTensor()
+    test_fitBackgroundTensor_multiproc()
     test_RobustAlgebraicLineFittingPy()
-    test_fitValue2Skewed_sweep_over_N()
-    visOrderStat()
+    test_fitBackground()
     test_fitValue2Skewed()
     test_for_textProgBar()
     test_removeIslands()
@@ -488,8 +511,8 @@ if __name__ == '__main__':
     test_RobustAlgebraicPlaneFittingPy()
     test_SginleGaussianVec()
     test_flatField()
-    test_fitBackground()
-    test_fitBackgroundTensor()
+    test_fitValue2Skewed_sweep_over_N()
     test_fitValueTensor_MultiProc()
     test_fitLineTensor_MultiProc()
-    test_fitBackgroundTensor_multiproc()
+    visOrderStat()
+    exit()

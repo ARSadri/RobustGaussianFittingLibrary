@@ -304,16 +304,18 @@ def fitPlane(inX, inY, inZ,
     return (modelParams)
 
 def fitBackground(inImage, 
-                inMask = None,
-                winX = None,
-                winY = None,
-                topKthPerc = 0.5,
-                bottomKthPerc = 0.45,
-                MSSE_LAMBDA = 3.0,
-                stretch2CornersOpt = 0,
-                numModelParams = 4,
-                optIters = 12):
-    """ fit a plane to the background of the image and calculate the value of the background plane and STD at the location of each pixel.
+                  inMask = None,
+                  winX = None,
+                  winY = None,
+                  topKthPerc = 0.5,
+                  bottomKthPerc = 0.45,
+                  MSSE_LAMBDA = 3.0,
+                  stretch2CornersOpt = 0,
+                  numModelParams = 4,
+                  optIters = 12,
+                  numStrides = 1):
+    """ fit a plane to the background of the image uainf convolving the window by number of strides
+        and calculate the value of the background plane and STD at the location of each pixel.
     
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -338,10 +340,15 @@ def fitBackground(inImage,
                        set it to 0.9*topKthPerc, if N is number of data points, then make sure that
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.        
+                       otherwise the code may return non-robust results.
+        numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
+                    and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
+                    will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
+                    will be analysed and averaged and so on ...
+
     Output
     ~~~~~~
-        2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
+        numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
     """
     
     stretch2CornersOpt = np.uint8(stretch2CornersOpt)
@@ -352,97 +359,62 @@ def fitBackground(inImage,
         winX = inImage.shape[0]
     if(winY is None):
         winY = inImage.shape[1]
-    modelParamsMap = np.zeros((2, inImage.shape[0], inImage.shape[1]), dtype='float32')
 
+    n_R = inImage.shape[0]
+    n_C = inImage.shape[1]
+        
+    bckParam = np.zeros((2, n_R, n_C), dtype='float32')
     RGFCLib.RSGImage(inImage.astype('float32'),
-                                inMask,
-                                modelParamsMap,
-                                winX,
-                                winY,
-                                inImage.shape[0],
-                                inImage.shape[1],
-                                topKthPerc,
-                                bottomKthPerc,
-                                MSSE_LAMBDA,
-                                stretch2CornersOpt,
-                                numModelParams,
-                                optIters)
-    return (modelParamsMap)
+                     inMask,
+                     bckParam,
+                     winX,
+                     winY,
+                     inImage.shape[0],
+                     inImage.shape[1],
+                     topKthPerc,
+                     bottomKthPerc,
+                     MSSE_LAMBDA,
+                     stretch2CornersOpt,
+                     numModelParams,
+                     optIters)
+    
+    _sums = np.ones((2, n_R, n_C), dtype='uint8')
+    if(numStrides>1):
+        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
+        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
+        for wSDRow in wSDListRows:
+            for wSDClm in wSDListClms:
+                _inImage = inImage[wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
+                _inMask = inMask[wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
+                modelParamsMap = np.zeros((2, _inImage.shape[0], _inImage.shape[1]), dtype='float32')
+                RGFCLib.RSGImage(_inImage.astype('float32'),
+                                 _inMask,
+                                 modelParamsMap,
+                                 winX,
+                                 winY,
+                                 _inImage.shape[0],
+                                 _inImage.shape[1],
+                                 topKthPerc,
+                                 bottomKthPerc,
+                                 MSSE_LAMBDA,
+                                 stretch2CornersOpt,
+                                 numModelParams,
+                                 optIters)
+                bckParam[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += modelParamsMap
+                _sums[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
+    return(bckParam / _sums)
 
 def fitBackgroundTensor(inImage_Tensor, 
-                inMask_Tensor = None,
-                winX = None,
-                winY = None,
-                topKthPerc = 0.5,
-                bottomKthPerc = 0.45,
-                MSSE_LAMBDA = 3.0,
-                stretch2CornersOpt = 0,
-                numModelParams = 4,
-                optIters = 12):
-    """ fit a plane to each image in the input Tensor and report background values and STD for each pixel for each plane
-    
-    Input arguments
-    ~~~~~~~~~~~~~~~
-        inImage_Tensor: n_F x n_R x n_C input Tensor, each image has size n_R x n_C
-        inMask_Tensor: same size of inImage_Tensor
-        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
-                        mean of the Gaussian, data is considered inlier.
-                        default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
-                    if you are not sure at all, refer to the note above this code.
-                    default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.        
-    Output
-    ~~~~~~
-        2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
-    """
-    
-                
-    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
-    if(inMask_Tensor is None):
-        inMask_Tensor = np.ones(inImage_Tensor.shape, dtype='uint8')
-    if(winX is None):
-        winX = inImage_Tensor.shape[1]
-    if(winY is None):
-        winY = inImage_Tensor.shape[2]
-    model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
-    model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
-
-    RGFCLib.RSGImage_by_Image_Tensor(inImage_Tensor.astype('float32'),
-                                                inMask_Tensor.astype('uint8'),
-                                                model_mean,
-                                                model_std,
-                                                winX,
-                                                winY,
-                                                inImage_Tensor.shape[0],
-                                                inImage_Tensor.shape[1],
-                                                inImage_Tensor.shape[2],
-                                                topKthPerc,
-                                                bottomKthPerc,
-                                                MSSE_LAMBDA,
-                                                stretch2CornersOpt,
-                                                numModelParams,
-                                                optIters)
-    
-    return ( np.array([model_mean, model_std]))
-
-def fitBackgroundTensorConv(inImage_Tensor, 
-                            inMask_Tensor = None,
-                            winX = None,
-                            winY = None,
-                            topKthPerc = 0.5,
-                            bottomKthPerc = 0.45,
-                            MSSE_LAMBDA = 3.0,
-                            stretch2CornersOpt = 0,
-                            numModelParams = 4,
-                            optIters = 12,
-                            numStrides = 1):
+                        inMask_Tensor = None,
+                        winX = None,
+                        winY = None,
+                        topKthPerc = 0.5,
+                        bottomKthPerc = 0.25,
+                        MSSE_LAMBDA = 3.0,
+                        stretch2CornersOpt = 0,
+                        numModelParams = 4,
+                        optIters = 12,
+                        numStrides = 1):
     """ fit a plane by convolving the model to each image in the input Tensor and report background values and STD for each pixel for each plane
     
     Input arguments
@@ -478,32 +450,58 @@ def fitBackgroundTensorConv(inImage_Tensor,
         winX = inImage_Tensor.shape[1]
     if(winY is None):
         winY = inImage_Tensor.shape[2]
-    model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
-    model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
     
     n_F = inImage_Tensor.shape[0]
     n_R = inImage_Tensor.shape[1]
     n_C = inImage_Tensor.shape[2]
         
-    bckParam = np.zeros((2, n_F, n_R, n_C), dtype='float32')
-    bckParam += fitBckTM(inImage_Tensor, winX=winX, winY=winY, showProgress=True)
+    model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
+    model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
+    RGFCLib.RSGImage_by_Image_Tensor(inImage_Tensor.astype('float32'),
+                                    inMask_Tensor.astype('uint8'),
+                                    model_mean,
+                                    model_std,
+                                    winX,
+                                    winY,
+                                    inImage_Tensor.shape[0],
+                                    inImage_Tensor.shape[1],
+                                    inImage_Tensor.shape[2],
+                                    topKthPerc,
+                                    bottomKthPerc,
+                                    MSSE_LAMBDA,
+                                    stretch2CornersOpt,
+                                    numModelParams,
+                                    optIters)
+
+    bckParam = np.array([model_mean, model_std])    
     _sums = np.ones((2, n_F, n_R, n_C), dtype='uint8')
-    wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
-    wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
-    for wSDRow in wSDListRows:
-        for wSDClm in wSDListClms:
-            _data = inImage_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm]
-            _inMask = inMask_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm]
-            _bck = fitBackgroundTensorConv(_data, 
-                                           _inMask,
-                                           winX,
-                                           winY,
-                                           topKthPerc,
-                                           bottomKthPerc,
-                                           MSSE_LAMBDA,
-                                           stretch2CornersOpt,
-                                           numModelParams,
-                                           optIters)
-            bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += _bck
-            _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
+    if(numStrides>1):
+        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
+        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
+        for wSDRow in wSDListRows:
+            for wSDClm in wSDListClms:
+                _inImage_Tensor = inImage_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
+                _inMask_Tensor = inMask_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
+    
+                model_mean = np.zeros(_inImage_Tensor.shape, dtype='float32')
+                model_std  = np.zeros(_inImage_Tensor.shape, dtype='float32')
+            
+                RGFCLib.RSGImage_by_Image_Tensor(_inImage_Tensor.astype('float32'),
+                                                _inMask_Tensor.astype('uint8'),
+                                                model_mean,
+                                                model_std,
+                                                winX,
+                                                winY,
+                                                _inImage_Tensor.shape[0],
+                                                _inImage_Tensor.shape[1],
+                                                _inImage_Tensor.shape[2],
+                                                topKthPerc,
+                                                bottomKthPerc,
+                                                MSSE_LAMBDA,
+                                                stretch2CornersOpt,
+                                                numModelParams,
+                                                optIters)
+    
+                bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += np.array([model_mean, model_std])
+                _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
     return(bckParam / _sums)
