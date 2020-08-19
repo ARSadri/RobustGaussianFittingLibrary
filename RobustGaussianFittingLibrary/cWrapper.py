@@ -14,6 +14,11 @@ import fnmatch
 dir_path = os.path.dirname(os.path.realpath(__file__)) + os.path.sep + '..' + os.path.sep
 fileNameTemplate = 'RGFLib*.so'
 flist = fnmatch.filter(os.listdir(dir_path + os.path.sep), fileNameTemplate)
+if(len(flist)==0):	#for those who use make
+	dir_path = os.path.dirname(os.path.realpath(__file__))
+	fileNameTemplate = 'RGFLib*.so'
+	flist = fnmatch.filter(os.listdir(dir_path + os.path.sep), fileNameTemplate)
+	
 RGFCLib = ctypes.cdll.LoadLibrary(dir_path + os.path.sep + flist[0])
 
 '''
