@@ -240,7 +240,8 @@ void fitValue2Skewed(float *vec, float *weights,
 					float topkPerc, float botkPerc,
 					float MSSE_LAMBDA, unsigned char optIters) {
 
-	float tmp, estScale, theta_new, upperScale, lowerScale, errAtTopk;
+	float tmp, tmpH, tmpL, estScale, theta_new;
+	float upperScale, lowerScale, errAtTopk;
 	int i, topk, botk, iter, numPointsSide;
 		
 	topk = (int)(N*topkPerc);
