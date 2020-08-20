@@ -1,6 +1,11 @@
 # Robust Gaussian Fitting Library
+A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Basically, many machine learning methods are based on cost functions that are differentiable with respect to their parameters. However, a class of machine learning methods supported by what is known as "order statistics" do not need derivatives to work. This library is based on such methods. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. More novel methods are on their way.
+
+## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
-A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. The intention is to provide more methods and convenient solutions.
+Are you using average, standard deviation as statistics? Are you fitting lines and planes to your data? What happens to these in presence of outliers? One solution seems to be Median, but what happens if number of outliers increase? Do you plan to use methods such as RANSAC and MeanShift?
+
+In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are urrently using mean and median, you can simply replace them with these proposed methods.
 
 ## Prior knowledge: Rough estimate of structure size
 In this robust model fitting method, the main assumption is that, the Gaussian we are looking for, has the majority of data points. If it doesn't, this turns the problem into a clustering problem. If the structure does not have the majority of data and the outliers do not form a structure, this reduces the problem back to segmentation where the structure size is smaller than half of data. 
