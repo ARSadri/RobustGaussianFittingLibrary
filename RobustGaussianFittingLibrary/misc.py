@@ -68,6 +68,41 @@ class textProgBar:
             print('~', end='')
         print(' ', flush = True)
 
+def PDF2Uniform(inVec, numBins=10, nUniPoints=None, lowPercentile = 0, highPercentile=100):
+    """
+    This function takes an array of numbers and returns indices of those who
+    form a uniform density over numBins bins, between lowPercentile and highPercentile
+    values in the array. The output vector will have the size nUniPoints.
+    """
+    indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
+                                          np.percentile(inVec, highPercentile), 
+                                          numBins) )
+    binNumber, counts = np.unique(indPerBin, return_counts = True)
+    counts = counts[counts>0]
+
+    if(nUniPoints is None):
+        nUniPoints = int(np.median(counts))
+
+    uniInds = np.zeros(nUniPoints, dtype='uint32')
+    ptCnt = 0
+    while(ptCnt < nUniPoints):
+        for binCnt in binNumber:
+            if(ptCnt >= nUniPoints):
+                break
+            lclInds = np.where(indPerBin==binCnt)[0]
+            smNum = 1 + 0 * np.minimum(nUniPoints-ptCnt,
+                                int(nUniPoints/numBins))
+            if(lclInds.shape[0]>smNum):
+                uniInds[ptCnt:ptCnt+smNum] = np.random.choice(lclInds,smNum)
+                indPerBin[uniInds[ptCnt:ptCnt+smNum]]=0
+                ptCnt += smNum            
+            elif(lclInds.shape[0]>0):
+                smNum = lclInds.shape[0]
+                uniInds[ptCnt:ptCnt+smNum] = lclInds
+                indPerBin[uniInds[ptCnt:ptCnt+smNum]]=0
+                ptCnt += smNum        
+    return(uniInds)
+
 def removeIslands(inMask, 
                     minSize = 1):
     """
