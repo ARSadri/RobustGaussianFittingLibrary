@@ -26,9 +26,21 @@ params = {'legend.fontsize': 'x-large',
          'xtick.labelsize':'x-large',
          'ytick.labelsize':'x-large'}
  
- 
-def test_for_textProgBar():
-    print('test_for_textProgBar')
+def test_PDF2Uniform():
+    inVec = np.random.randn(20000)
+    inds = RobustGaussianFittingLibrary.misc.PDF2Uniform(inVec, 
+                                    numBins=40, nUniPoints = 2000, 
+                                    lowPercentile = 0, highPercentile=100)
+    b, e = np.histogram(inVec, 100)
+    e = e[:-1]
+    b2, e2 = np.histogram(inVec[inds], 100)
+    e2 = e2[:-1]
+    plt.plot(e, b/b.sum())
+    plt.plot(e2, b2/b2.sum())
+    plt.show()
+  
+def test_textProgBar():
+    print('test_textProgBar')
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
     for _ in range(60):
         for _ in range(10000000):
