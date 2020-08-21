@@ -5,7 +5,7 @@ A Library for Robust Gaussian Fitting using geometric models in presence of outl
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
 Are average and standard deviation good as statistics? Are they proper statistics to use for fitting lines and planes to data? What happens to these in presence of outliers? One solution seems to be Median, but what happens if number of outliers increase?
 
-In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are urrently using mean and median, you can simply replace them with these proposed methods.
+In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these proposed methods.
 
 ## Prior knowledge: Rough estimate of structure size
 In this robust model fitting method, the main assumption is that, the Gaussian we are looking for, has the majority of data points. If it doesn't, this turns the problem into a clustering problem. If the structure does not have the majority of data and the outliers do not form a structure, this reduces the problem back to segmentation where the structure size is smaller than half of data. 
