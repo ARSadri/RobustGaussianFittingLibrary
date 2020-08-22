@@ -30,7 +30,7 @@ def test_PDF2Uniform():
     inVec = np.random.randn(20000)
     inds = RobustGaussianFittingLibrary.misc.PDF2Uniform(inVec, 
                                     numBins=40, nUniPoints = 2000, 
-                                    lowPercentile = 0, highPercentile=100)
+                                    lowPercentile = 50, highPercentile=100)
     b, e = np.histogram(inVec, 100)
     e = e[:-1]
     b2, e2 = np.histogram(inVec[inds], 100)
@@ -511,6 +511,7 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_PDF2Uniform()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()
     test_RobustAlgebraicLineFittingPy()

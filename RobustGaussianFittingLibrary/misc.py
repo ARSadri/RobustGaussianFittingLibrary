@@ -77,8 +77,8 @@ def PDF2Uniform(inVec, numBins=10, nUniPoints=None, lowPercentile = 0, highPerce
     indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
                                           np.percentile(inVec, highPercentile), 
                                           numBins) )
-    indPerBin[indPerBin < np.percentile(inVec, lowPercentile)]=0
-    indPerBin[indPerBin > np.percentile(inVec, highPercentile)]=0
+    indPerBin[inVec < np.percentile(inVec, lowPercentile)]=0
+    indPerBin[inVec > np.percentile(inVec, highPercentile)]=0
     binNumber, counts = np.unique(indPerBin, return_counts = True)
     counts = counts[counts>0]
 
@@ -92,17 +92,10 @@ def PDF2Uniform(inVec, numBins=10, nUniPoints=None, lowPercentile = 0, highPerce
             if(ptCnt >= nUniPoints):
                 break
             lclInds = np.where(indPerBin==binCnt)[0]
-            smNum = 1 + 0 * np.minimum(nUniPoints-ptCnt,
-                                int(nUniPoints/numBins))
-            if(lclInds.shape[0]>smNum):
-                uniInds[ptCnt:ptCnt+smNum] = np.random.choice(lclInds,smNum)
-                indPerBin[uniInds[ptCnt:ptCnt+smNum]]=0
-                ptCnt += smNum            
-            elif(lclInds.shape[0]>0):
-                smNum = lclInds.shape[0]
-                uniInds[ptCnt:ptCnt+smNum] = lclInds
-                indPerBin[uniInds[ptCnt:ptCnt+smNum]]=0
-                ptCnt += smNum        
+            if(lclInds.shape[0]>0):
+                uniInds[ptCnt] = np.random.choice(lclInds,1)
+                indPerBin[uniInds[ptCnt]]=0
+                ptCnt += 1            
     return(uniInds)
 
 def removeIslands(inMask, 
