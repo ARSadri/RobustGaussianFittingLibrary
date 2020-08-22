@@ -77,6 +77,8 @@ def PDF2Uniform(inVec, numBins=10, nUniPoints=None, lowPercentile = 0, highPerce
     indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
                                           np.percentile(inVec, highPercentile), 
                                           numBins) )
+    indPerBin[indPerBin < np.percentile(inVec, lowPercentile)]=0
+    indPerBin[indPerBin > np.percentile(inVec, highPercentile)]=0
     binNumber, counts = np.unique(indPerBin, return_counts = True)
     counts = counts[counts>0]
 
