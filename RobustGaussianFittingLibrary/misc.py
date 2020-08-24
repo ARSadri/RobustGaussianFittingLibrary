@@ -68,33 +68,36 @@ class textProgBar:
             print('~', end='')
         print(' ', flush = True)
 
-def PDF2Uniform(inVec, numBins=10, nUniPoints=None, lowPercentile = 0, highPercentile=100):
+def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile = 0, highPercentile=100):
     """
     This function takes an array of numbers and returns indices of those who
     form a uniform density over numBins bins, between lowPercentile and highPercentile
-    values in the array. The output vector will have the size nUniPoints.
+    values in the array, and not masked by 0. The output vector will have indices with the size nUniPoints.
     """
     indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
                                           np.percentile(inVec, highPercentile), 
                                           numBins) )
-    indPerBin[inVec < np.percentile(inVec, lowPercentile)]=0
-    indPerBin[inVec > np.percentile(inVec, highPercentile)]=0
-    binNumber, counts = np.unique(indPerBin, return_counts = True)
+    binValue, counts = np.unique(indPerBin, return_counts = True)
     counts = counts[counts>0]
-
     if(nUniPoints is None):
         nUniPoints = int(np.median(counts))
+
+    outIndicator = binValue.min()-1
+    indPerBin[inVec < np.percentile(inVec, lowPercentile)] = outIndicator
+    indPerBin[inVec > np.percentile(inVec, highPercentile)] = outIndicator
+    if(inMask is not None):
+        indPerBin[inMask==0] = outIndicator
 
     uniInds = np.zeros(nUniPoints, dtype='uint32')
     ptCnt = 0
     while(ptCnt < nUniPoints):
-        for binCnt in binNumber:
+        for bin in binValue:
             if(ptCnt >= nUniPoints):
                 break
-            lclInds = np.where(indPerBin==binCnt)[0]
+            lclInds = np.where(indPerBin==bin)[0]
             if(lclInds.shape[0]>0):
                 uniInds[ptCnt] = np.random.choice(lclInds,1)
-                indPerBin[uniInds[ptCnt]]=0
+                indPerBin[uniInds[ptCnt]] = outIndicator
                 ptCnt += 1            
     return(uniInds)
 
