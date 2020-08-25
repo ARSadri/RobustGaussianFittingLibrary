@@ -5,7 +5,7 @@
 
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
-from .basic import fitValueTensor, fitLineTensor, fitBackgroundTensor
+from .basic import fitValueTensor, fitLineTensor, fitBackgroundTensor, fitBackgroundRadially
 from .misc import textProgBar
 
 def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
@@ -356,3 +356,61 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
     if(showProgress):
         del pBar
     return(modelParamsMapTensor)
+
+def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, shellWidth, numStrides, imgCnt):
+    mP = RGFLib.fitBackgroundRadially(inImg, inMask, 
+                                      shellWidth=shellWidth, numStrides=numStrides)
+    aQ.put(list([imgCnt, mP]))
+
+def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
+                         inMask_Tensor = None,
+                         shellWidth = 9,
+                         numStrides = 3,
+                         showProgress = False):
+
+    if(inMask_Tensor is None):
+        inMask_Tensor = np.ones(inImg_Tensor.shape, dtype='uint8')
+
+    n_F = inImg_Tensor.shape[0]
+    n_R = inImg_Tensor.shape[1]
+    n_C = inImg_Tensor.shape[2]
+
+    if(showProgress):
+        print('Use radial info to find abnormal behaviour', flush=True)
+    imgAbMap = np.zeros((2, n_F, n_R, n_C), dtype='float32')
+    if(showProgress):
+        print('inImg_Tensor shape-->', inImg_Tensor.shape)
+    
+    myCPUCount = cpu_count()-1
+    aQ = Queue()
+    numProc = n_F
+    procID = 0
+    numProcessed = 0
+    numBusyCores = 0
+    if(showProgress):
+        print('starting ' +str(numProc) + ' processes with ' + str(myCPUCount) + ' CPUs')
+    while(numProcessed<numProc):
+        if (not aQ.empty()):
+            aQElement = aQ.get()
+            _imgCnt = aQElement[0]
+            imgAbMap[:, _imgCnt, :, :] = aQElement[1]
+            numProcessed += 1
+            numBusyCores -= 1
+            if(showProgress):
+                if(numProcessed == 1):
+                    pBar = RGFLib.textProgBar(numProc-1, title = 'Multiprocessing results progress bar')
+                if(numProcessed > 1):
+                    pBar.go()
+
+        if((procID<numProc) & (numBusyCores < myCPUCount)):
+            Process(target = fitBackgroundRadiallyTensor_multiprocFunc, args = (aQ,
+                                                                          inImg_Tensor[procID],
+                                                                          inMask_Tensor[procID],
+                                                                          shellWidth, numStrides,
+                                                                          procID)).start()
+            procID += 1
+            numBusyCores += 1
+    if(showProgress):
+        del pBar    
+    
+    return(imgAbMap)
