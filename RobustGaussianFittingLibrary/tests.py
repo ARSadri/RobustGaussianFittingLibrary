@@ -271,6 +271,42 @@ def test_fitBackground():
     fig.colorbar(im2, ax=axes[2], shrink = 0.5)
     plt.show()
 
+def test_fitBackgroundRadially():
+    print('test_fitBackgroundRadially')
+    XSZ = 512
+    YSZ = 512
+    WINSIZE = 7
+    inputPeaksNumber = 50
+    numOutliers = 0
+    print("Generating a pattern with " + str(inputPeaksNumber) + " peaks...")
+    inImage, inMask, randomLocations = diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers)
+    time_time = time.time()
+    mP = RobustGaussianFittingLibrary.fitBackgroundRadially(inImage, 
+                                                            inMask = inMask,
+                                                            shellWidth = 10,
+                                                            numStrides = 10)
+    print('time: ' + str(time.time() -time_time) + ' s')
+    plt.imshow(mP[0]), plt.show()
+    
+    fig, axes = plt.subplots(1, 3)
+    winXL = 200
+    winXU = 300
+    winYL = 200
+    winYU = 300
+    im0 = axes[0].imshow(inImage*inMask, vmin=0, vmax=1000)
+    axes[0].set_xlim([winXL, winXU])
+    axes[0].set_ylim([winYL, winYU])
+    fig.colorbar(im0, ax=axes[0], shrink =0.5)
+    im1 = axes[1].imshow(inMask*mP[0], vmin=0, vmax=1000)
+    axes[1].set_xlim([winXL, winXU])
+    axes[1].set_ylim([winYL, winYU])
+    fig.colorbar(im1, ax=axes[1], shrink = 0.5)
+    im2 = axes[2].imshow(inMask*(inImage - mP[0])/mP[1])
+    axes[2].set_xlim([winXL, winXU])
+    axes[2].set_ylim([winYL, winYU])
+    fig.colorbar(im2, ax=axes[2], shrink = 0.5)
+    plt.show()
+    
 
 def test_fitBackgroundTensor():
     print('test_fitBackgroundTensor')
@@ -511,6 +547,8 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitBackgroundRadially()
+    exit()
     test_PDF2Uniform()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()

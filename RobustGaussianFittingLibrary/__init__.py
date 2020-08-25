@@ -11,4 +11,5 @@ from .basic import fitLineTensor
 from .basic import fitPlane
 from .basic import fitBackground
 from .basic import fitBackgroundTensor
+from .basic import fitBackgroundRadially
 from .misc import textProgBar

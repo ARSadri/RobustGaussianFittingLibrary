@@ -155,3 +155,17 @@ RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
                 ctypes.c_float, ctypes.c_float, 
                 ctypes.c_float, ctypes.c_uint8, 
                 ctypes.c_uint8, ctypes.c_uint8]
+
+'''
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
+ 						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
+						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters)
+'''
+RGFCLib.fitBackgroundRadially.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint8, ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]

@@ -764,3 +764,94 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 	free(inImage);
 	free(inMask);
 }
+
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
+ 						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
+						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
+
+	unsigned int r, maxR, shellCnt, pixX, pixY, i, pixInd;
+	unsigned int X_Cent, Y_Cent, shell_low, shell_high, numElem;
+	float theta;
+	float mP[2];
+
+	if(minRes<1) minRes=1;
+
+	X_Cent = (int)(ceil(X/2));
+	Y_Cent = (int)(ceil(Y/2));
+
+	maxR = (int)(ceil(sqrt(X*X/4 + Y*Y/4)));
+	float *resShells;
+	resShells = (float*) malloc(maxR * sizeof(float));
+	for(i=0; i<maxR; i++)
+		resShells[i]=0;
+
+	shellCnt = 0;
+	if(includeCenter) {
+		resShells[shellCnt] = 1;
+		shellCnt++;
+	}
+	resShells[shellCnt] = minRes;
+
+	while(resShells[shellCnt]<maxRes) {
+		shellCnt++;
+		resShells[shellCnt] = resShells[shellCnt-1] + shellWidth;
+	}
+	if(resShells[shellCnt]>maxRes) {
+		resShells[shellCnt] = maxRes;
+	}
+	float *inVec;
+
+
+	for(i=0; i<shellCnt; i++) {
+		shell_low = resShells[i];
+		shell_high = resShells[i+1];
+		inVec = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*(shell_high+shell_low)/2 ) * sizeof(float));
+		numElem = 0;
+		for(r=shell_low; r<shell_high; r++) {
+			for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
+				pixX = (int)((float)r*cos(theta) + X_Cent);
+				pixY = (int)((float)r*sin(theta) + Y_Cent);
+				pixInd = pixY + pixX*Y;
+				if( (pixY>0) && (pixY<Y) && (pixX>0) && (pixX<X) && (inMask[pixInd]) ) {
+					inVec[numElem] = inImage[pixInd];
+					numElem++;
+				}
+			}
+		}
+
+		RobustSingleGaussianVec(inVec, mP, 0, numElem,
+				topkPerc, botkPerc, MSSE_LAMBDA, optIters);
+		free(inVec);
+
+		for(r=shell_low; r<shell_high; r++) {
+			for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
+				pixX = (int)((float)r*cos(theta) + X_Cent);
+				pixY = (int)((float)r*sin(theta) + Y_Cent);
+				pixInd = pixY + pixX*Y;
+				if( (pixY>0) && (pixY<Y) && (pixX>0) && (pixX<X)) {
+					modelParamsMap[pixInd + 0*X*Y] = mP[0];
+					modelParamsMap[pixInd + 1*X*Y] = mP[1];
+				}
+				pixInd = pixY + (pixX+1)*Y;
+				if( (pixY>0) && (pixY<Y) && (pixX+1<X) ) {
+					modelParamsMap[pixInd + 0*X*Y] = mP[0];
+					modelParamsMap[pixInd + 1*X*Y] = mP[1];
+				}
+				pixInd = pixY+1 + pixX*Y;
+				if( (pixY+1<Y) && (pixX>0) && (pixX<X) ) {
+					modelParamsMap[pixInd + 0*X*Y] = mP[0];
+					modelParamsMap[pixInd + 1*X*Y] = mP[1];
+				}
+				pixInd = pixY+1 + (pixX+1)*Y;
+				if( (pixY+1<Y) && (pixX+1<X) ) {
+					modelParamsMap[pixInd + 0*X*Y] = mP[0];
+					modelParamsMap[pixInd + 1*X*Y] = mP[1];
+				}
+			}
+		}
+	}
+
+	free(resShells);
+
+}

@@ -505,3 +505,80 @@ def fitBackgroundTensor(inImage_Tensor,
                 bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += np.array([model_mean, model_std])
                 _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
     return(bckParam / _sums)
+
+def fitBackgroundRadially(inImage, 
+                          inMask = None,
+                          minRes = 1,
+                          includeCenter = 0,
+                          maxRes = None,
+                          shellWidth = 3,
+                          topKthPerc = 0.5,
+                          bottomKthPerc = 0.35,
+                          MSSE_LAMBDA = 3.0,
+                          optIters = 12,
+                          numStrides = 1):
+    """ fit a value to the ring around the image and fine tune it by convolving the resolution shells
+        by number of stride and calculate the value of the background of the ring
+        and STD at the location of each pixel.
+    
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inImage: a 2D float32 numpy array as the image
+        inMask: where 0 is bad and 1 is good. The masked pixels have not effect in the calculation of the parameters of the plane fit to background. However, the value of the background at their location can be found.
+        minRes: minimum distance to the center of the image
+            default: 0
+        maxRes: maximum distance to the center of the image
+        shellWidth : the ring around the center can have a width and a value will be fitted to
+                all calue in the ring.
+        optIters: number of iterations of FLKOS for this fitting
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
+        numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
+            number of strides.
+
+    Output
+    ~~~~~~
+        numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
+    """
+    
+    if(inMask is None):
+        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
+        
+    if(maxRes is None):
+        maxRes = int(((inImage.shape[0]/2)**2 + (inImage.shape[1]/2)**2)**0.5)
+
+    n_R = inImage.shape[0]
+    n_C = inImage.shape[1]
+            
+    bckParam = np.zeros((2, n_R, n_C), dtype='float32')
+    modelParamsMap = bckParam.copy()
+    _sums = np.zeros((2, n_R, n_C), dtype='uint8')
+    shellStrideList = np.linspace(0, shellWidth, numStrides+1, dtype='uint8')[:-1]
+    for shellStride in shellStrideList:
+        RGFCLib.fitBackgroundRadially(inImage.astype('float32'),
+                                      inMask,
+                                      modelParamsMap,
+                                      minRes+shellStride,
+                                      maxRes,
+                                      shellWidth,
+                                      includeCenter,
+                                      inImage.shape[0],
+                                      inImage.shape[1],
+                                      topKthPerc,
+                                      bottomKthPerc,
+                                      MSSE_LAMBDA,
+                                      optIters)
+        bckParam += modelParamsMap
+        _sums += 1
+    return(bckParam / _sums)
