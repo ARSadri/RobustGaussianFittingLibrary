@@ -87,7 +87,7 @@ def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile =
     indPerBin[inVec > np.percentile(inVec, highPercentile)] = outIndicator
     if(inMask is not None):
         indPerBin[inMask==0] = outIndicator
-
+    nUniPoints = np.minimum(nUniPoints, (indPerBin != outIndicator).sum())
     uniInds = np.zeros(nUniPoints, dtype='uint32')
     ptCnt = 0
     while(ptCnt < nUniPoints):
