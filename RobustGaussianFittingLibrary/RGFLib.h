@@ -54,4 +54,8 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 						unsigned char numModelParams, unsigned char optIters);
 
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
+ 						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
+						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
 #endif
