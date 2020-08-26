@@ -80,7 +80,7 @@ def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile =
     binValue, counts = np.unique(indPerBin, return_counts = True)
     counts = counts[counts>0]
     if(nUniPoints is None):
-        nUniPoints = int(np.median(counts))
+        nUniPoints = int(numBins*np.median(counts))
 
     outIndicator = binValue.min()-1
     indPerBin[inVec < np.percentile(inVec, lowPercentile)] = outIndicator
