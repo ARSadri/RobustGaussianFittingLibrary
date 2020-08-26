@@ -36,8 +36,9 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 							unsigned int N, float topkPerc, float botkPerc,
 							float MSSE_LAMBDA, unsigned char stretch2CornersOpt);
 
-void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap, unsigned int N,
-		unsigned int X, unsigned int Y, float topkPerc, float botkPerc, float MSSE_LAMBDA);
+void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
+				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
+				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
 
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
@@ -56,6 +57,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
  						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
-						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   unsigned char includeCenter, unsigned int finiteSampleBias,
+						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
 #endif

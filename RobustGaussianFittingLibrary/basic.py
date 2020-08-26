@@ -141,13 +141,16 @@ def fitValue2Skewed(inVec,
     
     
 def fitValueTensor(inTensor,
-                  topKthPerc = 0.5,
-                  bottomKthPerc=0.45,
-                  MSSE_LAMBDA = 3.0):
+                   inMask = None,
+                   topKthPerc = 0.5,
+                   bottomKthPerc=0.45,
+                   MSSE_LAMBDA = 3.0,
+                   optIters = 12):
     """ fit a Gaussian to every vector inside a Tensor, robustly.
     Input arguments
     ~~~~~~~~~~~~~~~
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
+        inMask: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, uint8
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
@@ -165,15 +168,19 @@ def fitValueTensor(inTensor,
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
     """
+    if(inMask is None):
+        inMask = np.ones(shape = inTensor.shape, dtype = 'uint8')
     modelParamsMap = np.zeros((2, inTensor.shape[1], inTensor.shape[2]), dtype='float32')
     RGFCLib.RobustSingleGaussianTensor((inTensor.copy()).astype('float32'),
-                                                        modelParamsMap,
-                                                        inTensor.shape[0],
-                                                        inTensor.shape[1],
-                                                        inTensor.shape[2],
-                                                        topKthPerc,
-                                                        bottomKthPerc,
-                                                        MSSE_LAMBDA)
+                                       inMask.copy(),
+                                       modelParamsMap,
+                                       inTensor.shape[0],
+                                       inTensor.shape[1],
+                                       inTensor.shape[2],
+                                       topKthPerc,
+                                       bottomKthPerc,
+                                       MSSE_LAMBDA,
+                                       optIters)
     return (modelParamsMap)
 
 ##########################################################################################
@@ -516,7 +523,8 @@ def fitBackgroundRadially(inImage,
                           bottomKthPerc = 0.35,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
-                          numStrides = 1):
+                          numStrides = 1,
+                          finiteSampleBias = 400):
     """ fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
         and STD at the location of each pixel.
@@ -530,6 +538,8 @@ def fitBackgroundRadially(inImage,
         maxRes: maximum distance to the center of the image
         shellWidth : the ring around the center can have a width and a value will be fitted to
                 all calue in the ring.
+        finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
+            default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
@@ -573,6 +583,7 @@ def fitBackgroundRadially(inImage,
                                       maxRes,
                                       shellWidth,
                                       includeCenter,
+                                      finiteSampleBias,
                                       inImage.shape[0],
                                       inImage.shape[1],
                                       topKthPerc,

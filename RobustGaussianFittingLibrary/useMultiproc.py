@@ -50,26 +50,29 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
 ################################### Value fitting library #######################################
 
 def fitValueTensor_MultiProcFunc(aQ, 
-                            partCnt, inTensor,
-                            topKthPerc, bottomKthPerc, MSSE_LAMBDA):
+                                partCnt, inTensor, inMask,
+                                topKthPerc, bottomKthPerc, MSSE_LAMBDA):
 
-    modelParams = fitValueTensor(inTensor=inTensor,
-                        topKthPerc=topKthPerc,
-                        bottomKthPerc=bottomKthPerc,
-                        MSSE_LAMBDA = MSSE_LAMBDA)
+    modelParams = fitValueTensor(inTensor=inTensor, 
+                                 inMask = inMask,
+                                 topKthPerc=topKthPerc,
+                                 bottomKthPerc=bottomKthPerc,
+                                 MSSE_LAMBDA = MSSE_LAMBDA)
     aQ.put(list([partCnt, modelParams]))
 
 def fitValueTensor_MultiProc(inTensor,
-                              numRowSegs = 1,
-                              numClmSegs = 1,
-                              topKthPerc = 0.5,
-                              bottomKthPerc = 0.4,
-                              MSSE_LAMBDA = 3.0,
-                              showProgress = False):
+                             inMask = None,
+                             numRowSegs = 1,
+                             numClmSegs = 1,
+                             topKthPerc = 0.5,
+                             bottomKthPerc = 0.4,
+                             MSSE_LAMBDA = 3.0,
+                             showProgress = False):
     """"Does fitValueTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
+        inMask: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, uint8
         numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
@@ -88,6 +91,9 @@ def fitValueTensor_MultiProc(inTensor,
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
 
     """
+    if(inMask is None):
+        inMask = np.ones(shape = inTensor.shape, dtype = 'uint8')
+    
     rowClmInds, segInds = bigTensor2SmallsInds(inTensor.shape, numRowSegs, numClmSegs)
 
     numSegs = rowClmInds.shape[0]
@@ -122,6 +128,9 @@ def fitValueTensor_MultiProc(inTensor,
             Process(target=fitValueTensor_MultiProcFunc,
                             args=(aQ, partCnt,
                             np.squeeze(inTensor[                                            :,
+                                                rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
+                                                rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
+                            np.squeeze(inMask[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
                             topKthPerc,
@@ -357,16 +366,39 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
         del pBar
     return(modelParamsMapTensor)
 
-def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, shellWidth, numStrides, imgCnt):
-    mP = RGFLib.fitBackgroundRadially(inImg, inMask, 
-                                      shellWidth=shellWidth, numStrides=numStrides)
+def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, shellWidth, numStrides, 
+                                              finiteSampleBias, 
+                                              topKthPerc,
+                                              bottomKthPerc,
+                                              MSSE_LAMBDA,
+                                              optIters,
+                                              imgCnt):
+    mP = fitBackgroundRadially(inImg, inMask, 
+                                      shellWidth=shellWidth, numStrides=numStrides,
+                                      finiteSampleBias = finiteSampleBias,
+                                        topKthPerc = topKthPerc,
+                                        bottomKthPerc = bottomKthPerc,
+                                        MSSE_LAMBDA = MSSE_LAMBDA,
+                                        optIters = optIters)
     aQ.put(list([imgCnt, mP]))
 
 def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                          inMask_Tensor = None,
                          shellWidth = 9,
                          numStrides = 3,
+                         finiteSampleBias = 400,
+                         topKthPerc = 0.5,
+                         bottomKthPerc = 0.35,
+                         MSSE_LAMBDA = 3.0,
+                         optIters = 12,                         
                          showProgress = False):
+    """
+
+        finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
+            default : twice monte carlo finite sample bias 2x200
+
+    """
+
 
     if(inMask_Tensor is None):
         inMask_Tensor = np.ones(inImg_Tensor.shape, dtype='uint8')
@@ -398,7 +430,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
             numBusyCores -= 1
             if(showProgress):
                 if(numProcessed == 1):
-                    pBar = RGFLib.textProgBar(numProc-1, title = 'Multiprocessing results progress bar')
+                    pBar = textProgBar(numProc-1, title = 'Multiprocessing results progress bar')
                 if(numProcessed > 1):
                     pBar.go()
 
@@ -407,6 +439,11 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                                                           inImg_Tensor[procID],
                                                                           inMask_Tensor[procID],
                                                                           shellWidth, numStrides,
+                                                                          finiteSampleBias,
+                                                                          topKthPerc,
+                                                                          bottomKthPerc,
+                                                                          MSSE_LAMBDA,
+                                                                          optIters,                                                                          
                                                                           procID)).start()
             procID += 1
             numBusyCores += 1

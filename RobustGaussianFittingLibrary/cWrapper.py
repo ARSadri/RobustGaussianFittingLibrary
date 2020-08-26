@@ -94,15 +94,16 @@ RGFCLib.RobustAlgebraicLineFittingTensor.argtypes = [
                 ctypes.c_float, ctypes.c_float, ctypes.c_float]                
                 
 '''
-void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap,
-    unsigned int N, unsigned int X,
-    unsigned int Y, float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA))
+void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
+				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
+				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters)
 '''
 RGFCLib.RobustSingleGaussianTensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                ctypes.c_float, ctypes.c_float, ctypes.c_float]
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
+                ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
 
 '''
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
@@ -159,7 +160,8 @@ RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
 '''
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
  						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
-						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   unsigned char includeCenter, unsigned int finiteSampleBias, 
+						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters)
 '''
 RGFCLib.fitBackgroundRadially.argtypes = [
@@ -167,5 +169,6 @@ RGFCLib.fitBackgroundRadially.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
-                ctypes.c_uint8, ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint8, ctypes.c_uint32, 
+                ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]

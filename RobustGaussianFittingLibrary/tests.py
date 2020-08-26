@@ -363,6 +363,27 @@ def test_fitBackgroundTensor_multiproc():
         axes[1].imshow(modelParamsMap[1,frmCnt])
         plt.show()
 
+def test_fitBackgroundRadiallyTensor_multiproc():
+    print('test_fitBackgroundTensor_multiproc')
+    f_N, r_N, c_N = (4, 1024, 1024)
+    inTensor = np.zeros((f_N, r_N, c_N), dtype='float32')
+    for frmCnt in range(f_N):
+        inTensor[frmCnt] = frmCnt+frmCnt**0.5*np.random.randn(r_N,c_N)
+
+    print('input Tensor shape is: ', str(inTensor.shape))
+    modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitBackgroundRadiallyTensor_multiproc(inTensor,
+                                                                                                     shellWidth = 32,
+                                                                                                     numStrides = 4,
+                                                                                                     topKthPerc = 0.5,
+                                                                                                     bottomKthPerc = 0.25,
+                                                                                                     finiteSampleBias = 400,
+                                                                                                     showProgress = True)
+    for frmCnt in list([f_N-1]):
+        fig, axes = plt.subplots(2, 1)
+        axes[0].imshow(modelParamsMap[0,frmCnt], vmin = f_N - 2, vmax = f_N + 1)
+        axes[1].imshow(modelParamsMap[1,frmCnt])
+        plt.show()
+
 def test_SginleGaussianVec():
     print('test_SginleGaussianVec')
     RNN0 = 50 + 5*np.random.randn(12)
@@ -485,15 +506,18 @@ def test_fitValueTensor_MultiProc():
     testData = np.concatenate((RNN1, RNN2))
     testData = np.concatenate((testData, RNU))
     
+    inMask = np.ones(testData.shape, dtype='uint8')
+    #inMask[testData < 3] = 0
+    
     print('testing RobustSingleGaussianTensorPy')
     nowtime = time.time()
-    modelParamsMap = RobustGaussianFittingLibrary.fitValueTensor(testData)
+    modelParamsMap = RobustGaussianFittingLibrary.fitValueTensor(testData, inMask)
     print(time.time() - nowtime)
     print(modelParamsMap)
     
     print('testing fitValueTensor_MultiProc')
     nowtime = time.time()
-    modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitValueTensor_MultiProc(testData,
+    modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitValueTensor_MultiProc(testData, inMask,
                                                            numRowSegs = 6,
                                                            numClmSegs = 12)
     print(time.time() - nowtime)
@@ -547,8 +571,9 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_fitBackgroundRadially()
+    test_fitBackgroundRadiallyTensor_multiproc()
     exit()
+    test_fitValueTensor_MultiProc()
     test_PDF2Uniform()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()
@@ -563,7 +588,7 @@ if __name__ == '__main__':
     test_SginleGaussianVec()
     test_flatField()
     test_fitValue2Skewed_sweep_over_N()
-    test_fitValueTensor_MultiProc()
+    test_fitBackgroundRadially()
     test_fitLineTensor_MultiProc()
     visOrderStat()
     exit()

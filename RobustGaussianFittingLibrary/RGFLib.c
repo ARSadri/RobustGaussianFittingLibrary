@@ -247,8 +247,11 @@ void fitValue2Skewed(float *vec, float *weights,
 	topk = (int)(N*topkPerc);
 	botk = (int)(N*botkPerc);
 	
-	if(N<3)
+	if(N<3) {
+		modelParams[0]=NAN;
+		modelParams[1]=NAN;
 		return;
+	}
 	if(N<12) {
 		if(topk<N/2)
 			topk = (int)(N/2)+1;
@@ -612,25 +615,37 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 	free(sample_z);
 }
 
-void RobustSingleGaussianTensor(float *inTensor, float *modelParamsMap, unsigned int N,
-		unsigned int X, unsigned int Y, float topkPerc, float botkPerc, float MSSE_LAMBDA) {
+void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
+				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
+				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
 	float* vec;
-	vec = (float*) malloc(N * sizeof(float));
+	float* weights;
+
 	float mP[2];
-	unsigned int rCnt, cCnt, i;
+	unsigned int rCnt, cCnt, i, L;
+
+	vec = (float*) malloc(N * sizeof(float));
+	weights = (float*) malloc(N * sizeof(float));
+	for(i=0; i<N; i++)
+		weights[i]=1;
+
 
 	for(rCnt=0; rCnt<X; rCnt++) {
 		for(cCnt=0; cCnt<Y; cCnt++) {
 			
+			L = 0;
 			for(i=0; i<N; i++)
-				vec[i]=inTensor[cCnt + rCnt*Y + i*X*Y];
-			
-			RobustSingleGaussianVec(vec, mP, 0, N, topkPerc, botkPerc, MSSE_LAMBDA, 10);
+				if(inMask[cCnt + rCnt*Y + i*X*Y])
+					vec[L++]=inTensor[cCnt + rCnt*Y + i*X*Y];
+
+			fitValue2Skewed(vec, weights, mP, 0, L, topkPerc, botkPerc, MSSE_LAMBDA, optIters);
+			//RobustSingleGaussianVec(vec, mP, 0, L, topkPerc, botkPerc, MSSE_LAMBDA, 10);
 			modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0];
 			modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP[1];
 		}
 	}
+	free(weights);
 	free(vec);
 }
 
@@ -767,12 +782,13 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
  						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
-						   unsigned char includeCenter, unsigned int X, unsigned int Y,
+						   unsigned char includeCenter, unsigned int finiteSampleBias,
+						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
-	unsigned int r, maxR, shellCnt, pixX, pixY, i, pixInd;
+	unsigned int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
 	unsigned int X_Cent, Y_Cent, shell_low, shell_high, numElem;
-	float theta;
+	float theta, sCnt, jump;
 	float mP[2];
 
 	if(minRes<1) minRes=1;
@@ -819,7 +835,13 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 				}
 			}
 		}
-
+		if(numElem > finiteSampleBias) {
+			new_numElem = 0;
+			jump = (float)numElem/((float)finiteSampleBias);
+			for(sCnt=0; sCnt<numElem; sCnt += jump)
+				inVec[new_numElem++] = inVec[(int)sCnt];
+			numElem = new_numElem;
+		}
 		RobustSingleGaussianVec(inVec, mP, 0, numElem,
 				topkPerc, botkPerc, MSSE_LAMBDA, optIters);
 		free(inVec);
