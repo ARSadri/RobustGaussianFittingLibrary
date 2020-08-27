@@ -23,7 +23,7 @@ In this library, we have put together one of the state-of-the-art methods in rob
 ## Prior knowledge: Rough estimate of structure size
 In this robust model fitting method, the main assumption is that, the Gaussian we are looking for, has the majority of data points. If it doesn't, this turns the problem into a clustering problem. If the structure does not have the majority of data and the outliers do not form a structure, this reduces the problem back to segmentation where the structure size is smaller than half of data. 
 
-If the structure size cannot be guessed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are the most efficient and yet accurate methods.
+If the structure size cannot be guessed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are among the top most efficient and yet accurate methods.
 
 ## Usage from Python
 You can install this library via pip.
