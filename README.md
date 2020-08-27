@@ -4,6 +4,7 @@ A Library for Robust Gaussian Fitting using geometric models in presence of outl
 ## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
 Try it:
+
 ```
 import RobustGaussianFittingLibrary 
 import numpy as np
@@ -14,6 +15,7 @@ inVec = np.random.shuffle(np.hstack((inliers, outliers)))
 
 print(RobustGaussianFittingLibrary.fitValue(inVec))
 ```
+
 Are average and standard deviation good as statistics? Are they proper statistics to use for fitting lines and planes to data? What happens to these in presence of outliers? One solution seems to be Median, but what happens if number of outliers increase?
 
 In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these proposed methods.
@@ -54,6 +56,7 @@ pip3 install RobustGaussianFittingLibrary
 
 ### Examples in Python ###
 Many test functions are availble in the tests.py script. in the script, look for the main function and choose one of them to run. 
+
 ```
     test_fitBackgroundRadiallyTensor_multiproc()
     test_fitValueTensor_MultiProc()
