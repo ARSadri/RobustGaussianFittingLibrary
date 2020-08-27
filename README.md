@@ -54,8 +54,6 @@ pip3 install RobustGaussianFittingLibrary
 
 ### Examples in Python ###
 Many test functions are availble in the tests.py script. in the script, look for the main function and choose one of them to run. 
-
-* Fitting a single value to a vector of data
 ```
     test_fitBackgroundRadiallyTensor_multiproc()
     test_fitValueTensor_MultiProc()
