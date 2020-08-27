@@ -1,5 +1,5 @@
 # Robust Gaussian Fitting Library
-A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Basically, many machine learning methods are based on cost functions that are differentiable with respect to their parameters. However, a class of machine learning methods supported by what is known as "order statistics" do not need derivatives to work. This library is based on such methods. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. More novel methods are on their way.
+A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Basically, many machine learning methods are based on and limited to cost functions that are differentiable with respect to their parameters. However, a class of machine learning methods supported by "order statistics" do not need derivatives to be known for initilization of the learning process. This library is based on such methods. Currently, this library supports only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. More novel methods are on their way.
 
 ## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
