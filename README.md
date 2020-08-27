@@ -9,8 +9,8 @@ Try it:
 import RobustGaussianFittingLibrary 
 import numpy as np
 
-inliers = np.random.randn(30)
-outliers = np.array([10, 20, 1000])
+inliers = 50 + 5*np.random.randn(30)
+outliers = 200*(np.random.rand(20)-0.5)
 inVec = np.random.shuffle(np.hstack((inliers, outliers)))
 
 print(RobustGaussianFittingLibrary.fitValue(inVec))
