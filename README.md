@@ -16,9 +16,9 @@ inVec = np.random.shuffle(np.hstack((inliers, outliers)))
 print(RobustGaussianFittingLibrary.fitValue(inVec))
 ```
 
-Are average and standard deviation good as statistics? Are they proper statistics to use for fitting lines and planes to data? What happens to these in presence of outliers? One solution seems to be Median, but what happens if number of outliers increase?
+Are average and standard deviation good enough as statistics? Are they proper statistics to use for fitting lines and planes to data? What would happen to these statistics in presence of outliers? One solution seems to be Median, but what would happen if number of outliers increase?
 
-In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these proposed methods.
+In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these methods.
 
 ## Prior knowledge: Rough estimate of structure size
 In this robust model fitting method, the main assumption is that, the Gaussian we are looking for, has the majority of data points. If it doesn't, this turns the problem into a clustering problem. If the structure does not have the majority of data and the outliers do not form a structure, this reduces the problem back to segmentation where the structure size is smaller than half of data. 
