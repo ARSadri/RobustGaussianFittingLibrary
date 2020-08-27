@@ -572,7 +572,6 @@ def test_fitValueSmallSample():
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
     test_fitBackgroundRadiallyTensor_multiproc()
-    exit()
     test_fitValueTensor_MultiProc()
     test_PDF2Uniform()
     test_fitBackgroundTensor()
