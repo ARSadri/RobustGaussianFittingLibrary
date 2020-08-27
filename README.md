@@ -3,6 +3,17 @@ A Library for Robust Gaussian Fitting using geometric models in presence of outl
 
 ## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
+Try it:
+```
+import RobustGaussianFittingLibrary 
+import numpy as np
+
+inliers = np.random.randn(30)
+outliers = np.array([10, 20, 1000])
+inVec = np.random.shuffle(np.hstack((inliers, outliers)))
+
+print(RobustGaussianFittingLibrary.fitValue(inVec))
+```
 Are average and standard deviation good as statistics? Are they proper statistics to use for fitting lines and planes to data? What happens to these in presence of outliers? One solution seems to be Median, but what happens if number of outliers increase?
 
 In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these proposed methods.
@@ -46,12 +57,24 @@ Many test functions are availble in the tests.py script. in the script, look for
 
 * Fitting a single value to a vector of data
 ```
-import RobustGaussianFittingLibrary 
-import numpy as np
-inliers = np.random.randn(30)
-outliers = np.array([10, 20, 1000])
-inVec = np.random.shuffle(np.hstack((inliers, outliers)))
-print(RobustGaussianFittingLibrary.fitValue(inVec))
+    test_fitBackgroundRadiallyTensor_multiproc()
+    test_fitValueTensor_MultiProc()
+    test_PDF2Uniform()
+    test_fitBackgroundTensor()
+    test_fitBackgroundTensor_multiproc()
+    test_RobustAlgebraicLineFittingPy()
+    test_fitBackground()
+    test_fitValue2Skewed()
+    test_for_textProgBar()
+    test_removeIslands()
+    test_fitValueSmallSample()
+    test_bigTensor2SmallsInds()
+    test_RobustAlgebraicPlaneFittingPy()
+    test_SginleGaussianVec()
+    test_flatField()
+    test_fitValue2Skewed_sweep_over_N()
+    test_fitBackgroundRadially()
+    test_fitLineTensor_MultiProc()
 ```
 
 ## Compilation into static and shared library
