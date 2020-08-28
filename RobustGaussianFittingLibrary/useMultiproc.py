@@ -412,6 +412,12 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                         However, the value of the background at their location can be found.
         minRes: minimum distance to the center of the image
             default: 0
+        includeCenter: if you'd like to set the minimum to a higher value and yet get the
+                        circle inside the minimum resolution as one area, set this to one.
+                        this is particularly useful when shellWidth=1, then the area within
+                        radius 6 will have size of more than 200, the finiteSampleBias pf monteCarlo.
+                        So you can set the minRes to 6, set includeCenter to 1 and shellWidth to 1.
+            default: 0
         maxRes: maximum distance to the center of the image
         shellWidth : the ring around the center can have a width and a value will be fitted to
                 all calue in the ring.
