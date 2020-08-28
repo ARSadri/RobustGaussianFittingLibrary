@@ -12,6 +12,7 @@ import numpy as np
 inliers = 50 + 5*np.random.randn(30)
 outliers = 200*(np.random.rand(20)-0.5)
 inVec = np.hstack((inliers, outliers))
+np.random.shuffle(inVec)
 
 mP = fitValue(inVec)
 print(mP)
