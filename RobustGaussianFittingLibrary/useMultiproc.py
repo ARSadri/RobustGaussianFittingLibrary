@@ -366,7 +366,9 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
         del pBar
     return(modelParamsMapTensor)
 
-def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, shellWidth, numStrides, 
+def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, 
+                                              minRes, includeCenter, maxRes,
+                                              shellWidth, numStrides, 
                                               finiteSampleBias, 
                                               topKthPerc,
                                               bottomKthPerc,
@@ -374,29 +376,67 @@ def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, shellWidth, num
                                               optIters,
                                               imgCnt):
     mP = fitBackgroundRadially(inImg, inMask, 
-                                      shellWidth=shellWidth, numStrides=numStrides,
-                                      finiteSampleBias = finiteSampleBias,
-                                        topKthPerc = topKthPerc,
-                                        bottomKthPerc = bottomKthPerc,
-                                        MSSE_LAMBDA = MSSE_LAMBDA,
-                                        optIters = optIters)
+                               minRes=minRes, includeCenter=includeCenter, maxRes=maxRes,
+                               shellWidth=shellWidth, numStrides=numStrides,
+                               finiteSampleBias = finiteSampleBias,
+                               topKthPerc = topKthPerc,
+                               bottomKthPerc = bottomKthPerc,
+                               MSSE_LAMBDA = MSSE_LAMBDA,
+                               optIters = optIters)
     aQ.put(list([imgCnt, mP]))
 
 def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
-                         inMask_Tensor = None,
-                         shellWidth = 9,
-                         numStrides = 3,
-                         finiteSampleBias = 400,
-                         topKthPerc = 0.5,
-                         bottomKthPerc = 0.35,
-                         MSSE_LAMBDA = 3.0,
-                         optIters = 12,                         
-                         showProgress = False):
-    """
-
+                                          inMask_Tensor = None,
+                                          minRes = 1,
+                                          includeCenter = 0,
+                                          maxRes = None,
+                                          shellWidth = 9,
+                                          numStrides = 3,
+                                          finiteSampleBias = 400,
+                                          topKthPerc = 0.5,
+                                          bottomKthPerc = 0.35,
+                                          MSSE_LAMBDA = 3.0,
+                                          optIters = 12,                         
+                                          showProgress = False):
+    """ using Multiprocessing in python, 
+        fit a value to the ring around the image and fine tune it by convolving the resolution shells
+        by number of stride and calculate the value of the background of the ring
+        and STD at the location of each pixel.
+    
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inImg_Tensor: a 3D float32 numpy array as the tensor of n_F images: n_f x n_R x n_C
+        inMask_Tensor: same size as inImg_Tensor, with data type 'uint8',
+                        where 0 is bad and 1 is good. The masked pixels have not effect
+                        in the calculation of the parameters of the plane fit to background.
+                        However, the value of the background at their location can be found.
+        minRes: minimum distance to the center of the image
+            default: 0
+        maxRes: maximum distance to the center of the image
+        shellWidth : the ring around the center can have a width and a value will be fitted to
+                all calue in the ring.
         finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
             default : twice monte carlo finite sample bias 2x200
-
+        optIters: number of iterations of FLKOS for this fitting
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
+        numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
+            number of strides.
+        showProgress: shows progress, default: False
+    Output
+    ~~~~~~
+        numpy array with 3 parameters for each pixel : 2 x n_F x n_R, n_C : Rmean and RSTD.
     """
 
 
@@ -436,15 +476,19 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
 
         if((procID<numProc) & (numBusyCores < myCPUCount)):
             Process(target = fitBackgroundRadiallyTensor_multiprocFunc, args = (aQ,
-                                                                          inImg_Tensor[procID],
-                                                                          inMask_Tensor[procID],
-                                                                          shellWidth, numStrides,
-                                                                          finiteSampleBias,
-                                                                          topKthPerc,
-                                                                          bottomKthPerc,
-                                                                          MSSE_LAMBDA,
-                                                                          optIters,                                                                          
-                                                                          procID)).start()
+                                                                                inImg_Tensor[procID],
+                                                                                inMask_Tensor[procID],
+                                                                                minRes,
+                                                                                includeCenter,
+                                                                                maxRes,
+                                                                                shellWidth, 
+                                                                                numStrides,
+                                                                                finiteSampleBias,
+                                                                                topKthPerc,
+                                                                                bottomKthPerc,
+                                                                                MSSE_LAMBDA,
+                                                                                optIters,
+                                                                                procID)).start()
             procID += 1
             numBusyCores += 1
     if(showProgress):
