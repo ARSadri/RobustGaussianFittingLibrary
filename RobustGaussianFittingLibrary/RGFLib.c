@@ -829,7 +829,7 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 				pixX = (int)((float)r*cos(theta) + X_Cent);
 				pixY = (int)((float)r*sin(theta) + Y_Cent);
 				pixInd = pixY + pixX*Y;
-				if( (pixY>0) && (pixY<Y) && (pixX>0) && (pixX<X) && (inMask[pixInd]) ) {
+				if( (pixY>=0) && (pixY<Y) && (pixX>=0) && (pixX<X) && (inMask[pixInd]) ) {
 					inVec[numElem] = inImage[pixInd];
 					numElem++;
 				}
@@ -851,22 +851,22 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 				pixX = (int)((float)r*cos(theta) + X_Cent);
 				pixY = (int)((float)r*sin(theta) + Y_Cent);
 				pixInd = pixY + pixX*Y;
-				if( (pixY>0) && (pixY<Y) && (pixX>0) && (pixX<X)) {
+				if( (pixY>=0) && (pixY<Y) && (pixX>=0) && (pixX<X)) {
 					modelParamsMap[pixInd + 0*X*Y] = mP[0];
 					modelParamsMap[pixInd + 1*X*Y] = mP[1];
 				}
 				pixInd = pixY + (pixX+1)*Y;
-				if( (pixY>0) && (pixY<Y) && (pixX+1<X) ) {
+				if( (pixY>=0) && (pixY<Y) && (pixX+1>=0) && (pixX+1<X)) {
 					modelParamsMap[pixInd + 0*X*Y] = mP[0];
 					modelParamsMap[pixInd + 1*X*Y] = mP[1];
 				}
 				pixInd = pixY+1 + pixX*Y;
-				if( (pixY+1<Y) && (pixX>0) && (pixX<X) ) {
+				if( (pixY+1>=0) && (pixY+1<Y) && (pixX>=0) && (pixX<X)) {
 					modelParamsMap[pixInd + 0*X*Y] = mP[0];
 					modelParamsMap[pixInd + 1*X*Y] = mP[1];
 				}
 				pixInd = pixY+1 + (pixX+1)*Y;
-				if( (pixY+1<Y) && (pixX+1<X) ) {
+				if( (pixY+1>=0) && (pixY+1<Y) && (pixX+1>=0) && (pixX+1<X)) {
 					modelParamsMap[pixInd + 0*X*Y] = mP[0];
 					modelParamsMap[pixInd + 1*X*Y] = mP[1];
 				}
