@@ -786,9 +786,9 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
-	unsigned int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
-	unsigned int X_Cent, Y_Cent, shell_low, shell_high, numElem;
-	float theta, sCnt, jump;
+	int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
+	int shell_low, shell_high, numElem;
+	float theta, sCnt, jump, X_Cent, Y_Cent;
 	float mP[2];
 
 	if(minRes<1) minRes=1;
