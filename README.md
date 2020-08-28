@@ -6,14 +6,15 @@ A Library for Robust Gaussian Fitting using geometric models in presence of outl
 Try it:
 
 ```
-import RobustGaussianFittingLibrary 
+from RobustGaussianFittingLibrary import fitValue
 import numpy as np
 
 inliers = 50 + 5*np.random.randn(30)
 outliers = 200*(np.random.rand(20)-0.5)
 inVec = np.random.shuffle(np.hstack((inliers, outliers)))
 
-print(RobustGaussianFittingLibrary.fitValue(inVec))
+mP = fitValue(inVec)
+print(mP)
 ```
 
 Are average and standard deviation good enough as statistics? Are they proper statistics to use for fitting lines and planes to data? What would happen to these statistics in presence of outliers? One solution seems to be Median, but what would happen if number of outliers increase?
