@@ -278,7 +278,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                                         numModelParams = 4,
                                         optIters = 12,
                                         showProgress = False,
-                                        numStrides = 1):
+                                        numStrides = 2):
     """"Does fitBackgroundTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -396,8 +396,8 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                           minRes = 1,
                                           includeCenter = 0,
                                           maxRes = None,
-                                          shellWidth = 9,
-                                          numStrides = 3,
+                                          shellWidth = 2,
+                                          numStrides = 2,
                                           finiteSampleBias = 400,
                                           topKthPerc = 0.5,
                                           bottomKthPerc = 0.35,
