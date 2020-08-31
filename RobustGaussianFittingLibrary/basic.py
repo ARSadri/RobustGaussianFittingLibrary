@@ -59,7 +59,7 @@ def fitValue(inVec,
               bottomKthPerc = 0.45,
               MSSE_LAMBDA = 3.0,
               modelValueInit = 0,
-              optimizerNumIteration = 10):
+              optIters = 12):
     """Fit a Gaussian to input vector robustly:
     The function returns the parameters of a single gaussian structure through FLKOS [DICTA'08]
     The default values are suggested in MCNC [CVIU '18]
@@ -71,6 +71,12 @@ def fitValue(inVec,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -92,7 +98,7 @@ def fitValue(inVec,
                                                    topKthPerc,
                                                    bottomKthPerc,
                                                    MSSE_LAMBDA,
-                                                   optimizerNumIteration)
+                                                   optIters)
     return (modelParams[0], modelParams[1])
 
 def fitValue2Skewed(inVec, 
@@ -101,7 +107,7 @@ def fitValue2Skewed(inVec,
                     bottomKthPerc = 0.45,
                     MSSE_LAMBDA = 3.0,
                     modelValueInit = 0,
-                    optimizerNumIteration = 12):
+                    optIters = 12):
     """Fit a skewed bell shaped unimodal sharp density robustly:
     The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
     Input arguments
@@ -111,6 +117,12 @@ def fitValue2Skewed(inVec,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -136,7 +148,7 @@ def fitValue2Skewed(inVec,
                                topKthPerc,
                                bottomKthPerc,
                                MSSE_LAMBDA,
-                               optimizerNumIteration)
+                               optIters)
     return (modelParams[0], modelParams[1])
     
     
@@ -154,6 +166,12 @@ def fitValueTensor(inTensor,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -335,6 +353,11 @@ def fitBackground(inImage,
             set it to 4 for a reasonable performance.
         numModelParams: takes either 0, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
@@ -431,6 +454,12 @@ def fitBackgroundTensor(inImage_Tensor,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -541,6 +570,11 @@ def fitBackgroundRadially(inImage,
         finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
             default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0

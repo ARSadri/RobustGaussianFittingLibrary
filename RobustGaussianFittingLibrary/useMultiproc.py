@@ -286,6 +286,12 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
         inMask_Tensor: same size of inImage_Tensor
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -424,6 +430,11 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
         finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
             default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
@@ -481,20 +492,21 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                     pBar.go()
 
         if((procID<numProc) & (numBusyCores < myCPUCount)):
-            Process(target = fitBackgroundRadiallyTensor_multiprocFunc, args = (aQ,
-                                                                                inImg_Tensor[procID],
-                                                                                inMask_Tensor[procID],
-                                                                                minRes,
-                                                                                includeCenter,
-                                                                                maxRes,
-                                                                                shellWidth, 
-                                                                                numStrides,
-                                                                                finiteSampleBias,
-                                                                                topKthPerc,
-                                                                                bottomKthPerc,
-                                                                                MSSE_LAMBDA,
-                                                                                optIters,
-                                                                                procID)).start()
+            Process(target = fitBackgroundRadiallyTensor_multiprocFunc, 
+                    args = (aQ,
+                            inImg_Tensor[procID],
+                            inMask_Tensor[procID],
+                            minRes,
+                            includeCenter,
+                            maxRes,
+                            shellWidth, 
+                            numStrides,
+                            finiteSampleBias,
+                            topKthPerc,
+                            bottomKthPerc,
+                            MSSE_LAMBDA,
+                            optIters,
+                            procID)).start()
             procID += 1
             numBusyCores += 1
     if(showProgress):

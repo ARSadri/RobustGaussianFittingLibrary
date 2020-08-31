@@ -117,7 +117,7 @@ void quickSort( struct sortStruct dataVec[], int l, int r) {
    }
 }
 
-float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
+float MSSE(float* error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
 	unsigned int i;
 	float estScale, cumulative_sum, cumulative_sum_perv;
 	struct sortStruct* sortedSqError;
@@ -148,57 +148,83 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
 	return estScale;
 }
 
-void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
+void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsigned int N,
 		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
 	float avg, tmp, estScale;
 	unsigned int i, iter;
 
-	float *residual;
+	float* residual;
 
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 	
-	for (i = 0; i < N; i++) {
-		errorVec[i].vecData  = theta;
-		errorVec[i].indxs = i;
+	if(N==0) {
+		modelParams[0] = 0;
+		modelParams[1] = 0;
+		return;
 	}
-	quickSort(errorVec,0,N-1);
-	theta += vec[errorVec[(int)(N*topkPerc)-1].indxs];
-
-	for(iter=0; iter<optIters-1; iter++) {
+	else if(N==1) {
+		modelParams[0] = vec[0];
+		modelParams[1] = 0;
+		return;
+	}
+	else if(N==2) {
+		optIters = 0;
+	}
+	
+	if(optIters>0) {
 		for (i = 0; i < N; i++) {
-			errorVec[i].vecData  = fabs(vec[i] - theta);
+			errorVec[i].vecData = vec[i];
 			errorVec[i].indxs = i;
 		}
 		quickSort(errorVec,0,N-1);
-		theta = 0;
-		tmp = 0;
-		for(i=(int)(N*botkPerc); i<(int)(N*topkPerc); i++) {
-			theta += vec[errorVec[i].indxs];
-			tmp++;
+		theta = errorVec[(int)(N*topkPerc)].vecData;
+
+		for(iter=0; iter<optIters; iter++) {
+			for (i = 0; i < N; i++) {
+				errorVec[i].vecData  = fabs(vec[i] - theta);
+				errorVec[i].indxs = i;
+			}
+			quickSort(errorVec,0,N-1);
+			theta = 0;
+			tmp = 0;
+			for(i=(int)(N*botkPerc); i<(int)(N*topkPerc); i++) {
+				theta += vec[errorVec[i].indxs];
+				tmp++;
+			}
+			theta = theta / tmp;
 		}
-		theta = theta / tmp;
+	
+	
+		avg = 0;
+		for(i=0; i<(int)(N*topkPerc); i++)
+			avg += vec[errorVec[i].indxs];
+		avg = avg / (int)(N*topkPerc);
+
+		residual = (float*) malloc(N * sizeof(float));
+		for (i = 0; i < N; i++)
+			residual[i]  = vec[i] - avg;
+		estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
+		free(residual);
 	}
-
-	avg = 0;
-	for(i=0; i<(int)(N*topkPerc); i++)
-		avg += vec[errorVec[i].indxs];
-	avg = avg / (int)(N*topkPerc);
-
-	residual = (float*) malloc(N * sizeof(float));
-	for (i = 0; i < N; i++)
-		residual[i]  = vec[i] - avg;// + ((float) rand() / (RAND_MAX))/4;	//Noise stabilizes MSSE
-	estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
-	free(residual);
-
+	else {
+		avg = 0;
+		for(i=0; i<N; i++)
+			avg += vec[i];
+		avg = avg / N;
+		estScale = 0;
+		for(i=0; i<N; i++)
+			estScale += (vec[i]-avg)*(vec[i]-avg);
+		estScale = sqrt(estScale/N);
+	}
 	modelParams[0] = avg;
 	modelParams[1] = estScale;
 
 	free(errorVec);
 }
 
-float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
+float MSSEWeighted(float* error, float* weights, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k) {
 	unsigned int i, q;
 	float estScale, cumulative_sum, tmp;
 	struct sortStruct* sortedSqError;
@@ -235,8 +261,8 @@ float MSSEWeighted(float *error, float *weights, unsigned int vecLen, float MSSE
 	return estScale;
 }
 
-void fitValue2Skewed(float *vec, float *weights, 
-					float *modelParams, float theta, unsigned int N,
+void fitValue2Skewed(float* vec, float* weights, 
+					float* modelParams, float theta, unsigned int N,
 					float topkPerc, float botkPerc,
 					float MSSE_LAMBDA, unsigned char optIters) {
 
@@ -247,125 +273,147 @@ void fitValue2Skewed(float *vec, float *weights,
 	topk = (int)(N*topkPerc);
 	botk = (int)(N*botkPerc);
 	
-	if(N<3) {
-		modelParams[0]=NAN;
-		modelParams[1]=NAN;
+	if(N==0) {
+		modelParams[0] = 0;
+		modelParams[1] = 0;
 		return;
 	}
-	if(N<12) {
+	else if(N==1) {
+		modelParams[0] = vec[0];
+		modelParams[1] = 0;
+		return;
+	}
+	else if(N==2) {
+		optIters = 0;
+	}
+	else if(N<12) {
 		if(topk<N/2)
 			topk = (int)(N/2)+1;
 		botk = 0;
 	}
-	
-	float *residual;
-	residual = (float*) malloc(N * sizeof(float));
-	
-	struct sortStruct* errorVec;
-	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-	for(iter=0; iter<optIters; iter++) {
+	if(optIters>0) {
+		float *residual;
+		residual = (float*) malloc(N * sizeof(float));
 		
-		tmpH = 0;
-		tmpL = 0;
-		if(iter>=optIters/2) {
-			// lets do a symmetric fitting, half of the sample data points must come from either side
-			for (i = 0; i < N; i++) {
-				errorVec[i].vecData = fabs(vec[i] - theta);
-				errorVec[i].indxs = i;
+		struct sortStruct* errorVec;
+		errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
+		for(iter=0; iter<optIters; iter++) {
+			
+			tmpH = 0;
+			tmpL = 0;
+			if(iter>=optIters/2) {
+				// lets do a symmetric fitting, half of the sample data points must come from either side
+				for (i = 0; i < N; i++) {
+					errorVec[i].vecData = fabs(vec[i] - theta);
+					errorVec[i].indxs = i;
+				}
+				quickSort(errorVec,0,N-1);
+				errAtTopk = errorVec[topk-1].vecData;
+
+				//////////////////////////////////////////////////////////////////
+				theta_new = 0;
+				numPointsSide = 0;
+				for (i = 0; i < N; i++) {
+					if((vec[i] >= theta) && (vec[i] <=  theta + errAtTopk)) {
+						errorVec[i].vecData  = vec[i] - theta;
+						numPointsSide++;
+					}
+					else {
+						errorVec[i].vecData  = 1e+9;
+					}
+					errorVec[i].indxs = i;
+				}
+				if((int)(numPointsSide*topkPerc)>0) {
+					quickSort(errorVec,0,N-1);
+					for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
+						theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+						tmpH += weights[errorVec[i].indxs];
+					}
+				}
+				numPointsSide = 0;
+				for (i = 0; i < N; i++) {
+					if((vec[i] < theta) && (vec[i] >= theta - errAtTopk) ) {
+						errorVec[i].vecData  = theta - vec[i];
+						numPointsSide++;
+					}
+					else {
+						errorVec[i].vecData  = 1e+9;
+					}
+					errorVec[i].indxs = i;
+				}
+				if((int)(numPointsSide*topkPerc)>0) {
+					quickSort(errorVec,0,N-1);
+					for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
+						theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
+						tmpL += weights[errorVec[i].indxs];
+					}
+				}
 			}
-			quickSort(errorVec,0,N-1);
-			errAtTopk = errorVec[topk-1].vecData;
+			tmp = tmpL + tmpH;
 
 			//////////////////////////////////////////////////////////////////
-			theta_new = 0;
-			numPointsSide = 0;
-			for (i = 0; i < N; i++) {
-				if((vec[i] >= theta) && (vec[i] <=  theta + errAtTopk)) {
-					errorVec[i].vecData  = vec[i] - theta;
-					numPointsSide++;
+			if((tmpL==0) || (tmpH==0)) {
+				theta_new = 0;
+				tmp = 0;
+				for (i = 0; i < N; i++) {
+					errorVec[i].vecData = fabs(vec[i] - theta);
+					errorVec[i].indxs = i;
 				}
-				else {
-					errorVec[i].vecData  = 1e+9;
-				}
-				errorVec[i].indxs = i;
-			}
-			if((int)(numPointsSide*topkPerc)>0) {
 				quickSort(errorVec,0,N-1);
-				for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
+				theta = 0;
+				tmp = 0;
+				for(i=botk; i<topk; i++) {
 					theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-					tmpH += weights[errorVec[i].indxs];
+					tmp += weights[errorVec[i].indxs];
 				}
 			}
-			numPointsSide = 0;
-			for (i = 0; i < N; i++) {
-				if((vec[i] < theta) && (vec[i] >= theta - errAtTopk) ) {
-					errorVec[i].vecData  = theta - vec[i];
-					numPointsSide++;
-				}
-				else {
-					errorVec[i].vecData  = 1e+9;
-				}
-				errorVec[i].indxs = i;
-			}
-			if((int)(numPointsSide*topkPerc)>0) {
-				quickSort(errorVec,0,N-1);
-				for(i=(int)(numPointsSide*botkPerc); i<(int)(numPointsSide*topkPerc); i++) {
-					theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-					tmpL += weights[errorVec[i].indxs];
+			if(tmp==0) {
+				theta_new = 0;
+				tmp = 0;
+				for(i=botk; i<topk; i++) {
+					theta_new += vec[errorVec[i].indxs];
+					tmp += 1;
 				}
 			}
+			theta = theta_new / tmp;
 		}
-		tmp = tmpL + tmpH;
+		
+		////////////////////////////////////////////////////////////////
+		/////////// calculate the mean of symmetric inliers  ///////////
+		////////////////////////////////////////////////////////////////
+		for (i = 0; i < N; i++)
+			residual[i]  = fabs(theta - vec[i]);
+		estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
+		free(residual);
+		modelParams[0] = theta;
+		modelParams[1] = estScale;
 
-		//////////////////////////////////////////////////////////////////
-		if((tmpL==0) || (tmpH==0)) {
-			theta_new = 0;
-			tmp = 0;
-			for (i = 0; i < N; i++) {
-				errorVec[i].vecData = fabs(vec[i] - theta);
-				errorVec[i].indxs = i;
-			}
-			quickSort(errorVec,0,N-1);
-			theta = 0;
-			tmp = 0;
-			for(i=botk; i<topk; i++) {
-				theta_new += weights[errorVec[i].indxs]*vec[errorVec[i].indxs];
-				tmp += weights[errorVec[i].indxs];
-			}
-		}
-		if(tmp==0) {
-			theta_new = 0;
-			tmp = 0;
-			for(i=botk; i<topk; i++) {
-				theta_new += vec[errorVec[i].indxs];
-				tmp += 1;
-			}
-		}
-		theta = theta_new / tmp;
+
+		////////////////////////////////////////////////////////////////
+		//////////////// calculate the std by inliers  /////////////////
+		////////////////////////////////////////////////////////////////
+		upperScale = fabs((theta + 3.0*estScale) - modelParams[0])/3.0;
+		lowerScale = fabs(modelParams[0] - (theta - 3.0*estScale))/3.0;
+		if(lowerScale<upperScale)
+			modelParams[1] = upperScale;	//hopefully never negative
+		else
+			modelParams[1] = lowerScale;
+		
+		free(errorVec);
 	}
-	
-	////////////////////////////////////////////////////////////////
-	/////////// calculate the mean of symmetric inliers  ///////////
-	////////////////////////////////////////////////////////////////
-	for (i = 0; i < N; i++)
-		residual[i]  = fabs(theta - vec[i]);
-	estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, topk);
-	free(residual);
-	modelParams[0] = theta;
-	modelParams[1] = estScale;
+	else {
+		theta = 0;
+		for(i=0; i<N; i++)
+			theta += vec[i];
+		theta = theta / N;
+		estScale = 0;
+		for(i=0; i<N; i++)
+			estScale += (vec[i]-theta)*(vec[i]-theta);
+		estScale = sqrt(estScale/N);
+		modelParams[0] = theta;
+		modelParams[1] = estScale;
+	}
 
-
-	////////////////////////////////////////////////////////////////
-	//////////////// calculate the std by inliers  /////////////////
-	////////////////////////////////////////////////////////////////
-	upperScale = fabs((theta + 3.0*estScale) - modelParams[0])/3.0;
-	lowerScale = fabs(modelParams[0] - (theta - 3.0*estScale))/3.0;
-	if(lowerScale<upperScale)
-		modelParams[1] = upperScale;	//hopefully never negative
-	else
-		modelParams[1] = lowerScale;
-	
-	free(errorVec);
 }
 
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
@@ -447,8 +495,8 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 	free(errorVec);
 }
 
-void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY,
-									float *modelParamsMap, unsigned int N,
+void RobustAlgebraicLineFittingTensor(float* inTensorX, float* inTensorY,
+									float* modelParamsMap, unsigned int N,
 									unsigned int X, unsigned int Y, 
 									float topkPerc, float botkPerc,
 									float MSSE_LAMBDA) {
@@ -615,8 +663,8 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
 	free(sample_z);
 }
 
-void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
-				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
+void RobustSingleGaussianTensor(float* inTensor, unsigned char* inMask,
+				float* modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
 				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
 	float* vec;
@@ -649,7 +697,7 @@ void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
 	free(vec);
 }
 
-void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
+void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
 				unsigned int winX, unsigned int winY,
 				unsigned int X, unsigned int Y, 
 				float topkPerc, float botkPerc,
@@ -736,7 +784,7 @@ void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 }
 
 void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor, 
-						float *model_mean, float *model_std,
+						float* model_mean, float* model_std,
 						unsigned int winX, unsigned int winY,
 						unsigned int N, unsigned int X, unsigned int Y, 
 						float topkPerc, float botkPerc,
@@ -780,17 +828,18 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 	free(inMask);
 }
 
-void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, float* modelParamsMap,
  						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
 						   unsigned char includeCenter, unsigned int finiteSampleBias,
 						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters) {
 
-	int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
+	int r, maxR, shellCnt, pixX, pixY, i, j,pixInd, new_numElem;
 	int shell_low, shell_high, numElem;
 	float theta, sCnt, jump, X_Cent, Y_Cent;
 	float mP[2];
-
+	float* inVec;
+	
 	if(minRes<1) minRes=1;
 
 	X_Cent = (int)(ceil(X/2));
@@ -816,8 +865,6 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 	if(resShells[shellCnt]>maxRes) {
 		resShells[shellCnt] = maxRes;
 	}
-	float *inVec;
-
 
 	for(i=0; i<shellCnt; i++) {
 		shell_low = resShells[i];
@@ -835,6 +882,7 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 				}
 			}
 		}
+
 		if(numElem > finiteSampleBias) {
 			new_numElem = 0;
 			jump = (float)numElem/((float)finiteSampleBias);
@@ -842,10 +890,24 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelPa
 				inVec[new_numElem++] = inVec[(int)sCnt];
 			numElem = new_numElem;
 		}
-		RobustSingleGaussianVec(inVec, mP, 0, numElem,
-				topkPerc, botkPerc, MSSE_LAMBDA, optIters);
-		free(inVec);
 
+		if(optIters>0) {
+			RobustSingleGaussianVec(inVec, mP, 0, numElem,
+					topkPerc, botkPerc, MSSE_LAMBDA, optIters);
+		}		
+		else {
+			mP[0] = 0;
+			for(j=0; j<numElem; j++)
+				mP[0] += inVec[j];
+			mP[0] /= numElem;
+			mP[1] = 0;
+			for(j=0; j<numElem; j++)
+				mP[1] += (inVec[j] - mP[0])*(inVec[j] - mP[0]);
+			mP[1] /= numElem;
+			mP[1] = sqrt(mP[1]);
+		}
+		free(inVec);
+		
 		for(r=shell_low; r<shell_high; r++) {
 			for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
 				pixX = (int)((float)r*cos(theta) + X_Cent);
