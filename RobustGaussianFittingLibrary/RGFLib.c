@@ -173,6 +173,9 @@ void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsign
 		optIters = 0;
 	}
 	
+	if(N<12)
+		botkPerc = 0;
+	
 	if(optIters>0) {
 		for (i = 0; i < N; i++) {
 			errorVec[i].vecData = vec[i];
