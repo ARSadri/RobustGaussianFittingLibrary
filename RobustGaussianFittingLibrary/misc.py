@@ -49,11 +49,11 @@ class textProgBar:
                        (time.time() - self.startTime)/(self.ck/self.length) - time.time()
             time_correct = 2-2*(self.ck/self.length)
             #remTimeS *= time_correct
-            if(remTimeS>=3600):
+            if(remTimeS>=5940):
                 progStr = "%02d" % int(remTimeS/3600)
                 print(progStr, end='')
                 print('h', end='', flush = True)
-            elif(remTimeS>=60):
+            elif(remTimeS>=99):
                 progStr = "%02d" % int(remTimeS/60)
                 print(progStr, end='')
                 print('m', end='', flush = True)
