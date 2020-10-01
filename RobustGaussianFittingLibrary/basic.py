@@ -338,7 +338,7 @@ def fitBackground(inImage,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,
                   optIters = 12,
-                  numStrides = 2):
+                  numStrides = 1):
     """ fit a plane to the background of the image uainf convolving the window by number of strides
         and calculate the value of the background plane and STD at the location of each pixel.
     
@@ -444,7 +444,7 @@ def fitBackgroundTensor(inImage_Tensor,
                         stretch2CornersOpt = 0,
                         numModelParams = 4,
                         optIters = 12,
-                        numStrides = 2):
+                        numStrides = 1):
     """ fit a plane by convolving the model to each image in the input Tensor and report background values and STD for each pixel for each plane
     
     Input arguments
@@ -552,7 +552,7 @@ def fitBackgroundRadially(inImage,
                           bottomKthPerc = 0.35,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
-                          numStrides = 2,
+                          numStrides = 1,
                           finiteSampleBias = 400):
     """ fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
