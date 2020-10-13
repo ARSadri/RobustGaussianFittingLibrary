@@ -153,9 +153,6 @@ void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsign
 
 	float avg, tmp, estScale;
 	unsigned int i, iter;
-
-	float* residual;
-
 	struct sortStruct* errorVec;
 	errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 	
@@ -173,8 +170,8 @@ void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsign
 		optIters = 0;
 	}
 	
-	if(N<12)
-		botkPerc = 0;
+	if( (N<12) && (bothkPerc >= (int)(N/2)) )
+		botkPerc = (int)(N/2);
 	
 	if(optIters>0) {
 		for (i = 0; i < N; i++) {
@@ -182,8 +179,9 @@ void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsign
 			errorVec[i].indxs = i;
 		}
 		quickSort(errorVec,0,N-1);
-		theta = errorVec[(int)(N*topkPerc)].vecData;
-
+		_percentile = errorVec[(int)(N*topkPerc)].vecData;
+		
+		theta = _percentile;
 		for(iter=0; iter<optIters; iter++) {
 			for (i = 0; i < N; i++) {
 				errorVec[i].vecData  = fabs(vec[i] - theta);
@@ -198,18 +196,11 @@ void RobustSingleGaussianVec(float* vec, float* modelParams, float theta, unsign
 			}
 			theta = theta / tmp;
 		}
-	
-	
+		estScale = MSSE(errorVec, N, MSSE_LAMBDA, (int)(N*topkPerc));
 		avg = 0;
-		for(i=0; i<(int)(N*topkPerc); i++)
-			avg += vec[errorVec[i].indxs];
-		avg = avg / (int)(N*topkPerc);
-
-		residual = (float*) malloc(N * sizeof(float));
-		for (i = 0; i < N; i++)
-			residual[i]  = vec[i] - avg;
-		estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc));
-		free(residual);
+		while(fabs(vec[errorVec[i].indxs]-_percentile)<estScale*MSSE_LAMBDA)
+			avg += vec[errorVec[i++].indxs];
+		avg = avg / (float)(i-1);
 	}
 	else {
 		avg = 0;
