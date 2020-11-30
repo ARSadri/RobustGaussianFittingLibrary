@@ -22,7 +22,7 @@ if(len(flist)==0):	#for those who use make
 RGFCLib = ctypes.cdll.LoadLibrary(dir_path + os.path.sep + flist[0])
 
 '''
-void islandRemoval(unsigned char* inMask, unsigned char* outMask, 
+void islandRemoval(unsigned char* inMask, unsigned char* labelMap, 
 					  unsigned int X, unsigned int Y, 
 					  unsigned int islandSizeThreshold)
 '''
@@ -40,35 +40,35 @@ RGFCLib.indexCheck.argtypes = [
                 ctypes.c_int, ctypes.c_int, ctypes.c_float]
 
 '''
-float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k)
+float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k, float minimumResidual)
 '''
 RGFCLib.MSSE.restype = ctypes.c_float
 RGFCLib.MSSE.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                ctypes.c_int, ctypes.c_float, ctypes.c_int ]
+                ctypes.c_int, ctypes.c_float, ctypes.c_int, ctypes.c_float ]
 
 '''
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
-		float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA, unsigned char optIters)
+		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters, float minimumResidual)
 '''
 RGFCLib.RobustSingleGaussianVec.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_float, ctypes.c_int, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
+                ctypes.c_float, ctypes.c_float, ctypes.c_uint8, ctypes.c_float]
 
 '''
 void fitValue2Skewed(float *vec, float *weights, 
 					float *modelParams, float theta, unsigned int N,
-					float topKthPerc, float bottomKthPerc, 
-					float MSSE_LAMBDA, unsigned char optIters)
+					float topkPerc, float botkPerc,
+					float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
 '''                    
 RGFCLib.fitValue2Skewed.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_float, ctypes.c_uint32, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_uint8]                
+                ctypes.c_float, ctypes.c_float, ctypes.c_uint8, ctypes.c_float]                
 '''
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N,
 							  float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
@@ -96,36 +96,39 @@ RGFCLib.RobustAlgebraicLineFittingTensor.argtypes = [
 '''
 void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
 				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
-				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters)
+				float topkPerc, float botkPerc, float MSSE_LAMBDA, 
+				unsigned char optIters, float minimumResidual)
 '''
 RGFCLib.RobustSingleGaussianTensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
-                ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
+                ctypes.c_float, ctypes.c_float, ctypes.c_float, 
+                ctypes.c_uint8, ctypes.c_float]
 
 '''
-void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
-							unsigned int N, float topKthPerc, float bottomKthPerc, 
-							float MSSE_LAMBDA, unsigned char stretch2CornersOpt)
-'''                            
+void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, float* mP_Init,
+							unsigned int N, float topkPerc, float botkPerc,
+							float MSSE_LAMBDA, unsigned char stretch2CornersOpt, 
+							float minimumResidual, unsigned char optIters)
+'''
 RGFCLib.RobustAlgebraicPlaneFitting.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_int, ctypes.c_float, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_uint8]
+                ctypes.c_float, ctypes.c_uint8, ctypes.c_float, ctypes.c_uint8]
                 
 '''
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
-				unsigned int X, unsigned int Y, 
-				float topKthPerc, float bottomKthPerc, 
+				unsigned int X, unsigned int Y,
+				float topkPerc, float botkPerc,
 				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 				unsigned char numModelParams, unsigned char optIters)
-
 '''                
 RGFCLib.RSGImage.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
@@ -138,11 +141,11 @@ RGFCLib.RSGImage.argtypes = [
                 ctypes.c_uint8, ctypes.c_uint8]
        
 '''
-void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor, 
+void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor,
 						float *model_mean, float *model_std,
 						unsigned int winX, unsigned int winY,
-						unsigned int N, unsigned int X, unsigned int Y, 
-						float topKthPerc, float bottomKthPerc, 
+						unsigned int N, unsigned int X, unsigned int Y,
+						float topkPerc, float botkPerc,
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 						unsigned char numModelParams, unsigned char optIters)
 '''
@@ -158,11 +161,17 @@ RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
                 ctypes.c_uint8, ctypes.c_uint8]
 
 '''
-void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
- 						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
-						   unsigned char includeCenter, unsigned int finiteSampleBias, 
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
+						   float* modelParamsMap,
+ 						   unsigned int minRes, 
+						   unsigned int maxRes, 
+						   unsigned int shellWidth,
+						   unsigned char includeCenter, 
+						   unsigned int finiteSampleBias,
 						   unsigned int X, unsigned int Y,
-						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters)
+						   float topkPerc, float botkPerc, 
+						   float MSSE_LAMBDA, 
+						   unsigned char optIters);
 '''
 RGFCLib.fitBackgroundRadially.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),

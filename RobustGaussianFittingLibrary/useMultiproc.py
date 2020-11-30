@@ -257,16 +257,16 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             optIters,
                             numStrides):
     modelParamsMap = fitBackgroundTensor(inImage_Tensor, 
-                                                inMask_Tensor,
-                                                winX,
-                                                winY,
-                                                topKthPerc,
-                                                bottomKthPerc,
-                                                MSSE_LAMBDA,
-                                                stretch2CornersOpt,
-                                                numModelParams,
-                                                optIters,
-                                                numStrides)
+                                         inMask_Tensor,
+                                         winX,
+                                         winY,
+                                         topKthPerc,
+                                         bottomKthPerc,
+                                         MSSE_LAMBDA,
+                                         stretch2CornersOpt,
+                                         numModelParams,
+                                         optIters,
+                                         numStrides)
     aQ.put(list([imgCnt, modelParamsMap]))
     
 def fitBackgroundTensor_multiproc(inDataSet, inMask = None, 
@@ -278,7 +278,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                                         numModelParams = 4,
                                         optIters = 12,
                                         showProgress = False,
-                                        numStrides = 1):
+                                        numStrides = 0):
     """"Does fitBackgroundTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -292,6 +292,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
+        numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -397,7 +398,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                           includeCenter = 0,
                                           maxRes = None,
                                           shellWidth = 2,
-                                          numStrides = 1,
+                                          numStrides = 0,
                                           finiteSampleBias = 400,
                                           topKthPerc = 0.5,
                                           bottomKthPerc = 0.35,

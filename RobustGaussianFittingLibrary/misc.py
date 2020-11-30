@@ -68,12 +68,20 @@ class textProgBar:
             print('~', end='')
         print(' ', flush = True)
 
-def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile = 0, highPercentile=100):
+def PDF2Uniform(inVec, inMask=None, numBins=10, 
+                nUniPoints=None, lowPercentile = 0, 
+                highPercentile=100, showProgress = False):
     """
     This function takes an array of numbers and returns indices of those who
     form a uniform density over numBins bins, between lowPercentile and highPercentile
     values in the array, and not masked by 0. The output vector will have indices with the size nUniPoints.
+    It is possible to only provide the vector with no parameter. I will calculate the maximum
+    number of elements it can, as long as it still provides a uniform density.
     """
+    n_pts = inVec.shape[0]
+    if((highPercentile - lowPercentile)*n_pts < nUniPoints):
+        lowPercentile = 0
+        highPercentile=100
     indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
                                           np.percentile(inVec, highPercentile), 
                                           numBins) )
@@ -90,6 +98,8 @@ def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile =
     nUniPoints = np.minimum(nUniPoints, (indPerBin != outIndicator).sum())
     uniInds = np.zeros(nUniPoints, dtype='uint32')
     ptCnt = 0
+    if(showProgress):
+        pBar = textProgBar(nUniPoints)
     while(ptCnt < nUniPoints):
         for bin in binValue:
             if(ptCnt >= nUniPoints):
@@ -98,23 +108,26 @@ def PDF2Uniform(inVec, inMask=None, numBins=10, nUniPoints=None, lowPercentile =
             if(lclInds.shape[0]>0):
                 uniInds[ptCnt] = np.random.choice(lclInds,1)
                 indPerBin[uniInds[ptCnt]] = outIndicator
-                ptCnt += 1            
+                ptCnt += 1
+                if(showProgress):
+                    pBar.go()            
+    if(showProgress):
+        del pBar
     return(uniInds)
 
-def removeIslands(inMask, 
-                    minSize = 1):
-    """
-    Given a mask in the input where the background is zero and bad areas are 1,
-    the output will not have island of zeros with size less or equal to minSize,
-    sorrounded by four 1s. Notice that if the island has diagonal routes, it will
-    still be an island. If it has a vertical or horizontal route to the background,
-    it is not an island.
+def removeIslands(inMask, minSize = 1):
+    """small islands of 0s in the middle of 1s will turn into 1s
+    Given a mask in the input where the good pixels are marked by zero and bad areas are 1,
+    the output will not have islands of zeros with size less or equal to minSize,
+    sorrounded by 1s. Notice that if the island has diagonal routes to other islands, it will
+    still be an isolated island. If it has a vertical or horizontal route to other good areas,
+    it is not an isolated island.
     Input arguments
     ~~~~~~~~~~~~~~~
-        inMask : 2D array, numbers are either 0: bad and 1: good.
+        inMask : 2D array, numbers are either 0: good and 1: bad.
     Output
     ~~~~~~    
-        same size as input, some of the 1s in the input are now 0 if there were lonly surrounded by 0s.
+        same size as input, some of the pixels that were 0s in the input are now 1s if they were on lonly islands of good pixels surrounded by bad 1s.
     """
     outMask = np.zeros(inMask.shape, dtype='uint8')
     RGFCLib.islandRemoval(1 - inMask.astype('uint8'),

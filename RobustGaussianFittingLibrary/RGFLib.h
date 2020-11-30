@@ -9,19 +9,26 @@
 #include <math.h>
 #include <stdlib.h>
 
+#define NEGATIVE_MAX -1e+20
+
 void islandRemoval(unsigned char* inMask, unsigned char* outMask,
  	 			   unsigned int X, unsigned int Y,
 				   unsigned int islandSizeThreshold);
 
-float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k);
+float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k, float minimumResidual);
 
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
-		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
+		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
 
-void fitValue2Skewed(float *vec, float *weights,
+void fitValue2Skewed(float *vec, float *weights, 
 					float *modelParams, float theta, unsigned int N,
 					float topkPerc, float botkPerc,
-					float MSSE_LAMBDA, unsigned char optIters);
+					float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
+
+void medianOfFits(float *vec, float *weights, 
+  				  float *modelParams, float theta, unsigned int N,
+				  float topkMin, float topkMax, unsigned int numSamples, float samplePerc,
+				  float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
 
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
 							unsigned int N, float topkPerc, float botkPerc, float MSSE_LAMBDA);
@@ -32,13 +39,15 @@ void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY,
 									float topkPerc, float botkPerc,
 									float MSSE_LAMBDA);
 
-void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP,
+void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, float* mP_Init,
 							unsigned int N, float topkPerc, float botkPerc,
-							float MSSE_LAMBDA, unsigned char stretch2CornersOpt);
+							float MSSE_LAMBDA, unsigned char stretch2CornersOpt, 
+							float minimumResidual, unsigned char optIters);
 
 void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
 				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
-				float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
+				float topkPerc, float botkPerc, float MSSE_LAMBDA, 
+				unsigned char optIters, float minimumResidual);
 
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
@@ -55,9 +64,15 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 						unsigned char numModelParams, unsigned char optIters);
 
-void fitBackgroundRadially(float* inImage, unsigned char* inMask, float *modelParamsMap,
- 						   unsigned int minRes, unsigned int maxRes, unsigned int shellWidth,
-						   unsigned char includeCenter, unsigned int finiteSampleBias,
+void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
+						   float* modelParamsMap,
+ 						   unsigned int minRes, 
+						   unsigned int maxRes, 
+						   unsigned int shellWidth,
+						   unsigned char includeCenter, 
+						   unsigned int finiteSampleBias,
 						   unsigned int X, unsigned int Y,
-						   float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters);
+						   float topkPerc, float botkPerc, 
+						   float MSSE_LAMBDA, 
+						   unsigned char optIters);
 #endif

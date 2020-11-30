@@ -32,7 +32,7 @@ Output
 from .cWrapper import RGFCLib
 import numpy as np
  
-def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):
+def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12, minimumResidual = 0):
     """ A C implementation of MSSE'99
         
         Input arguments
@@ -42,24 +42,29 @@ def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12):
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
         k : minimum number of inliers, 12 is the least.
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
         
         Output
         ~~~~~~
-        a scalar, STD of the Gaussian. If you'd like to know its relatino to $\lambda$, have a look at the function visOrderStat in the tests.py 
+        a scalar, STD of the Gaussian. If you'd like to know 
+        its relatino to $\lambda$, have a look at the function 
+        visOrderStat in the tests.py 
     """
     return RGFCLib.MSSE((inVec.copy()).astype('float32'),
                         inVec.shape[0],
-                        float(MSSE_LAMBDA), k)
+                        float(MSSE_LAMBDA), k, minimumResidual)
 
 ###########################################################################################
 ################################### Robust AVG and STD ####################################
                                        
 def fitValue(inVec,
-              topKthPerc = 0.5,
-              bottomKthPerc = 0.45,
-              MSSE_LAMBDA = 3.0,
-              modelValueInit = 0,
-              optIters = 12):
+             topKthPerc = 0.5,
+             bottomKthPerc = 0.45,
+             MSSE_LAMBDA = 3.0,
+             modelValueInit = 0,
+             optIters = 12,
+             minimumResidual = 0):
     """Fit a Gaussian to input vector robustly:
     The function returns the parameters of a single gaussian structure through FLKOS [DICTA'08]
     The default values are suggested in MCNC [CVIU '18]
@@ -87,6 +92,8 @@ def fitValue(inVec,
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust average and standard deviation of the guassian
@@ -98,7 +105,8 @@ def fitValue(inVec,
                                                    topKthPerc,
                                                    bottomKthPerc,
                                                    MSSE_LAMBDA,
-                                                   optIters)
+                                                   optIters,
+                                                   minimumResidual)
     return (modelParams[0], modelParams[1])
 
 def fitValue2Skewed(inVec, 
@@ -107,7 +115,8 @@ def fitValue2Skewed(inVec,
                     bottomKthPerc = 0.45,
                     MSSE_LAMBDA = 3.0,
                     modelValueInit = 0,
-                    optIters = 12):
+                    optIters = 12,
+                    minimumResidual = 0):
     """Fit a skewed bell shaped unimodal sharp density robustly:
     The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
     Input arguments
@@ -133,6 +142,8 @@ def fitValue2Skewed(inVec,
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
@@ -148,7 +159,8 @@ def fitValue2Skewed(inVec,
                                topKthPerc,
                                bottomKthPerc,
                                MSSE_LAMBDA,
-                               optIters)
+                               optIters,
+                               minimumResidual)
     return (modelParams[0], modelParams[1])
     
     
@@ -157,7 +169,8 @@ def fitValueTensor(inTensor,
                    topKthPerc = 0.5,
                    bottomKthPerc=0.45,
                    MSSE_LAMBDA = 3.0,
-                   optIters = 12):
+                   optIters = 12,
+                   minimumResidual = 0):
     """ fit a Gaussian to every vector inside a Tensor, robustly.
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -181,7 +194,9 @@ def fitValueTensor(inTensor,
                        set it to 0.9*topKthPerc, if N is number of data points, then make sure that
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.        
+                       otherwise the code may return non-robust results.       
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
@@ -198,7 +213,8 @@ def fitValueTensor(inTensor,
                                        topKthPerc,
                                        bottomKthPerc,
                                        MSSE_LAMBDA,
-                                       optIters)
+                                       optIters,
+                                       minimumResidual)
     return (modelParamsMap)
 
 ##########################################################################################
@@ -244,9 +260,9 @@ def fitLine(inX, inY,
     return (modelParams)
 
 def fitLineTensor(inX, inY,
-                    topKthPerc = 0.5,
-                    bottomKthPerc = 0.45,
-                    MSSE_LAMBDA = 3.0):
+                  topKthPerc = 0.5,
+                  bottomKthPerc = 0.45,
+                  MSSE_LAMBDA = 3.0):
     """fit a line to every pixel in a Tensor
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -287,10 +303,13 @@ def fitLineTensor(inX, inY,
 ############################### background estimation library ############################
     
 def fitPlane(inX, inY, inZ,
-                            topKthPerc = 0.5,
-                            bottomKthPerc = 0.25,
-                            MSSE_LAMBDA = 3.0,
-                            stretch2CornersOpt = 2):
+             topKthPerc = 0.5,
+             bottomKthPerc = 0.25,
+             MSSE_LAMBDA = 3.0,
+             stretch2CornersOpt = 0,
+             modelParamsInitial = None,
+             minimumResidual = 0,
+             optIters = 10):
     """ fit a plane assuming a Gaussian noise to data points with x, y and z.
     The plane is supposed to be z = ax + by + Normal(Rmean, RSTD^2)
     Input arguments
@@ -317,15 +336,20 @@ def fitPlane(inX, inY, inZ,
     """
 
     modelParams = np.zeros(4, dtype='float32')
+    if(modelParamsInitial is None):
+        modelParamsInitial = modelParams.copy()
     RGFCLib.RobustAlgebraicPlaneFitting((inX.copy()).astype('float32'),
                                             (inY.copy()).astype('float32'),
                                             (inZ.copy()).astype('float32'),
                                             modelParams, 
+                                            modelParamsInitial, 
                                             inZ.shape[0],
                                             topKthPerc,
                                             bottomKthPerc,
                                             MSSE_LAMBDA, 
-                                            stretch2CornersOpt)
+                                            stretch2CornersOpt,
+                                            minimumResidual,
+                                            optIters)
     return (modelParams)
 
 def fitBackground(inImage, 
@@ -338,7 +362,7 @@ def fitBackground(inImage,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,
                   optIters = 12,
-                  numStrides = 1):
+                  numStrides = 0):
     """ fit a plane to the background of the image uainf convolving the window by number of strides
         and calculate the value of the background plane and STD at the location of each pixel.
     
@@ -351,7 +375,7 @@ def fitBackground(inImage,
         stretch2CornersOpt: An option that helps approximating towards segmentaed planes
             default is zero that does not stretch the model to corner and can be degenerate.
             set it to 4 for a reasonable performance.
-        numModelParams: takes either 0, which gives a horizontal plane or 4 which gives an algebraic plane.
+        numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
             value 1: returns topKthPerc percentile and the scale by MSSE.
@@ -439,12 +463,12 @@ def fitBackgroundTensor(inImage_Tensor,
                         winX = None,
                         winY = None,
                         topKthPerc = 0.5,
-                        bottomKthPerc = 0.25,
+                        bottomKthPerc = 0.3,
                         MSSE_LAMBDA = 3.0,
                         stretch2CornersOpt = 0,
                         numModelParams = 4,
                         optIters = 12,
-                        numStrides = 1):
+                        numStrides = 0):
     """ fit a plane by convolving the model to each image in the input Tensor and report background values and STD for each pixel for each plane
     
     Input arguments
@@ -454,6 +478,7 @@ def fitBackgroundTensor(inImage_Tensor,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
+        numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
             value 1: returns topKthPerc percentile and the scale by MSSE.
@@ -523,20 +548,20 @@ def fitBackgroundTensor(inImage_Tensor,
                 model_std  = np.zeros(_inImage_Tensor.shape, dtype='float32')
             
                 RGFCLib.RSGImage_by_Image_Tensor(_inImage_Tensor.astype('float32'),
-                                                _inMask_Tensor.astype('uint8'),
-                                                model_mean,
-                                                model_std,
-                                                winX,
-                                                winY,
-                                                _inImage_Tensor.shape[0],
-                                                _inImage_Tensor.shape[1],
-                                                _inImage_Tensor.shape[2],
-                                                topKthPerc,
-                                                bottomKthPerc,
-                                                MSSE_LAMBDA,
-                                                stretch2CornersOpt,
-                                                numModelParams,
-                                                optIters)
+                                                 _inMask_Tensor.astype('uint8'),
+                                                 model_mean,
+                                                 model_std,
+                                                 winX,
+                                                 winY,
+                                                 _inImage_Tensor.shape[0],
+                                                 _inImage_Tensor.shape[1],
+                                                 _inImage_Tensor.shape[2],
+                                                 topKthPerc,
+                                                 bottomKthPerc,
+                                                 MSSE_LAMBDA,
+                                                 stretch2CornersOpt,
+                                                 numModelParams,
+                                                 optIters)
     
                 bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += np.array([model_mean, model_std])
                 _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
@@ -552,7 +577,7 @@ def fitBackgroundRadially(inImage,
                           bottomKthPerc = 0.35,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
-                          numStrides = 1,
+                          numStrides = 0,
                           finiteSampleBias = 400):
     """ fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
