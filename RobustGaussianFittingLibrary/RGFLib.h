@@ -9,7 +9,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define NEGATIVE_MAX -1e+20
+#define NEGATIVE_MAX -(1e+10)
 
 void islandRemoval(unsigned char* inMask, unsigned char* outMask,
  	 			   unsigned int X, unsigned int Y,

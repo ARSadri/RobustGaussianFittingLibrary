@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import os
 import scipy.stats
 from cProfile import label
+from docutils.nodes import inline
 np.set_printoptions(suppress = True)
 np.set_printoptions(precision = 2)
  
@@ -52,7 +53,7 @@ def visOrderStat():
     print('visOrderStat')
     # std of a few closests samplse of a gaussian to its average
     # is less than the actual std:
-    allN = list([2000])
+    allN = list([10])
     intervals = np.arange(0.01,1.01,0.01)
     for N in allN:
         Data = np.random.randn(N)
@@ -68,7 +69,6 @@ def visOrderStat():
         del pBar
         plt.plot(intervals, result_STD)
         plt.plot(intervals, result_MSSE)
-    plt.plot(intervals, np.power(intervals, 1.4))
     plt.plot(intervals, intervals)
     plt.legend(allN)
     plt.title('The estimated STD by the portion of \ninliers of a Gaussian structure')
@@ -386,12 +386,13 @@ def test_fitBackgroundRadiallyTensor_multiproc():
 
 def test_SginleGaussianVec():
     print('test_SginleGaussianVec')
-    RNN0 = 50 + 5*np.random.randn(50)
-    RNN1 = 200*(np.random.rand(25)-0.5)
+    RNN0 = 50 + 5*np.random.randn(1000)
+    RNN1 = 200*(np.random.rand(500)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
-    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=3.0)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.35, MSSE_LAMBDA=3.0)
+    print(mP)
     RobustGaussianFittingLibrary.misc.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
     plt.plot(testData,'.'), 
@@ -420,49 +421,61 @@ def test_fitValue2Skewed():
     
 def test_fitValue2Skewed_sweep_over_N():
     print('test_fitValue2Skewed_sweep_over_N')
-    numIter = 100
-    maxN = 500
-    minN = 2
-    mode_all = np.zeros((maxN-minN, numIter))
-    std_all = np.zeros((maxN-minN, numIter))
-    std_base = np.zeros((maxN-minN, numIter))
-    rmod_all = np.zeros((maxN-minN, numIter))
-    rstd_all = np.zeros((maxN-minN, numIter))
+    numIter = 1000
+    maxN = 64
+    minN = 3
+    mean_inliers = np.zeros((maxN-minN, numIter))
+    std_inliers = np.zeros((maxN-minN, numIter))
+    robustSkew_mean = np.zeros((maxN-minN, numIter))
+    robustSkew_std = np.zeros((maxN-minN, numIter))
+    robust_mean = np.zeros((maxN-minN, numIter))
+    robust_std = np.zeros((maxN-minN, numIter))
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
     x = np.zeros(maxN-minN)
+    
+    timeSkew = 0
+    timeR = 0
     for N in range(minN,maxN):
         for iter in range(numIter):
             RNN0 = np.random.randn(N)
-            RNN1 = 7+5*(np.random.rand(int(N*0.5))-0.5)
+            RNN1 = 7+5*(np.random.rand(int(N*0.25))-0.5)
             testData = np.concatenate((RNN0, RNN1)).flatten()
-            #testData = RNN0.flatten()
             np.random.shuffle(testData)
-            rmode, rstd = RobustGaussianFittingLibrary.fitValue2Skewed(testData, 
+            time_time = time.time()
+            rmodeSkew, rstdSkew = RobustGaussianFittingLibrary.fitValue2Skewed(testData, 
                                                                 topKthPerc=0.5, 
-                                                                bottomKthPerc=0.25,
-                                                                MSSE_LAMBDA=3.0)
-            mode_all[N-minN, iter] = RNN0.mean()
-            std_all[N-minN, iter] = RobustGaussianFittingLibrary.MSSE(np.squeeze(RNN0), MSSE_LAMBDA = 3.0, k=int(0.5*N))
-            std_base[N-minN, iter] = RNN0.std()
-            rmod_all[N-minN, iter] = rmode
-            rstd_all[N-minN, iter] = rstd
+                                                                bottomKthPerc=0.3,
+                                                                MSSE_LAMBDA=3.0,
+                                                                optIters= 12)
+            timeSkew = time.time() - time_time
+            time_time = time.time()
+            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData, 
+                                                                topKthPerc=0.5, 
+                                                                bottomKthPerc=0.3,
+                                                                MSSE_LAMBDA=3.0,
+                                                                optIters= 12)
+            timeR = time.time() - time_time
+            mean_inliers[N-minN, iter] = RNN0.mean()
+            std_inliers[N-minN, iter] = RNN0.std()
+            robustSkew_mean[N-minN, iter] = rmodeSkew
+            robustSkew_std[N-minN, iter] = rstdSkew
+            robust_mean[N-minN, iter] = rmode
+            robust_std[N-minN, iter] = rstd
         x[N-minN] = testData.shape[0]
         pBar.go()
     del pBar
+        
+    print(timeR/timeSkew)
     
-    mode_all = mode_all.mean(1)
-    std_all = std_all.mean(1)
-    std_base = std_base.mean(1)
-    rmod_all = rmod_all.mean(1)
-    rstd_all = rstd_all.mean(1)
-    
-    plt.plot(x, mode_all, '.')
-    plt.plot(x, rmod_all, '.')
+    plt.plot(x, mean_inliers.mean(1), '.', label = 'mean of inliers')
+    plt.plot(x, robustSkew_mean.mean(1), '.', label = 'robust skewed mean of data')
+    plt.plot(x, robust_mean.mean(1), '.', label = 'robust mean of data')
+    plt.legend()
     plt.show()
     
-    plt.plot(x, std_base, '.', label='std_base')
-    plt.plot(x, std_all, '.', label='std_all')
-    plt.plot(x, rstd_all, '.', label='rstd_all')
+    plt.plot(x, std_inliers.mean(1), '.', label='std of inliers')
+    plt.plot(x, robustSkew_std.mean(1), '.', label='robust skewed std of data')
+    plt.plot(x, robust_std.mean(1), '.', label='robust std of data')
     plt.grid()
     plt.legend()
     plt.show()
@@ -523,19 +536,6 @@ def test_fitValueTensor_MultiProc():
     print(time.time() - nowtime)
     print(modelParamsMap)
 
-def test_fitValueSmallSample(): 
-    print('test_fitValueSmallSample')
-    inliers = np.random.randn(3)
-    outliers = np.array([10])
-    testData = np.hstack((inliers, outliers))
-    np.random.shuffle(testData)
-    print('testing RobustSingleGaussianVecPy')
-    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
-    print(mP)
-    #inds = np.where(np.fabs(testData)<50)
-    #print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
-    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
-
 def test_fitLineTensor_MultiProc():
     print('test_fitLineTensor_MultiProc')
     n_F, n_R, n_C = (500, 32, 32)
@@ -556,33 +556,33 @@ def test_fitLineTensor_MultiProc():
     plt.imshow(lP[1]), plt.show()
     plt.imshow(lP[2]), plt.show()
     
-def test_fitValueSmallSample():
+def test_fitValueSmallSample(): 
     print('test_fitValueSmallSample')
-    inliers = np.random.randn(3)
-    outliers = np.array([10])
+    inliers = np.random.randn(100)
+    outliers = np.array([100, 64])
     testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
-    print('testing RobustSingleGaussianVecPy')
-    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.4, MSSE_LAMBDA=3.0)
+    print('testing fitValue with ' + str(inliers.shape[0]) + ' inliers and ' + str(outliers.shape[0]) + ' outliers.')
+    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, 
+                                               bottomKthPerc=0.35, MSSE_LAMBDA=3.0,
+                                               modelValueInit = 100)
+    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
     print(mP)
-    #inds = np.where(np.fabs(testData)<50)
-    #print('(' + str(testData[inds].mean())+ ', ' + str(testData[inds].std()) + ')')
-    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))                                   
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitValue2Skewed_sweep_over_N()
+    test_SginleGaussianVec()
+    visOrderStat()
     test_removeIslands()
     test_fitBackgroundRadially()
     test_fitLineTensor_MultiProc()
-    visOrderStat()
-    test_fitValue2Skewed_sweep_over_N()
     test_textProgBar()
     test_bigTensor2SmallsInds()
     test_RobustAlgebraicPlaneFittingPy()
     test_flatField()
-    test_SginleGaussianVec()
-    test_fitValueTensor_MultiProc()
     test_fitValueSmallSample()
+    test_fitValueTensor_MultiProc()
     test_fitBackgroundRadiallyTensor_multiproc()
     test_PDF2Uniform()
     test_fitBackgroundTensor()
