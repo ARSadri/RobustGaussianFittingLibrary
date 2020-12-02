@@ -220,18 +220,9 @@ float MSSE(float* error, unsigned int vecLen, float MSSE_LAMBDA,
         i++;
     }
     cumulative_sum_perv = cumulative_sum;
-    //Officially i - rho, but many use i so do we just for similarity.
-    estScale = fabs(sqrt(cumulative_sum_perv / (float)(i)));
+    //Officially i - rho, and rho = 1 mostly here
+    estScale = fabs(sqrt(cumulative_sum_perv / (float)(i-1)));
 
-    /*
-    estScale = 0;
-    float tmp = 0;
-    for(int q=0; q<i; q++) {
-        estScale += sortedSqError[q].vecData;
-        tmp += 1;
-    }
-    estScale = sqrt((i/(float)(i-1))*estScale / tmp);
-     */
     free(sortedSqError);
     return estScale;
 }
@@ -334,13 +325,10 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
 
 
         float* residual;
-        float* weights;
-        weights = (float*) malloc(N * sizeof(float));
         residual = (float*) malloc(N * sizeof(float));
         estScale = 0;
         for (i = 0; i < N; i++) {
             residual[i]  = vec[i] - theta;
-            weights[i] = 1;
             if(i<(int)(N*topkPerc)) {
             	estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
             }
@@ -348,7 +336,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
         estScale = sqrt(estScale/((int)(N*topkPerc)));
 
         if(MSSE_LAMBDA>0) {
-            estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, (int)(N*topkPerc), minimumResidual);
+            estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc), minimumResidual);
 			theta = 0;
 			tmp = 0;
 			for(i=0; i<N; i++) {
