@@ -5,7 +5,7 @@
 // gcc -fPIC -shared -o RobustGausFitLib.c RobustGausFitLib.so
 
 #include "RGFLib.h"
-
+#include <stdio.h>
 //https://research.ijcaonline.org/volume122/number21/pxc3905155.pdf
 
 void dfs(unsigned char* inMask, unsigned int* mask, 
@@ -304,7 +304,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     	if(theta == modelParams[0])
     		theta = NEGATIVE_MAX;
 
-        for(iter=0; iter<optIters; iter++) {
+        for(iter=0; iter<optIters-2; iter++) {
             for (i = 0; i < N; i++) {
                 errorVec[i].vecData  = fabs(vec[i] - theta);
                 errorVec[i].indxs = i;
@@ -324,30 +324,42 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
         }
 
 
-        float* residual;
-        residual = (float*) malloc(N * sizeof(float));
-        estScale = 0;
-        for (i = 0; i < N; i++) {
-            residual[i]  = vec[i] - theta;
-            if(i<(int)(N*topkPerc)) {
-            	estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
-            }
-        }
-        estScale = sqrt(estScale/((int)(N*topkPerc)));
+		float* weights;
+		weights = (float*) malloc(N * sizeof(float));
+		float* residual;
+		residual = (float*) malloc(N * sizeof(float));
+		//Final mean-shift touch (which is now outlier free), very expensive
+		estScale = 0;
+		for (i = 0; i < N; i++) {
+			residual[i]  = vec[i] - theta;
+			weights[i] = 1;
+			if(i<(int)(N*topkPerc)) {
+				estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
+			}
+		}
+		estScale = sqrt(estScale/((int)(N*topkPerc)));
 
-        if(MSSE_LAMBDA>0) {
-            estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc), minimumResidual);
-			theta = 0;
-			tmp = 0;
-			for(i=0; i<N; i++) {
-				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
-					theta += vec[i];
-					tmp++;
+		if(MSSE_LAMBDA>0) {
+			for (iter = 0; iter < 2; iter++) {
+				estScale = MSSEWeighted(residual, weights,
+						                N, MSSE_LAMBDA,
+										(int)(N*topkPerc),
+										minimumResidual);
+				theta = 0;
+				tmp = 0;
+				for(i=0; i<N; i++) {
+					if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+						theta += vec[i];
+						tmp++;
+					}
+				}
+				theta = theta / tmp;
+				for (i = 0; i < N; i++) {
+					residual[i]  = vec[i] - theta;
 				}
 			}
-			theta = theta / tmp;
         }
-
+		free(weights);
         free(residual);
     }
     else {
@@ -602,7 +614,8 @@ void lineAlgebraicModelEval(float* x, float* y_fit, float* mP, unsigned int N) {
 }
 
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
-                                unsigned int N, float topkPerc, float botkPerc, float MSSE_LAMBDA) {
+                                unsigned int N, float topkPerc,
+								float botkPerc, float MSSE_LAMBDA) {
     float model[2];
     unsigned int i, iter, cnt;
     unsigned int sampleSize;
@@ -640,8 +653,8 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
     mP[1] = model[1];
     residual = (float*) malloc(N * sizeof(float));
     for (i = 0; i < N; i++)
-        residual[i]  = y[i] - (model[0]*x[i] + model[1]) + ((float) rand() / (RAND_MAX))/4;    
-        //Noise stabilizes MSSE
+        residual[i]  = y[i] - (model[0]*x[i] + model[1]);
+    	// + ((float) rand() / (RAND_MAX))/4; //Noise stabilizes MSSE
     mP[2] = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc), 0);
 
     free(sample_x);
