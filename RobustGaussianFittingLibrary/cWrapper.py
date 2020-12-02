@@ -45,7 +45,17 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k,
 RGFCLib.MSSE.restype = ctypes.c_float
 RGFCLib.MSSE.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                ctypes.c_int, ctypes.c_float, ctypes.c_int, ctypes.c_float ]
+                ctypes.c_uint, ctypes.c_float, ctypes.c_uint, ctypes.c_float ]
+
+'''
+float MSSEWeighted(float* error, float* weights, unsigned int vecLen, 
+                   float MSSE_LAMBDA, unsigned int k, float minimumResidual)
+'''
+RGFCLib.MSSEWeighted.restype = ctypes.c_float
+RGFCLib.MSSEWeighted.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_uint, ctypes.c_float, ctypes.c_uint, ctypes.c_float ]
 
 '''
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,

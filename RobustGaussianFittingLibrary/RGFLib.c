@@ -221,9 +221,59 @@ float MSSE(float* error, unsigned int vecLen, float MSSE_LAMBDA,
     }
     cumulative_sum_perv = cumulative_sum;
     //Officially i - rho, but many use i so do we just for similarity.
-    estScale = fabs(sqrt(cumulative_sum_perv / (float)(i-1)));
+    estScale = fabs(sqrt(cumulative_sum_perv / (float)(i)));
 
+    /*
+    estScale = 0;
+    float tmp = 0;
+    for(int q=0; q<i; q++) {
+        estScale += sortedSqError[q].vecData;
+        tmp += 1;
+    }
+    estScale = sqrt((i/(float)(i-1))*estScale / tmp);
+     */
     free(sortedSqError);
+    return estScale;
+}
+
+float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
+                   float MSSE_LAMBDA, unsigned int k, float minimumResidual) {
+    unsigned int i, q;
+    float estScale, cumulative_sum, tmp;
+    struct sortStruct* sortedSqWErrors;
+
+    if((vecLen < k) || (vecLen<=0))
+        return(-1);
+
+    sortedSqWErrors = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
+
+    for (i = 0; i < vecLen; i++) {
+        sortedSqWErrors[i].vecData  = weights[i]*error[i]*weights[i]*error[i];
+        sortedSqWErrors[i].indxs = i;
+    }
+    quickSort(sortedSqWErrors,0,vecLen-1);
+
+    cumulative_sum = 0;
+    i=0;
+    while ((i < vecLen) &&( (i<k) | (sortedSqWErrors[i].vecData < minimumResidual*minimumResidual) ) ){
+        cumulative_sum += sortedSqWErrors[i].vecData;
+        i++;
+    }
+    for (i = i; i < vecLen; i++) {
+        if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqWErrors[i].vecData )
+            break;
+        cumulative_sum += sortedSqWErrors[i].vecData ;
+    }
+
+    estScale = 0;
+    tmp = 0;
+    for(q=0; q<i; q++) {
+        estScale += sortedSqWErrors[q].vecData;
+        tmp += weights[sortedSqWErrors[q].indxs];
+    }
+    estScale = sqrt((i/(float)(i-1))*estScale / tmp);
+
+    free(sortedSqWErrors);
     return estScale;
 }
 
@@ -236,7 +286,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     float tmp, estScale;
     unsigned int i, iter;
 
-    float* residual;
+
 
     struct sortStruct* errorVec;
     errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
@@ -282,10 +332,15 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
             theta = theta / tmp;
         }
 
+
+        float* residual;
+        float* weights;
+        weights = (float*) malloc(N * sizeof(float));
         residual = (float*) malloc(N * sizeof(float));
         estScale = 0;
         for (i = 0; i < N; i++) {
             residual[i]  = vec[i] - theta;
+            weights[i] = 1;
             if(i<(int)(N*topkPerc)) {
             	estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
             }
@@ -293,7 +348,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
         estScale = sqrt(estScale/((int)(N*topkPerc)));
 
         if(MSSE_LAMBDA>0) {
-            estScale = MSSE(residual, N, MSSE_LAMBDA, (int)(N*topkPerc), minimumResidual);
+            estScale = MSSEWeighted(residual, weights, N, MSSE_LAMBDA, (int)(N*topkPerc), minimumResidual);
 			theta = 0;
 			tmp = 0;
 			for(i=0; i<N; i++) {
@@ -322,47 +377,6 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     modelParams[1] = estScale;
 
     free(errorVec);
-}
-
-float MSSEWeighted(float* error, float* weights, unsigned int vecLen, 
-                   float MSSE_LAMBDA, unsigned int k, float minimumResidual) {
-    unsigned int i, q;
-    float estScale, cumulative_sum, tmp;
-    struct sortStruct* sortedSqWErrors;
-
-    if((vecLen < k) || (vecLen<=0))
-        return(-1);
-
-    sortedSqWErrors = (struct sortStruct*) malloc(vecLen * sizeof(struct sortStruct));
-
-    for (i = 0; i < vecLen; i++) {
-        sortedSqWErrors[i].vecData  = error[i]*error[i];
-        sortedSqWErrors[i].indxs = i;
-    }
-    quickSort(sortedSqWErrors,0,vecLen-1);
-
-    cumulative_sum = 0;
-    i=0;
-    while ((i < vecLen) &&( (i<k) | (sortedSqWErrors[i].vecData < minimumResidual*minimumResidual) ) ){
-        cumulative_sum += sortedSqWErrors[i].vecData;
-        i++;
-    }
-    for (i = i; i < vecLen; i++) {
-        if ( MSSE_LAMBDA*MSSE_LAMBDA * cumulative_sum < (i-1)*sortedSqWErrors[i].vecData )
-            break;
-        cumulative_sum += sortedSqWErrors[i].vecData ;
-    }
-
-    estScale = 0;
-    tmp = 0;
-    for(q=0; q<i; q++) {
-        estScale += sortedSqWErrors[q].vecData;
-        tmp += weights[sortedSqWErrors[q].indxs];
-    }
-    estScale = sqrt((i/(float)(i-1))*estScale / tmp);
-
-    free(sortedSqWErrors);
-    return estScale;
 }
 
 void fitValue2Skewed(float* inVec, float* inWeights,
@@ -493,13 +507,13 @@ void fitValue2Skewed(float* inVec, float* inWeights,
     }
     
     //////////////// calculate the std by inliers  /////////////////
-    float *wResiduals;
-    wResiduals = (float*) malloc(N * sizeof(float));
+    float *residuals;
+    residuals = (float*) malloc(N * sizeof(float));
 
     tmp = 0;
     estScale = 0;
     for (i = 0; i < N; i++) {
-        wResiduals[i]  = weights[i]*fabs(theta - vec[i]);
+        residuals[i]  = fabs(theta - vec[i]);
         if(i<topk) {
         	estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
         	tmp += weights[i];
@@ -507,11 +521,11 @@ void fitValue2Skewed(float* inVec, float* inWeights,
     }
     estScale = sqrt(estScale/tmp);
     if(MSSE_LAMBDA) {
-    	estScale = MSSEWeighted(wResiduals, weights, N, MSSE_LAMBDA, topk, minimumResidual);
+    	estScale = MSSEWeighted(residuals, weights, N, MSSE_LAMBDA, topk, minimumResidual);
 		theta = 0;
 		tmp = 0;
 		for(i=0; i<N; i++) {
-			if(fabs(wResiduals[i])<MSSE_LAMBDA*estScale) {
+			if(fabs(weights[i]*residuals[i])<MSSE_LAMBDA*estScale) {
 				theta += weights[i]*vec[i];
 				tmp += weights[i];
 			}
@@ -522,7 +536,7 @@ void fitValue2Skewed(float* inVec, float* inWeights,
 	modelParams[0] = theta;
     modelParams[1] = estScale;
 
-    free(wResiduals);
+    free(residuals);
     free(vec);
     free(weights);
     free(errorVec);

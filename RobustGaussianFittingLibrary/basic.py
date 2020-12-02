@@ -55,6 +55,34 @@ def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12, minimumResidual = 0):
                         inVec.shape[0],
                         float(MSSE_LAMBDA), k, minimumResidual)
 
+def MSSEWeighted(inVec, inWeights = None, 
+                 MSSE_LAMBDA = 3.0, k = 12, minimumResidual = 0):
+    """ A C implementation of MSSE'99
+        
+        Input arguments
+        ~~~~~~~~~~~~~~~
+        inVec : the residuals verctor
+        inWeights : the weights for residuals
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        k : minimum number of inliers, 12 is the least.
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
+        
+        Output
+        ~~~~~~
+        a scalar, STD of the Gaussian. If you'd like to know 
+        its relatino to $\lambda$, have a look at the function 
+        visOrderStat in the tests.py 
+    """
+    if ( inWeights is None):
+        inWeights = np.ones(shape = inVec.shape, dtype=inVec.dtype)
+    return RGFCLib.MSSEWeighted((inVec.copy()).astype('float32'),
+                                (inWeights.copy()).astype('float32'),
+                                inVec.shape[0],
+                                float(MSSE_LAMBDA), k, minimumResidual)
+
 ###########################################################################################
 ################################### Robust AVG and STD ####################################
                                        

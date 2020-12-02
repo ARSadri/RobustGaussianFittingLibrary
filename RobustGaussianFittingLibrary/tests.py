@@ -74,6 +74,24 @@ def visOrderStat():
     plt.title('The estimated STD by the portion of \ninliers of a Gaussian structure')
     plt.show()
 
+def test_MSSE():
+    n_iters = 100
+    min_N = 3
+    max_N = 100
+    
+    estScaleMSSE = np.zeros((n_iters, max_N - min_N))
+    estScaleMSSEWeighted = np.zeros((n_iters, max_N - min_N))
+    for iterCnt, iter in enumerate(range(n_iters)):
+        for NCnt, N in enumerate(np.arange(min_N,max_N)):
+            vec = np.random.randn(N)
+            res = np.abs(vec - vec.mean())
+            estScaleMSSE[iterCnt, NCnt] =  RobustGaussianFittingLibrary.MSSE(res, k=int(N*0.5))
+            estScaleMSSEWeighted[iterCnt, NCnt] =  RobustGaussianFittingLibrary.MSSEWeighted(res, k=int(N*0.5))
+    plt.plot(estScaleMSSE.mean(0), label='estScaleMSSE')
+    plt.plot(estScaleMSSEWeighted.mean(0), label='estScaleMSSEWeighted')
+    plt.legend()
+    plt.show()
+    
 def gkern(kernlen):
     lim = kernlen//2 + (kernlen % 2)/2
     x = np.linspace(-lim, lim, kernlen+1)
@@ -571,6 +589,7 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_MSSE()
     test_fitValue2Skewed_sweep_over_N()
     test_SginleGaussianVec()
     visOrderStat()
