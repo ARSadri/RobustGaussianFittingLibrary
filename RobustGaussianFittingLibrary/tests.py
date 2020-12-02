@@ -184,6 +184,64 @@ def test_bigTensor2SmallsInds():
     rowClmInds, segInds = RobustGaussianFittingLibrary.useMultiproc.bigTensor2SmallsInds(a.shape, 2,3)
     print(rowClmInds)
 
+def test_fitValue_sweep():
+    print('test_fitValue2Skewed_sweep_over_N')
+    numIter = 1000
+    maxN = 100
+    minN = 3
+    mean_inliers = np.zeros((maxN-minN, numIter))
+    std_inliers = np.zeros((maxN-minN, numIter))
+    robust_mean = np.zeros((maxN-minN, numIter))
+    robust_std = np.zeros((maxN-minN, numIter))
+    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
+    x = np.zeros(maxN-minN)
+
+    timeSkew = 0
+    timeR = 0
+    for N in range(minN,maxN):
+        for iter in range(numIter):
+            RNN0 = np.random.randn(N)
+            RNN1 = 1000+5*(np.random.rand(int(N*0.25))-0.5)
+            testData = np.concatenate((RNN0, RNN1)).flatten()
+            np.random.shuffle(testData)
+            time_time = time.time()
+            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData, 
+                                                                topKthPerc=0.5, 
+                                                                bottomKthPerc=0.3,
+                                                                MSSE_LAMBDA=3.0,
+                                                                optIters= 12)
+            timeR = time.time() - time_time
+            mean_inliers[N-minN, iter] = RNN0.mean()
+            std_inliers[N-minN, iter] = RNN0.std()
+            robustSkew_mean[N-minN, iter] = rmodeSkew
+            robustSkew_std[N-minN, iter] = rstdSkew
+            robust_mean[N-minN, iter] = rmode
+            robust_std[N-minN, iter] = rstd
+        x[N-minN] = testData.shape[0]
+        pBar.go()
+    del pBar
+        
+    print(timeR/timeSkew)
+
+    plt.plot(x, ((robust_mean-mean_inliers)/std_inliers).mean(1) - \
+               ((robust_mean-mean_inliers)/std_inliers).std(1), 
+             '.', label = 'robust mean of data - std')
+    plt.plot(x, ((robust_mean-mean_inliers)/std_inliers).mean(1), '.', label = 'robust mean of data')
+    plt.plot(x, ((robust_mean-mean_inliers)/std_inliers).mean(1) + \
+               ((robust_mean-mean_inliers)/std_inliers).std(1), 
+             '.', label = 'robust mean of data + std')
+    plt.legend()
+    plt.show()
+
+    plt.plot(x, (robust_std/std_inliers).mean(1)-(robust_std/std_inliers).std(1), 
+             '.', label='robust std of data - std')
+    plt.plot(x, (robust_std/std_inliers).mean(1), '.', label='robust std of data')
+    plt.plot(x, (robust_std/std_inliers).mean(1)+(robust_std/std_inliers).std(1), 
+             '.', label='robust std of data + std')
+    plt.grid()
+    plt.legend()
+    plt.show()    
+    
 def test_RobustAlgebraicPlaneFittingPy():
     print('test_RobustAlgebraicPlaneFittingPy')
     N = 500
@@ -590,6 +648,7 @@ def test_fitValueSmallSample():
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
     test_MSSE()
+    test_fitValue_sweep()
     test_fitValue2Skewed_sweep_over_N()
     test_SginleGaussianVec()
     test_flatField()
