@@ -16,7 +16,9 @@ void islandRemoval(unsigned char* inMask, unsigned char* outMask,
 				   unsigned int islandSizeThreshold);
 
 float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k, float minimumResidual);
-
+float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
+                   float MSSE_LAMBDA, unsigned int k, float minimumResidual);
+	
 void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
 		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
 
