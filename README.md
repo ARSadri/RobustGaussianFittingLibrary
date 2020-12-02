@@ -9,13 +9,14 @@ Try it:
 from RobustGaussianFittingLibrary import fitValue
 import numpy as np
 
-inliers = 50 + 5*np.random.randn(30)
-outliers = 200*(np.random.rand(20)-0.5)
+inliers = 50 + 5*np.random.randn(70)
+outliers = 500*(np.random.rand(30)-0.5)
 inVec = np.hstack((inliers, outliers))
 np.random.shuffle(inVec)
 
 mP = fitValue(inVec)
-print(mP)
+print('inliers.mean -> ' + str(inliers.mean()) + ', inliers.std -> ' + str(inliers.std()))
+print('robust.mean -> ' + str(mP[0]) + ', robust.std -> ' + str(mP[1]))
 ```
 
 Are average and standard deviation good enough as statistics? Are they proper statistics to use for fitting lines and planes to data? What would happen to these statistics in presence of outliers? One solution seems to be Median, but what would happen if number of outliers increase?
