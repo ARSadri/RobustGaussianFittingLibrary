@@ -188,7 +188,7 @@ def test_fitValue_sweep():
     print('test_fitValue2Skewed_sweep_over_N')
     numIter = 1000
     maxN = 100
-    minN = 3
+    minN = 5
     mean_inliers = np.zeros((maxN-minN, numIter))
     std_inliers = np.zeros((maxN-minN, numIter))
     robust_mean = np.zeros((maxN-minN, numIter))
@@ -196,7 +196,6 @@ def test_fitValue_sweep():
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
     x = np.zeros(maxN-minN)
 
-    timeSkew = 0
     timeR = 0
     for N in range(minN,maxN):
         for iter in range(numIter):
@@ -209,20 +208,16 @@ def test_fitValue_sweep():
                                                                 topKthPerc=0.5, 
                                                                 bottomKthPerc=0.3,
                                                                 MSSE_LAMBDA=3.0,
-                                                                optIters= 12)
+                                                                optIters= 1)
             timeR = time.time() - time_time
             mean_inliers[N-minN, iter] = RNN0.mean()
             std_inliers[N-minN, iter] = RNN0.std()
-            robustSkew_mean[N-minN, iter] = rmodeSkew
-            robustSkew_std[N-minN, iter] = rstdSkew
             robust_mean[N-minN, iter] = rmode
             robust_std[N-minN, iter] = rstd
-        x[N-minN] = testData.shape[0]
+        x[N-minN] = N
         pBar.go()
     del pBar
         
-    print(timeR/timeSkew)
-
     plt.plot(x, ((robust_mean-mean_inliers)/std_inliers).mean(1) - \
                ((robust_mean-mean_inliers)/std_inliers).std(1), 
              '.', label = 'robust mean of data - std')
@@ -647,8 +642,8 @@ def test_fitValueSmallSample():
     
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_MSSE()
     test_fitValue_sweep()
+    test_MSSE()
     test_fitValue2Skewed_sweep_over_N()
     test_SginleGaussianVec()
     test_flatField()

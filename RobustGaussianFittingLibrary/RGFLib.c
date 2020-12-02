@@ -295,7 +295,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     else if(N==2) {
         optIters = 0;
     }
-    if(N<12) {
+    if(N<5) {
         botkPerc = 0;
         MSSE_LAMBDA = 0;
     }
@@ -304,15 +304,12 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     	if(theta == modelParams[0])
     		theta = NEGATIVE_MAX;
 
-        for(iter=0; iter<optIters-2; iter++) {
+        for(iter=0; iter<optIters; iter++) {
             for (i = 0; i < N; i++) {
                 errorVec[i].vecData  = fabs(vec[i] - theta);
                 errorVec[i].indxs = i;
             }
             quickSort(errorVec,0,N-1);
-
-            if(iter==optIters-1)
-            	botkPerc = 0;
 
             theta = 0;
             tmp = 0;
@@ -328,7 +325,6 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
 		weights = (float*) malloc(N * sizeof(float));
 		float* residual;
 		residual = (float*) malloc(N * sizeof(float));
-		//Final mean-shift touch (which is now outlier free), very expensive
 		estScale = 0;
 		for (i = 0; i < N; i++) {
 			residual[i]  = vec[i] - theta;
@@ -340,24 +336,40 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
 		estScale = sqrt(estScale/((int)(N*topkPerc)));
 
 		if(MSSE_LAMBDA>0) {
-			for (iter = 0; iter < 2; iter++) {
 				estScale = MSSEWeighted(residual, weights,
 						                N, MSSE_LAMBDA,
 										(int)(N*topkPerc),
 										minimumResidual);
-				theta = 0;
-				tmp = 0;
-				for(i=0; i<N; i++) {
-					if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
-						theta += vec[i];
-						tmp++;
+				if(optIters>1) {
+					theta = 0;
+					tmp = 0;
+					for(i=0; i<N; i++) {
+						if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+							theta += vec[i];
+							tmp++;
+						}
+					}
+					theta = theta / tmp;
+					for (i = 0; i < N; i++) {
+						residual[i]  = vec[i] - theta;
+					}
+					estScale = MSSEWeighted(residual, weights,
+							                N, MSSE_LAMBDA,
+											(int)(N*topkPerc),
+											minimumResidual);
+					theta = 0;
+					tmp = 0;
+					for(i=0; i<N; i++) {
+						if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+							theta += vec[i];
+							tmp++;
+						}
+					}
+					theta = theta / tmp;
+					for (i = 0; i < N; i++) {
+						residual[i]  = vec[i] - theta;
 					}
 				}
-				theta = theta / tmp;
-				for (i = 0; i < N; i++) {
-					residual[i]  = vec[i] - theta;
-				}
-			}
         }
 		free(weights);
         free(residual);
