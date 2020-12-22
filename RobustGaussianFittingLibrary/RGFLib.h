@@ -56,7 +56,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int X, unsigned int Y,
 				float topkPerc, float botkPerc,
 				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-				unsigned char numModelParams, unsigned char optIters);
+				unsigned char numModelParams, unsigned char optIters,
+				float minimumResidual);
 
 void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor,
 						float *model_mean, float *model_std,
@@ -64,10 +65,11 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						unsigned int N, unsigned int X, unsigned int Y,
 						float topkPerc, float botkPerc,
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-						unsigned char numModelParams, unsigned char optIters);
+						unsigned char numModelParams, unsigned char optIters,
+						float minimumResidual);
 
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
-						   float* modelParamsMap,
+						   float* modelParamsMap, float* vecMP,
  						   unsigned int minRes, 
 						   unsigned int maxRes, 
 						   unsigned int shellWidth,
@@ -76,5 +78,6 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
 						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, 
 						   float MSSE_LAMBDA, 
-						   unsigned char optIters);
+						   unsigned char optIters,
+						   float minimumResidual);
 #endif

@@ -390,7 +390,8 @@ def fitBackground(inImage,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,
                   optIters = 12,
-                  numStrides = 0):
+                  numStrides = 0,
+                  minimumResidual = 0):
     """ fit a plane to the background of the image uainf convolving the window by number of strides
         and calculate the value of the background plane and STD at the location of each pixel.
     
@@ -427,6 +428,7 @@ def fitBackground(inImage,
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
                     will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
                     will be analysed and averaged and so on ...
+        minimumResidual: Minimum fitting error if available
 
     Output
     ~~~~~~
@@ -458,7 +460,8 @@ def fitBackground(inImage,
                      MSSE_LAMBDA,
                      stretch2CornersOpt,
                      numModelParams,
-                     optIters)
+                     optIters,
+                     minimumResidual)
     
     _sums = np.ones((2, n_R, n_C), dtype='uint8')
     if(numStrides>1):
@@ -481,7 +484,8 @@ def fitBackground(inImage,
                                  MSSE_LAMBDA,
                                  stretch2CornersOpt,
                                  numModelParams,
-                                 optIters)
+                                 optIters,
+                                 minimumResidual)
                 bckParam[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += modelParamsMap
                 _sums[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
     return(bckParam / _sums)
@@ -496,7 +500,8 @@ def fitBackgroundTensor(inImage_Tensor,
                         stretch2CornersOpt = 0,
                         numModelParams = 4,
                         optIters = 12,
-                        numStrides = 0):
+                        numStrides = 0,
+                        minimumResidual = 0):
     """ fit a plane by convolving the model to each image in the input Tensor and report background values and STD for each pixel for each plane
     
     Input arguments
@@ -527,6 +532,7 @@ def fitBackgroundTensor(inImage_Tensor,
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
                     will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
                     will be analysed and averaged. This means that the method will run 7 times.
+        minimumResidual : minimum fitting error if available
     Output
     ~~~~~~
         2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
@@ -560,11 +566,12 @@ def fitBackgroundTensor(inImage_Tensor,
                                     MSSE_LAMBDA,
                                     stretch2CornersOpt,
                                     numModelParams,
-                                    optIters)
+                                    optIters,
+                                    minimumResidual)
 
     bckParam = np.array([model_mean, model_std])    
     _sums = np.ones((2, n_F, n_R, n_C), dtype='uint8')
-    if(numStrides>1):
+    if(numStrides>0):
         wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
         wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
         for wSDRow in wSDListRows:
@@ -589,7 +596,8 @@ def fitBackgroundTensor(inImage_Tensor,
                                                  MSSE_LAMBDA,
                                                  stretch2CornersOpt,
                                                  numModelParams,
-                                                 optIters)
+                                                 optIters,
+                                                 minimumResidual)
     
                 bckParam[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += np.array([model_mean, model_std])
                 _sums[:,:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
@@ -606,7 +614,9 @@ def fitBackgroundRadially(inImage,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
                           numStrides = 0,
-                          finiteSampleBias = 400):
+                          finiteSampleBias = 200,
+                          minimumResidual = 0,
+                          return_vecMP = False):
     """ fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
         and STD at the location of each pixel.
@@ -643,10 +653,16 @@ def fitBackgroundRadially(inImage,
                        otherwise the code may return non-robust results.
         numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
+        minimumResidual: the minimum residual for MSSE to initialize with, similar to RANSAC,
+            default: 0
+        return_vecMP: True if you'd like to receive a vector with radial info as a vector
+            
 
     Output
     ~~~~~~
-        numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
+        modelParametersMap: numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD. In case return_vecMP is set to True, you get a tuple in the output, the first element will be numpy array modelParametersMap which is the same size as the image and 
+        the second element will be a vector of size the maximum radius with two elements,
+        average and standard deviation.
     """
     
     if(inMask is None):
@@ -657,15 +673,21 @@ def fitBackgroundRadially(inImage,
 
     n_R = inImage.shape[0]
     n_C = inImage.shape[1]
-            
+
+    vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
+    _vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
+
     bckParam = np.zeros((2, n_R, n_C), dtype='float32')
+    if(shellWidth<1):
+        shellWidth = 1
     modelParamsMap = bckParam.copy()
-    _sums = np.zeros((2, n_R, n_C), dtype='uint8')
-    shellStrideList = np.linspace(0, shellWidth, numStrides+1, dtype='uint8')[:-1]
+    _sums = 0
+    shellStrideList = np.linspace(0, shellWidth, numStrides + 1, dtype='uint8')
     for shellStride in shellStrideList:
         RGFCLib.fitBackgroundRadially(inImage.astype('float32'),
                                       inMask,
                                       modelParamsMap,
+                                      _vecMP,
                                       minRes+shellStride,
                                       maxRes,
                                       shellWidth,
@@ -676,7 +698,12 @@ def fitBackgroundRadially(inImage,
                                       topKthPerc,
                                       bottomKthPerc,
                                       MSSE_LAMBDA,
-                                      optIters)
+                                      optIters,
+                                      minimumResidual)
         bckParam += modelParamsMap
+        vecMP += _vecMP
         _sums += 1
-    return(bckParam / _sums)
+    if(return_vecMP):
+        return(bckParam/_sums, vecMP/_sums)
+    else:
+        return(bckParam/_sums)

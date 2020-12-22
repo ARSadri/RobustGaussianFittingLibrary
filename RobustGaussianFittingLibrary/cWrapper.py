@@ -138,7 +138,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int X, unsigned int Y,
 				float topkPerc, float botkPerc,
 				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-				unsigned char numModelParams, unsigned char optIters)
+				unsigned char numModelParams, unsigned char optIters,
+                float minimumResidual)
 '''                
 RGFCLib.RSGImage.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
@@ -148,7 +149,7 @@ RGFCLib.RSGImage.argtypes = [
                 ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_float, ctypes.c_float, 
                 ctypes.c_float, ctypes.c_uint8, 
-                ctypes.c_uint8, ctypes.c_uint8]
+                ctypes.c_uint8, ctypes.c_uint8, ctypes.c_float]
        
 '''
 void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor,
@@ -157,7 +158,8 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						unsigned int N, unsigned int X, unsigned int Y,
 						float topkPerc, float botkPerc,
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-						unsigned char numModelParams, unsigned char optIters)
+						unsigned char numModelParams, unsigned char optIters,
+                        float minimumResidual)
 '''
 RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
@@ -168,11 +170,11 @@ RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
                 ctypes.c_float, ctypes.c_float, 
                 ctypes.c_float, ctypes.c_uint8, 
-                ctypes.c_uint8, ctypes.c_uint8]
+                ctypes.c_uint8, ctypes.c_uint8, ctypes.c_float]
 
 '''
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
-						   float* modelParamsMap,
+						   float* modelParamsMap, float* vecMP,
  						   unsigned int minRes, 
 						   unsigned int maxRes, 
 						   unsigned int shellWidth,
@@ -181,13 +183,16 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
 						   unsigned int X, unsigned int Y,
 						   float topkPerc, float botkPerc, 
 						   float MSSE_LAMBDA, 
-						   unsigned char optIters);
+						   unsigned char optIters,
+						   float minimumResidual);
 '''
 RGFCLib.fitBackgroundRadially.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_uint8, ctypes.c_uint32, 
                 ctypes.c_uint32, ctypes.c_uint32, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint8]
+                ctypes.c_float, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_uint8, ctypes.c_float]

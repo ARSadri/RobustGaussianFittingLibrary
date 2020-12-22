@@ -241,8 +241,8 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
         del pBar
     return (modelParamsMap)
     
-################################################################################################
-################################### background estimation library ##############################
+############################################
+###### background estimation library #######
     
 def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             inImage_Tensor, 
@@ -255,7 +255,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             stretch2CornersOpt,
                             numModelParams,
                             optIters,
-                            numStrides):
+                            numStrides,
+                            minimumResidual):
     modelParamsMap = fitBackgroundTensor(inImage_Tensor, 
                                          inMask_Tensor,
                                          winX,
@@ -266,7 +267,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                                          stretch2CornersOpt,
                                          numModelParams,
                                          optIters,
-                                         numStrides)
+                                         numStrides,
+                                         minimumResidual)
     aQ.put(list([imgCnt, modelParamsMap]))
     
 def fitBackgroundTensor_multiproc(inDataSet, inMask = None, 
@@ -278,7 +280,9 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                                         numModelParams = 4,
                                         optIters = 12,
                                         showProgress = False,
-                                        numStrides = 0):
+                                        numStrides = 0,
+                                        minimumResidual = 0,
+                                        numProcesses = None):
     """"Does fitBackgroundTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -307,6 +311,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
                     will be analysed. But if numStrides is 2, from 0 to 15, 10 to 25 and 15 to 31
                     will be analysed and averaged. This means that the method will run 7 times.
+        minimumResidual : minimum fitting error if available
     Output
     ~~~~~~
         2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
@@ -328,6 +333,8 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
 
     aQ = Queue()
     mycpucount = cpu_count() - 1
+    if(numProcesses is None):
+        numProcesses = 2*mycpucount
     if(showProgress):
         print('Multiprocessing background ' + str(f_N) + ' frames...')
     numProc = f_N
@@ -335,7 +342,8 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
     numProcessed = 0
     numBusyCores = 0
     firstProcessed = 0
-    default_stride = int(np.ceil(numProc/(2*mycpucount)))
+
+    default_stride = int(np.ceil(numProc/numProcesses))
     while(numProcessed<numProc):
         if (not aQ.empty()):
             qElement = aQ.get()
@@ -366,7 +374,8 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                             stretch2CornersOpt,
                             numModelParams,
                             optIters,
-                            numStrides)).start()
+                            numStrides,
+                            minimumResidual)).start()
             numSubmitted += stride
             numBusyCores += 1
     if(showProgress):
@@ -381,6 +390,7 @@ def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask,
                                               bottomKthPerc,
                                               MSSE_LAMBDA,
                                               optIters,
+                                              minimumResidual,
                                               imgCnt):
     mP = fitBackgroundRadially(inImg, inMask, 
                                minRes=minRes, includeCenter=includeCenter, maxRes=maxRes,
@@ -389,7 +399,8 @@ def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask,
                                topKthPerc = topKthPerc,
                                bottomKthPerc = bottomKthPerc,
                                MSSE_LAMBDA = MSSE_LAMBDA,
-                               optIters = optIters)
+                               optIters = optIters,
+                               minimumResidual = minimumResidual)
     aQ.put(list([imgCnt, mP]))
 
 def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
@@ -404,7 +415,8 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                           bottomKthPerc = 0.35,
                                           MSSE_LAMBDA = 3.0,
                                           optIters = 12,                         
-                                          showProgress = False):
+                                          showProgress = False,
+                                          minimumResidual = 0):
     """ using Multiprocessing in python, 
         fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
@@ -451,6 +463,8 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                        otherwise the code may return non-robust results.
         numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
+        minimumResidual : minimum residual to initialize MSSE just like RANSAC
+            default: 0
         showProgress: shows progress, default: False
     Output
     ~~~~~~
@@ -507,6 +521,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                             bottomKthPerc,
                             MSSE_LAMBDA,
                             optIters,
+                            minimumResidual,
                             procID)).start()
             procID += 1
             numBusyCores += 1

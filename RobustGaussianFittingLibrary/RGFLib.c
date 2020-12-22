@@ -1,8 +1,8 @@
 //#################################################################################################
 //# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
-//# Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
+//# Authors: Alireza Sadri, DESY/CFEL,															  #
+//#          Marjan Hadian Jazi, LaTrobe University,                                              #
 //#################################################################################################
-// gcc -fPIC -shared -o RobustGausFitLib.c RobustGausFitLib.so
 
 #include "RGFLib.h"
 #include <stdio.h>
@@ -885,7 +885,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
                 unsigned int X, unsigned int Y, 
                 float topkPerc, float botkPerc,
                 float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-                unsigned char numModelParams, unsigned char optIters) {
+                unsigned char numModelParams, unsigned char optIters,
+				float minimumResidual) {
 
     float* x;
     x = (float*) malloc(winX*winY * sizeof(float));
@@ -906,23 +907,25 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
 
             if(numModelParams==1) {
                 numElem = 0;
-                for(rCnt = pRowStart; rCnt < pRowEnd; rCnt++)
-                    for(cCnt = pClmStart; cCnt < pClmEnd; cCnt++)
+                for(rCnt = pRowStart; rCnt < pRowEnd; rCnt++) {
+                    for(cCnt = pClmStart; cCnt < pClmEnd; cCnt++) {
                         if(inMask[cCnt + rCnt*Y]) {
                             z[numElem] = inImage[cCnt + rCnt*Y];
                             numElem++;
                         }
-                if((int) (botkPerc*numElem)>12) {
-                    RobustSingleGaussianVec(z, mP_MOne, 0, numElem, 
-                                            topkPerc, botkPerc, 
-                                            MSSE_LAMBDA, optIters, 0);
-                    for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
-                        for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
-                            modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP_MOne[0];
-                            modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP_MOne[1];
-                        }
-                    }
-                }
+					}
+				}
+                mP_MOne[0] = 0;
+				mP_MOne[1] = 0;
+				RobustSingleGaussianVec(z, mP_MOne, 0, numElem, 
+										topkPerc, botkPerc, 
+										MSSE_LAMBDA, optIters, minimumResidual);
+				for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
+					for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
+						modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP_MOne[0];
+						modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP_MOne[1];
+					}
+				}
             }
         
             if(numModelParams==4) {
@@ -940,7 +943,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
                     
                     RobustAlgebraicPlaneFitting(x, y, z, mP, mP,
                                                 numElem, topkPerc,
-                                                botkPerc, MSSE_LAMBDA, stretch2CornersOpt, 0, 12);
+                                                botkPerc, MSSE_LAMBDA, stretch2CornersOpt, 
+												minimumResidual, 12);
                     
                     for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
                         for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
@@ -976,7 +980,8 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
                         unsigned int N, unsigned int X, unsigned int Y, 
                         float topkPerc, float botkPerc,
                         float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-                        unsigned char numModelParams, unsigned char optIters) {
+                        unsigned char numModelParams, unsigned char optIters,
+						float minimumResidual) {
 
     unsigned int frmCnt, rCnt, cCnt;
     float* modelParamsMap;
@@ -1001,7 +1006,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
                  winX, winY, X, Y,
                  topkPerc, botkPerc,
                  MSSE_LAMBDA, stretch2CornersOpt,
-                 numModelParams, optIters);
+                 numModelParams, optIters, minimumResidual);
         
         for(rCnt=0; rCnt<X; rCnt++) {
             for(cCnt=0; cCnt<Y; cCnt++) {
@@ -1016,8 +1021,8 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 }
 
 void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
-                           float* modelParamsMap,
-                            unsigned int minRes, 
+                           float* modelParamsMap, float* vecMP,
+                           unsigned int minRes,
                            unsigned int maxRes, 
                            unsigned int shellWidth,
                            unsigned char includeCenter, 
@@ -1025,36 +1030,57 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                            unsigned int X, unsigned int Y,
                            float topkPerc, float botkPerc, 
                            float MSSE_LAMBDA, 
-                           unsigned char optIters) {
+                           unsigned char optIters,
+						   float minimumResidual) {
 
     int r, maxR, shellCnt, pixX, pixY, i, j,pixInd, new_numElem;
     int shell_low, shell_high, numElem;
     float theta, sCnt, jump, X_Cent, Y_Cent;
     float mP[2];
     float* inVec;
+    float shellWidth_FSB, currentShell, area;
+    float squareSide;
     
-    if(minRes<1) minRes=1;
+    if(finiteSampleBias<1)		finiteSampleBias = 1;
+    if(minRes<finiteSampleBias)		minRes = (unsigned int) (finiteSampleBias/(2*M_PI));
 
     X_Cent = (int)(ceil(X/2));
     Y_Cent = (int)(ceil(Y/2));
 
+    squareSide = X_Cent;
+    if(squareSide > Y_Cent)		squareSide = Y_Cent;
+
     maxR = (int)(ceil(sqrt(X*X/4 + Y*Y/4)));
     float *resShells;
     resShells = (float*) malloc(maxR * sizeof(float));
-    for(i=0; i<maxR; i++)
-        resShells[i]=0;
+    for(i=0; i<maxR; i++)	resShells[i]=0;
 
     shellCnt = 0;
     if(includeCenter) {
-        resShells[shellCnt] = 1;
+        resShells[shellCnt] = 1;	//no radius 0
         shellCnt++;
     }
     resShells[shellCnt] = minRes;
 
-    while(resShells[shellCnt]<maxRes) {
-        shellCnt++;
-        resShells[shellCnt] = resShells[shellCnt-1] + shellWidth;
+    while(resShells[shellCnt] < maxRes) {
+    	shellCnt++;
+    	currentShell = resShells[shellCnt-1];
+        shellWidth_FSB = 0;
+        area = 0;
+        while( (area<finiteSampleBias) && ( currentShell+shellWidth_FSB < maxRes ) ) {
+			if(currentShell+shellWidth_FSB > squareSide) {
+				area += 4*(M_PI/2 - 2*(acos(squareSide/(currentShell+shellWidth_FSB))))*(currentShell+shellWidth_FSB);
+			}
+			else {
+				area += 2*M_PI*(currentShell + shellWidth_FSB);
+			}
+			shellWidth_FSB += 1;
+        }
+
+        if(shellWidth_FSB<shellWidth)	shellWidth_FSB = shellWidth;
+        resShells[shellCnt] = currentShell + shellWidth_FSB;
     }
+
     if(resShells[shellCnt]>maxRes) {
         resShells[shellCnt] = maxRes;
     }
@@ -1062,6 +1088,8 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
     for(i=0; i<shellCnt; i++) {
         shell_low = resShells[i];
         shell_high = resShells[i+1];
+
+        //Fill in the vector of resolution shell
         inVec = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*(shell_high+shell_low)/2 ) * sizeof(float));
         numElem = 0;
         for(r=shell_low; r<shell_high; r++) {
@@ -1075,7 +1103,7 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                 }
             }
         }
-
+        //Downsample it if it is too big
         if(numElem > finiteSampleBias) {
             new_numElem = 0;
             jump = (float)numElem/((float)finiteSampleBias);
@@ -1083,10 +1111,10 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                 inVec[new_numElem++] = inVec[(int)sCnt];
             numElem = new_numElem;
         }
-
+        //Get the model parameters
         if(optIters>0) {
             RobustSingleGaussianVec(inVec, mP, 0, numElem,
-                    topkPerc, botkPerc, MSSE_LAMBDA, optIters, 0);
+                    topkPerc, botkPerc, MSSE_LAMBDA, optIters, minimumResidual);
         }        
         else {
             mP[0] = 0;
@@ -1100,8 +1128,12 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
             mP[1] = sqrt(mP[1]);
         }
         free(inVec);
-        
+        //Fill the output with model parameters
+        //We will set four pixels around each radius as this shell
+        //This way no pixel will be forgotten
         for(r=shell_low; r<shell_high; r++) {
+			vecMP[r + 0*maxR] = mP[0];
+			vecMP[r + 1*maxR] = mP[1];
             for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
                 pixX = (int)((float)r*cos(theta) + X_Cent);
                 pixY = (int)((float)r*sin(theta) + Y_Cent);

@@ -3,7 +3,7 @@
 # Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
 #################################################################################################
 from distutils.core import setup, Extension
-_version = 'v0.1.25'
+_version = 'v0.1.26'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
@@ -17,8 +17,8 @@ setup(
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
   install_requires=[ 
           'numpy',
-          'matplotlib',
           'scipy'
+          'matplotlib',
       ],
   #cmdclass={'install': 'make all'},
   ext_modules=[Extension(name = 'RGFLib', 
