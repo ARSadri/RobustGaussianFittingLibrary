@@ -17,8 +17,8 @@ setup(
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
   install_requires=[ 
           'numpy',
-          'scipy'
-          'matplotlib',
+          'scipy',
+          'matplotlib'
       ],
   #cmdclass={'install': 'make all'},
   ext_modules=[Extension(name = 'RGFLib', 
