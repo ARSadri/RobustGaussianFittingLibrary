@@ -268,3 +268,9 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     #plt.bar(bin_edges[:-1], hist, width =, color='g',alpha=0.5)
     plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
     plt.show()
+
+def printvar(p):
+    for name in globals():
+        if(globals()[name] is p):
+            print(name, end='')
+    print(' --> ' + str(p))
