@@ -273,4 +273,5 @@ def printvar(p):
     for name in globals():
         if(globals()[name] is p):
             print(name, end='')
+            break
     print(' --> ' + str(p))
