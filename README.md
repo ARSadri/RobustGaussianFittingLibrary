@@ -3,7 +3,7 @@ A Library for Robust Gaussian Fitting using geometric models in presence of outl
 
 ## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
-Try it:
+Try it with 30% outliers:
 
 ```
 from RobustGaussianFittingLibrary import fitValue
