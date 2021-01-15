@@ -135,7 +135,7 @@ def fitValue(inVec,
                                                    MSSE_LAMBDA,
                                                    optIters,
                                                    minimumResidual)
-    return (modelParams[0], modelParams[1])
+    return modelParams
 
 def fitValue2Skewed(inVec, 
                     inWeights = None,
@@ -707,3 +707,24 @@ def fitBackgroundRadially(inImage,
         return(bckParam/_sums, vecMP/_sums)
     else:
         return(bckParam/_sums)
+
+def fitValue_by_meanShift(inVec, minSNR = 3.0, MS_numIter = 8):
+    MS_mu = inVec.mean()
+    MS_std = inVec.std()
+    for _ in range(MS_numIter):
+        rth = MS_mu + minSNR*MS_std
+        lth = MS_mu - minSNR*MS_std
+        vec = inVec[(lth<inVec) & (inVec<rth)].copy()
+        MS_mu = vec.mean()
+        MS_std = vec.std()
+    return(np.array([MS_mu, MS_std]))
+
+def fitPlane_by_meanShift(inX, inY, inZ, minSNR = 3.0, MS_numIter = 8):
+    res2 = 0*inX.copy()
+    for _ in range(MS_numIter):
+        mP = fitPlane(inX[res2<=minSNR**2],
+                      inY[res2<=minSNR**2],
+                      inZ[res2<=minSNR**2],
+                      1, 0, MSSE_LAMBDA=0)
+        res2 = (inZ - (mP[0]*inX + mP[1]*inY + mP[2]))**2/mP[3]**2
+    return(mP)
