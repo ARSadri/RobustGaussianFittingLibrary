@@ -79,6 +79,21 @@ RGFCLib.fitValue2Skewed.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_float, ctypes.c_uint32, ctypes.c_float, 
                 ctypes.c_float, ctypes.c_float, ctypes.c_uint8, ctypes.c_float]                
+
+'''
+void medianOfFits(float *vec, float *weights, 
+                  float *modelParams, float theta, unsigned int N,
+                  float topkMin, float topkMax, unsigned int numSamples, float samplePerc,
+                  float MSSE_LAMBDA, unsigned char optIters, float minimumResidual) 
+'''
+RGFCLib.medianOfFits.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_float, ctypes.c_uint32, 
+                ctypes.c_float, ctypes.c_float, ctypes.c_uint32, ctypes.c_float,   
+                ctypes.c_float, ctypes.c_uint8, ctypes.c_float]                
+
 '''
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N,
 							  float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)

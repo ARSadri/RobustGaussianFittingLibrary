@@ -518,31 +518,52 @@ void fitValue2Skewed(float* inVec, float* inWeights,
         theta = theta_new / tmp;
     }
     
-    //////////////// calculate the std by inliers  /////////////////
-    float *residuals;
-    residuals = (float*) malloc(N * sizeof(float));
+	float* residuals;
+	residuals = (float*) malloc(N * sizeof(float));
+	estScale = 0;
+	for (i = 0; i < N; i++) {
+		residuals[i]  = vec[i] - theta;
+		if(i<(int)(N*topkPerc)) {
+			estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
+		}
+	}
+	estScale = sqrt(estScale/((int)(N*topkPerc)));
 
-    tmp = 0;
-    estScale = 0;
-    for (i = 0; i < N; i++) {
-        residuals[i]  = fabs(theta - vec[i]);
-        if(i<topk) {
-        	estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
-        	tmp += weights[i];
-        }
-    }
-    estScale = sqrt(estScale/tmp);
-    if(MSSE_LAMBDA) {
-    	estScale = MSSEWeighted(residuals, weights, N, MSSE_LAMBDA, topk, minimumResidual);
-		theta = 0;
-		tmp = 0;
-		for(i=0; i<N; i++) {
-			if(fabs(weights[i]*residuals[i])<MSSE_LAMBDA*estScale) {
-				theta += weights[i]*vec[i];
-				tmp += weights[i];
+	if(MSSE_LAMBDA>0) {
+		estScale = MSSEWeighted(residuals, weights,
+								N, MSSE_LAMBDA,
+								(int)(N*topkPerc),
+								minimumResidual);
+		if(optIters>1) {
+			theta = 0;
+			tmp = 0;
+			for(i=0; i<N; i++) {
+				if(fabs(residuals[i])<MSSE_LAMBDA*estScale) {
+					theta += vec[i];
+					tmp++;
+				}
+			}
+			theta = theta / tmp;
+			for (i = 0; i < N; i++) {
+				residuals[i]  = vec[i] - theta;
+			}
+			estScale = MSSEWeighted(residuals, weights,
+									N, MSSE_LAMBDA,
+									(int)(N*topkPerc),
+									minimumResidual);
+			theta = 0;
+			tmp = 0;
+			for(i=0; i<N; i++) {
+				if(fabs(residuals[i])<MSSE_LAMBDA*estScale) {
+					theta += vec[i];
+					tmp++;
+				}
+			}
+			theta = theta / tmp;
+			for (i = 0; i < N; i++) {
+				residuals[i]  = vec[i] - theta;
 			}
 		}
-		theta = theta / tmp;
     }
 
 	modelParams[0] = theta;

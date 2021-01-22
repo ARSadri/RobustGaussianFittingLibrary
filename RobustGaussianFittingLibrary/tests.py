@@ -6,7 +6,7 @@
 import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
 import RobustGaussianFittingLibrary.misc
-
+import RobustGaussianFittingLibrary.basic
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -14,12 +14,11 @@ import os
 import scipy.stats
 from cProfile import label
 from docutils.nodes import inline
+
 np.set_printoptions(suppress = True)
 np.set_printoptions(precision = 2)
- 
 LWidth = 3
-font = {
-        'weight' : 'bold',
+font = {'weight' : 'bold',
         'size'   : 8}
 params = {'legend.fontsize': 'x-large',
          'axes.labelsize': 'x-large',
@@ -185,7 +184,7 @@ def test_bigTensor2SmallsInds():
     print(rowClmInds)
 
 def test_fitValue_sweep():
-    print('test_fitValue2Skewed_sweep_over_N')
+    print('test_fitValue_sweep_over_N')
     numIter = 1000
     maxN = 100
     minN = 5
@@ -298,7 +297,7 @@ def test_fitValueVSMeanShiftPy():
     inZ = 1*inX - 2 * inY + 50*np.random.randn(N) + 50
     inZ[((N-1)*np.random.rand(numOut)).astype('int')] = 500*np.random.rand(numOut) +500
 
-    mP = RobustGaussianFittingLibrary.basic.fitValue_by_meanShift(inZ)
+    mP = RobustGaussianFittingLibrary.basic.fitValue_by_meanShift(inVec = inZ, minSNR = 3.0, MS_numIter = 8)
     print(mP)
     Xax = np.arange(inX.min(), inX.max())
     Yax = np.arange(inY.min(), inY.max())
@@ -330,7 +329,7 @@ def test_fitValueVSMeanShiftPy():
     fig.legend()
     plt.show()
     
-    mP = RobustGaussianFittingLibrary.fitValue(inZ)
+    mP = RobustGaussianFittingLibrary.fitValue2Skewed(inZ)
     print(mP)
     Xax = np.arange(inX.min(), inX.max())
     Yax = np.arange(inY.min(), inY.max())
@@ -423,7 +422,7 @@ def test_fitPlaneVSMeanShiftPy():
     ax = fig.add_subplot(111, projection='3d')
 
     c1 = ax.plot_wireframe(X, Y, Zax_H, rstride=wireFrameStride, cstride=wireFrameStride, 
-                           color = 'blue', alpha = 0.25, label='PF8 peak threshold')
+                           color = 'blue', alpha = 0.25, label='MeanShift peak threshold')
     #c1._facecolors2d = c1._facecolors3d
     #c1._edgecolors2d = c1._edgecolors3d    
     
@@ -490,7 +489,7 @@ def test_fitPlaneVSMeanShiftPy():
     ax = fig.add_subplot(111, projection='3d')
 
     c1 = ax.plot_wireframe(X, Y, Zax_H, rstride=wireFrameStride, cstride=wireFrameStride, 
-                           color = 'blue', alpha = 0.25, label='RPF peak threshold')
+                           color = 'blue', alpha = 0.25, label='FLKOS peak threshold')
     #c1._facecolors2d = c1._facecolors3d
     #c1._edgecolors2d = c1._edgecolors3d    
     
@@ -554,7 +553,7 @@ def test_fitPlaneVSMeanShiftPy():
     Zax_U = mP[0]*X + mP[1]*Y + mP[2]
     Zax_L = mP[0]*X + mP[1]*Y + mP[2] - 6*mP[3]
     c2 = ax.plot_wireframe(X, Y, Zax_H, rstride=wireFrameStride, cstride=wireFrameStride,
-                           color = 'green', label='PF8 peak threshold')
+                           color = 'green', label='MeanShift peak threshold')
 
     
     mP = RobustGaussianFittingLibrary.fitPlane(inX, inY, inZ)
@@ -569,7 +568,7 @@ def test_fitPlaneVSMeanShiftPy():
     resOutliers = inZ[outliersInds] - (mP[0]*inX[outliersInds] + mP[1]*inY[outliersInds] + mP[2])
     
     c1 = ax.plot_wireframe(X, Y, Zax_H, rstride=wireFrameStride, cstride=wireFrameStride, 
-                           color = 'blue', alpha = 0.25, label='RPF peak threshold')
+                           color = 'blue', alpha = 0.25, label='FLKOS peak threshold')
     
 
 
@@ -633,7 +632,6 @@ def test_fitPlaneVSMeanShiftPy():
     ax.dist = ax_dist
     ax.elev = ax_elev
     plt.show()
-
 
 def test_RobustAlgebraicLineFittingPy():
     print('test_RobustAlgebraicLineFittingPy')
@@ -766,7 +764,6 @@ def test_fitBackgroundRadially():
     axes[2].set_ylim([winYL, winYU])
     fig.colorbar(im2, ax=axes[2], shrink = 0.5)
     plt.show()
-    
 
 def test_fitBackgroundTensor():
     print('test_fitBackgroundTensor')
@@ -1028,90 +1025,14 @@ def test_fitValueSmallSample():
                                                modelValueInit = 100)
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
     print(mP)
-    
-def _test_fit2Poisson():    
-    #import scipy.math.factorial as factorial
-    photon = 70
-    offset = -10
-    bckSTD = 14
-    pois_lambda_list = np.arange(0.2, 1, 0.1)
-    pois_lambda_list = np.concatenate( (pois_lambda_list, np.arange(2, 5, 0.25)), axis=0)
-    mP = np.zeros((pois_lambda_list.shape[0], 2))
-    meanShift = np.zeros((pois_lambda_list.shape[0], 2))
-    inliers_mP = np.zeros((pois_lambda_list.shape[0], 2))
-    for Lcnt, pois_lambda in enumerate(pois_lambda_list):
-        minSNR = 6.0
-        intended_mu = pois_lambda*photon + offset
-        worstInlier = intended_mu + minSNR*photon*(intended_mu/photon)**0.5
-        ADU = np.arange(-bckSTD*4, worstInlier)
-        kList = np.unique(photon*(ADU[ADU>=photon+offset]/photon).astype('int'))
-        poissonDensity_kList = np.zeros(kList.shape[0])
-        for cnt in range(kList.shape[0]):
-            poissonDensity_kList[cnt] = pois_lambda**int((kList[cnt]-offset)/photon) * \
-                                     np.exp(-pois_lambda) / \
-                                   scipy.math.factorial(int((kList[cnt]-offset)/photon))
-        N = int(6283185)
-        poissonDensity_kList[poissonDensity_kList<10/N]=0
-        vec = np.zeros(kList.shape[0]*N)
-        vecSize = 0
-        for kListCnt in range(kList.shape[0]):
-            tmp = kList[kListCnt] + bckSTD*np.random.randn(int(N* \
-                      poissonDensity_kList[kListCnt]))
-            vec[vecSize: vecSize + tmp.shape[0]] = tmp
-            vecSize += tmp.shape[0]
 
-        vec = vec[:vecSize:int(N/200)].flatten()
-        N = vec.shape[0]
-        inliers_mu = vec.mean()
-        inliers_std = vec.std()
-
-        numOutliers = int(N*0.01)
-        outliersSpread = 3
-
-        outliers = 0.01*photon + inliers_mu + \
-                   inliers_std * (minSNR + outliersSpread * np.random.rand(numOutliers))
-        SNRs_true = (((outliers - inliers_mu)/inliers_std) >= minSNR).sum()/numOutliers
-        vec_contaminated = np.hstack((vec.copy(), outliers))
-    
-        _mP = RobustGaussianFittingLibrary.fitValue(vec_contaminated, 
-                                                    minimumResidual = 0.2 * photon, MSSE_LAMBDA = 4.0)
-        _meanShift = RobustGaussianFittingLibrary.basic.fitValue_by_meanShift(vec_contaminated, minSNR = 6.0)
-        
-        inliers_mP[Lcnt, 0] = inliers_mu/photon
-        inliers_mP[Lcnt, 1] = (inliers_std/photon)**2
-        mP[Lcnt, 0] = _mP[0]/photon
-        mP[Lcnt, 1] = (_mP[1]/photon)**2
-        meanShift[Lcnt, 0] = (_meanShift[0]/photon)
-        meanShift[Lcnt, 1] = (_meanShift[1]/photon)**2
-        str2Print = 'N -> ' + str(N)
-        str2Print += ', inliers -> ' + '%0.3f'%inliers_mu + ' ' + '%0.3f'%inliers_std
-        str2Print += ', mP -> ' + '%0.3f'%_mP[0] + ' ' + '%0.3f'%_mP[1]
-        str2Print += ', meanShift -> ' + '%0.3f'%_meanShift[0] + ' ' + '%0.3f'%_meanShift[1]
-        print(str2Print, flush=True)
-    
-    plt.rc('font', **font)
-    plt.rcParams.update(params)
-    
-    plt.plot(pois_lambda_list, pois_lambda_list, color = 'gold', label='Reference')
-    plt.plot(pois_lambda_list, inliers_mP[:, 0], color = 'red', label='inliers $\mu$')
-    plt.plot(pois_lambda_list, inliers_mP[:, 1], color = 'tab:red', label='inliers $\sigma^2$')
-    plt.plot(pois_lambda_list, mP[:, 0], color = 'green', label='RPF $\mu$')
-    plt.plot(pois_lambda_list, mP[:, 1], color = 'tab:green', label='RPF $\sigma^2$')
-    plt.plot(pois_lambda_list, meanShift[:, 0], color = 'blue', label='PF8 $\mu$')
-    plt.plot(pois_lambda_list, meanShift[:, 1], color = 'tab:blue', label='PF8 $\sigma^2$')
-    
-    plt.xlabel('Poisson density average')
-    plt.ylabel('Calculated average')
-    plt.legend()
-    plt.grid()
-    plt.show()    
-    
 def test_fit2Poisson():    
     #import scipy.math.factorial as factorial
+    numIters = 20
     photon = 73.5
     offset = -10
     bckSTD = 14
-    pois_lambda_list = np.arange(0.2, 3, 0.05)
+    pois_lambda_list = np.arange(0.2, 2, 0.05)
     #pois_lambda_list = np.concatenate( (pois_lambda_list, np.arange(2, 3, 0.25)), axis=0)
     mP = np.zeros((pois_lambda_list.shape[0], 2))
     inliers_mP = np.zeros((pois_lambda_list.shape[0], 2))
@@ -1145,9 +1066,9 @@ def test_fit2Poisson():
         numOutliers = int(N*0.01)
         outliersSpread = 1
 
-        _mP = np.zeros((1000, 2))
-        _meanShift = np.zeros((1000, 2))
-        for iters in range(100):
+        _mP = np.zeros((numIters, 2))
+        _meanShift = np.zeros((numIters, 2))
+        for iters in range(numIters):
             outliers = 0.01*photon + inliers_mu + \
                        inliers_std * (minSNR + outliersSpread * np.random.rand(numOutliers))
             SNRs_true = (((outliers - inliers_mu)/inliers_std) >= minSNR).sum()/numOutliers
@@ -1164,7 +1085,7 @@ def test_fit2Poisson():
         mP[Lcnt, 1] = (_mP[1]/photon)**2
         meanShift[Lcnt, 0] = (_meanShift[0]/photon)
         meanShift[Lcnt, 1] = (_meanShift[1]/photon)**2        
-        str2Print = 'N -> ' + str(N)
+        str2Print = 'phi -> ' + str(pois_lambda)
         str2Print += ', inliers -> ' + '%0.3f'%inliers_mu + ' ' + '%0.3f'%inliers_std
         str2Print += ', mP -> ' + '%0.3f'%_mP[0] + ' ' + '%0.3f'%_mP[1]
         str2Print += ', meanShift -> ' + '%0.3f'%_meanShift[0] + ' ' + '%0.3f'%_meanShift[1]
@@ -1175,10 +1096,10 @@ def test_fit2Poisson():
     plt.plot(pois_lambda_list, pois_lambda_list, marker = '.', color = 'gold',     label='Reference')
     plt.plot(pois_lambda_list, inliers_mP[:, 0], marker = '.', color = 'red',      label='Inliers $\mu$')
     plt.plot(pois_lambda_list, inliers_mP[:, 1], marker = '.', color = 'red',      label='Inliers $\sigma^2$')
-    plt.plot(pois_lambda_list,         mP[:, 0], marker = '.', color = 'green',    label='RPF $\mu^2$')
-    plt.plot(pois_lambda_list,         mP[:, 1], marker = '.', color = 'green',    label='RPF $\sigma^2$')
-    plt.plot(pois_lambda_list,  meanShift[:, 0], marker = '.', color = 'blue',     label='PF8 $\mu$')
-    plt.plot(pois_lambda_list,  meanShift[:, 1], marker = '.', color = 'tab:blue', label='PF8 $\sigma^2$')
+    plt.plot(pois_lambda_list,         mP[:, 0], marker = '.', color = 'green',    label='FLKOS $\mu^2$')
+    plt.plot(pois_lambda_list,         mP[:, 1], marker = '.', color = 'green',    label='FLKOS $\sigma^2$')
+    plt.plot(pois_lambda_list,  meanShift[:, 0], marker = '.', color = 'blue',     label='MeanShift $\mu$')
+    plt.plot(pois_lambda_list,  meanShift[:, 1], marker = '.', color = 'tab:blue', label='MeanShift $\sigma^2$')
     plt.xlim([0, pois_lambda_list.max()])
     plt.ylim([0, pois_lambda_list.max()])
     plt.xlabel('Poisson density average')
@@ -1186,13 +1107,47 @@ def test_fit2Poisson():
     plt.legend()
     plt.grid()
     plt.show()    
-    
+
+    plt.rc('font', **font)
+    plt.rcParams.update(params)
+    plt.plot(pois_lambda_list,         mP[:, 0]/inliers_mP[:, 0], marker = '.', color = 'green',    label='FLKOS $\mu^2$')
+    plt.plot(pois_lambda_list,         mP[:, 1]/inliers_mP[:, 1], marker = '.', color = 'green',    label='FLKOS $\sigma^2$')
+    plt.plot(pois_lambda_list,  meanShift[:, 0]/inliers_mP[:, 0], marker = '.', color = 'blue',     label='MeanShift $\mu$')
+    plt.plot(pois_lambda_list,  meanShift[:, 1]/inliers_mP[:, 1], marker = '.', color = 'tab:blue', label='MeanShift $\sigma^2$')
+    plt.xlim([0, pois_lambda_list.max()])
+    plt.ylim([0, pois_lambda_list.max()])
+    plt.xlabel('Poisson density average')
+    plt.ylabel('Calculated average')
+    plt.legend()
+    plt.grid()
+    plt.show()    
+
+def test_medianOfFits():
+    print('test_fitValueSmallSample')
+    inliers = np.random.randn(100)
+    outliers = np.array([100, 64])
+    testData = np.hstack((inliers, outliers))
+    np.random.shuffle(testData)
+    print('testing fitValue with ' + str(inliers.shape[0]) + ' inliers and ' + str(outliers.shape[0]) + ' outliers.')
+    mP = RobustGaussianFittingLibrary.basic.medianOfFits(inVec = testData, 
+                                                   inWeights = None,
+                                                   topkMax = 0.7,
+                                                   topkMin = 0.3,
+                                                   numSamples = 50,
+                                                   samplePerc = 0.1,
+                                                   MSSE_LAMBDA = 3.0,
+                                                   modelValueInit = 0,
+                                                   optIters = 12,
+                                                   minimumResidual = 0)
+    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
+    print(mP)    
+
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
     test_fit2Poisson()
-    exit()
-    test_fitPlaneVSMeanShiftPy()
+    test_medianOfFits()
     test_fitValueVSMeanShiftPy()
+    test_fitPlaneVSMeanShiftPy()
     test_RobustAlgebraicPlaneFittingPy()
     test_fitBackgroundRadially()
     test_fitBackgroundTensor()

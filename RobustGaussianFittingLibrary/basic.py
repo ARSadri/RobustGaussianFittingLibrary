@@ -191,7 +191,71 @@ def fitValue2Skewed(inVec,
                                minimumResidual)
     return (modelParams[0], modelParams[1])
     
-    
+'''
+void medianOfFits(float *vec, float *weights, 
+                  float *modelParams, float theta, unsigned int N,
+                  float topkMin, float topkMax, unsigned int numSamples, float samplePerc,
+                  float MSSE_LAMBDA, unsigned char optIters, float minimumResidual) 
+'''
+def medianOfFits(inVec, 
+                 inWeights = None,
+                 topkMax = 0.7,
+                 topkMin = 0.3,
+                 numSamples = 50,
+                 samplePerc = 0.1,
+                 MSSE_LAMBDA = 3.0,
+                 modelValueInit = 0,
+                 optIters = 12,
+                 minimumResidual = 0):
+    """Fit a skewed bell shaped unimodal sharp density robustly:
+    The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inVec (numpy.1darray): a float32 input vector of values to fit the model to
+        inWeight (numpy.1darray): a float32 input vector of weights for each data point, doesn't need to sum to 1
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
+    Output
+    ~~~~~~
+        tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
+    """
+    if(inWeights is None):
+        inWeights = np.ones(inVec.shape, dtype='float32')
+    modelParams = np.zeros(2, dtype='float32')
+    RGFCLib.medianOfFits((inVec.copy()).astype('float32'),
+                         (inWeights.copy()).astype('float32'),
+                         modelParams, 
+                         modelValueInit,
+                         inVec.shape[0],
+                         topkMin,
+                         topkMax,
+                         numSamples,
+                         samplePerc,
+                         MSSE_LAMBDA,
+                         optIters,
+                         minimumResidual)
+    return np.array([modelParams[0], modelParams[1]])
+
+
 def fitValueTensor(inTensor,
                    inMask = None,
                    topKthPerc = 0.5,
