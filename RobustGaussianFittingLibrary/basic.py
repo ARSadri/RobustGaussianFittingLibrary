@@ -86,13 +86,14 @@ def MSSEWeighted(inVec, inWeights = None,
 ###########################################################################################
 ################################### Robust AVG and STD ####################################
                                        
-def fitValue(inVec,
+def fitValue(inVec, inWeights = None,
              topKthPerc = 0.5,
-             bottomKthPerc = 0.45,
+             bottomKthPerc = 0.35,
              MSSE_LAMBDA = 3.0,
              modelValueInit = 0,
-             optIters = 12,
-             minimumResidual = 0):
+             optIters = 8,
+             minimumResidual = 0,
+             downSampledSize = np.iinfo("uint32").max):
     """Fit a Gaussian to input vector robustly:
     The function returns the parameters of a single gaussian structure through FLKOS [DICTA'08]
     The default values are suggested in MCNC [CVIU '18]
@@ -101,6 +102,7 @@ def fitValue(inVec,
     Input arguments
     ~~~~~~~~~~~~~~~
         inVec (numpy.1darray): a float32 input vector
+        inWeights : same size as inVec with positive float32 weights for errors
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
@@ -109,7 +111,7 @@ def fitValue(inVec,
             value 1: returns topKthPerc percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
-            default : 12
+            default : 8
         topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
                     Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
                     if you are not sure at all, refer to the note above this code.
@@ -122,56 +124,80 @@ def fitValue(inVec,
                        otherwise the code may return non-robust results.
         minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
                           default : 0
+        downSampledSize: the data will be downsampled regualrly starting from
+            position 0 to have this length. This is used for finding the 
+            parameter model and not to find the noise scale. The entire
+            inVec will be used to find the noise scale. If you'd like to use
+            less part of data for edtimation of the noise which is not recommended
+            then down sample the whole thing before you send it to this function
+            and set the downSampledSize to inf.
+            default: np.iinfo('uint32').max
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust average and standard deviation of the guassian
     """
+    if (inWeights is None):
+        inWeights = np.ones(shape = inVec.shape, dtype ='float32')
     modelParams = np.zeros(2, dtype='float32')
-    RGFCLib.RobustSingleGaussianVec((inVec.copy()).astype('float32'),
-                                                   modelParams, modelValueInit,
-                                                   inVec.shape[0],
-                                                   topKthPerc,
-                                                   bottomKthPerc,
-                                                   MSSE_LAMBDA,
-                                                   optIters,
-                                                   minimumResidual)
+    RGFCLib.fitValue((inVec.copy()).astype('float32'),
+                     (inWeights.copy()).astype('float32'),
+                     modelParams, 
+                     modelValueInit,
+                     inVec.shape[0],
+                     topKthPerc,
+                     bottomKthPerc,
+                     MSSE_LAMBDA,
+                     optIters,
+                     minimumResidual,
+                     downSampledSize)
     return modelParams
 
 def fitValue2Skewed(inVec, 
                     inWeights = None,
                     topKthPerc = 0.5,
-                    bottomKthPerc = 0.45,
+                    bottomKthPerc = 0.35,
                     MSSE_LAMBDA = 3.0,
                     modelValueInit = 0,
-                    optIters = 12,
+                    optIters = 8,
                     minimumResidual = 0):
     """Fit a skewed bell shaped unimodal sharp density robustly:
-    The function works exactly the same as the fitValue, it fits a Gaussian to inVec robustly. Except that it accepts weights as well and returns the average and standard deviation of a skewed density, it reports the bigger STD of two sides as standard deviation, and the median of inliers as the mode.
+    The function works exactly the same as the fitValue, it fits 
+    a Gaussian to inVec robustly. Except that it accepts weights 
+    as well and returns the average and standard deviation of a 
+    skewed density, it reports the bigger STD of two sides as 
+    standard deviation, and the median of inliers as the mode.
     Input arguments
     ~~~~~~~~~~~~~~~
-        inVec (numpy.1darray): a float32 input vector of values to fit the model to
-        inWeight (numpy.1darray): a float32 input vector of weights for each data point, doesn't need to sum to 1
+        inVec (numpy.1darray): a float32 input vector of values 
+            to fit the model to
+        inWeight (numpy.1darray): a float32 input vector of weights 
+            for each data point, doesn't need to sum to 1
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
-                        mean of the Gaussian, data is considered inlier.
-                        default: 3.0
+            mean of the Gaussian, data is considered inlier.
+            default: 3.0
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
             value 1: returns topKthPerc percentile and the scale by MSSE.
-            value 8 and above is recommended for optimization according 
-                    to Newton method
-            default : 12
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
-                    if you are not sure at all, refer to the note above this code.
-                    default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.
-        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
-                          default : 0
+            value 8 and above is recommended for optimization similar 
+                to Newton method
+            default : 8
+        topKthPerc: A rough but certain guess of portion of inliers, 
+            between 0 and 1, e.g. 0.5. 
+            Choose the topKthPerc to be as high as you are 
+            sure the portion of data is inlier.
+            if you are not sure at all, refer to the note above this code.
+            default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst 
+            inliers from data points that are
+            between bottomKthPerc and topKthPerc of sorted residuals.
+            set it to 0.9*topKthPerc, if N is number of data points,
+            then make sure that
+            (topKthPerc - bottomKthPerc)*N>4, 
+            it is best if bottomKthPerc*N>12 then MSSE makes sense
+            otherwise the code may return non-robust results.
+        minimumResidual : minimum fitting error to initialize MSSE 
+            (dtype = 'float32')
+            default : 0
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
@@ -191,16 +217,10 @@ def fitValue2Skewed(inVec,
                                minimumResidual)
     return (modelParams[0], modelParams[1])
     
-'''
-void medianOfFits(float *vec, float *weights, 
-                  float *modelParams, float theta, unsigned int N,
-                  float topkMin, float topkMax, unsigned int numSamples, float samplePerc,
-                  float MSSE_LAMBDA, unsigned char optIters, float minimumResidual) 
-'''
 def medianOfFits(inVec, 
                  inWeights = None,
-                 topkMax = 0.7,
-                 topkMin = 0.3,
+                 topkMax = 0.5,
+                 topkMin = 0.35,
                  numSamples = 50,
                  samplePerc = 0.1,
                  MSSE_LAMBDA = 3.0,
@@ -255,19 +275,19 @@ def medianOfFits(inVec,
                          minimumResidual)
     return np.array([modelParams[0], modelParams[1]])
 
-
 def fitValueTensor(inTensor,
-                   inMask = None,
+                   inWeights = None,
                    topKthPerc = 0.5,
-                   bottomKthPerc=0.45,
+                   bottomKthPerc=0.35,
                    MSSE_LAMBDA = 3.0,
                    optIters = 12,
-                   minimumResidual = 0):
+                   minimumResidual = 0.0,
+                   downSampledSize = np.iinfo('uint32').max):
     """ fit a Gaussian to every vector inside a Tensor, robustly.
     Input arguments
     ~~~~~~~~~~~~~~~
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
-        inMask: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, uint8
+        inWeights: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
@@ -289,24 +309,34 @@ def fitValueTensor(inTensor,
                        otherwise the code may return non-robust results.       
         minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
                           default : 0
+        downSampledSize: the data will be downsampled regualrly starting from
+            position 0 to have this length. This is used for finding the 
+            parameter model and not to find the noise scale. The entire
+            inVec will be used to find the noise scale. If you'd like to use
+            less part of data for edtimation of the noise which is not recommended
+            then down sample the whole thing before you send it to this function
+            and set the downSampledSize to inf.
+            default: np.iinfo('uint32').max                          
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
     """
-    if(inMask is None):
-        inMask = np.ones(shape = inTensor.shape, dtype = 'uint8')
+    if(inWeights is None):
+        inWeights = np.ones(shape = inTensor.shape, dtype = 'float32')
     modelParamsMap = np.zeros((2, inTensor.shape[1], inTensor.shape[2]), dtype='float32')
-    RGFCLib.RobustSingleGaussianTensor((inTensor.copy()).astype('float32'),
-                                       inMask.copy(),
-                                       modelParamsMap,
-                                       inTensor.shape[0],
-                                       inTensor.shape[1],
-                                       inTensor.shape[2],
-                                       topKthPerc,
-                                       bottomKthPerc,
-                                       MSSE_LAMBDA,
-                                       optIters,
-                                       minimumResidual)
+    assert(inTensor.shape == inWeights.shape)
+    RGFCLib.fitValueTensor((inTensor.copy()).astype('float32'),
+                           (inWeights.copy()).astype('float32'),
+                           modelParamsMap,
+                           inTensor.shape[0],
+                           inTensor.shape[1],
+                           inTensor.shape[2],
+                           topKthPerc,
+                           bottomKthPerc,
+                           MSSE_LAMBDA,
+                           optIters,
+                           minimumResidual,
+                           downSampledSize)
     return (modelParamsMap)
 
 ##########################################################################################
@@ -353,7 +383,7 @@ def fitLine(inX, inY,
 
 def fitLineTensor(inX, inY,
                   topKthPerc = 0.5,
-                  bottomKthPerc = 0.45,
+                  bottomKthPerc = 0.35,
                   MSSE_LAMBDA = 3.0):
     """fit a line to every pixel in a Tensor
     Input arguments
@@ -396,7 +426,7 @@ def fitLineTensor(inX, inY,
     
 def fitPlane(inX, inY, inZ,
              topKthPerc = 0.5,
-             bottomKthPerc = 0.25,
+             bottomKthPerc = 0.35,
              MSSE_LAMBDA = 3.0,
              stretch2CornersOpt = 0,
              modelParamsInitial = None,
@@ -449,7 +479,7 @@ def fitBackground(inImage,
                   winX = None,
                   winY = None,
                   topKthPerc = 0.5,
-                  bottomKthPerc = 0.45,
+                  bottomKthPerc = 0.35,
                   MSSE_LAMBDA = 3.0,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,

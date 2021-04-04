@@ -58,14 +58,30 @@ RGFCLib.MSSEWeighted.argtypes = [
                 ctypes.c_uint, ctypes.c_float, ctypes.c_uint, ctypes.c_float ]
 
 '''
-void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
-		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters, float minimumResidual)
+void fitValue(float* inVec,
+			  float* inWeights,
+			  float* modelParams,
+			  float theta,
+			  unsigned int inN,
+              float topkPerc,
+			  float botkPerc,
+              float MSSE_LAMBDA,
+			  unsigned char optIters,
+              float minimumResidual,
+			  unsigned int downSampledSize);
 '''
-RGFCLib.RobustSingleGaussianVec.argtypes = [
+RGFCLib.fitValue.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                ctypes.c_float, ctypes.c_int, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_uint8, ctypes.c_float]
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_float, 
+                ctypes.c_int, 
+                ctypes.c_float, 
+                ctypes.c_float, 
+                ctypes.c_float, 
+                ctypes.c_uint8, 
+                ctypes.c_float, 
+                ctypes.c_int]
 
 '''
 void fitValue2Skewed(float *vec, float *weights, 
@@ -119,18 +135,19 @@ RGFCLib.RobustAlgebraicLineFittingTensor.argtypes = [
                 ctypes.c_float, ctypes.c_float, ctypes.c_float]                
                 
 '''
-void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
-				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
-				float topkPerc, float botkPerc, float MSSE_LAMBDA, 
-				unsigned char optIters, float minimumResidual)
+void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
+					unsigned int N, unsigned int X, unsigned int Y,
+					float topkPerc, float botkPerc, float MSSE_LAMBDA,
+					unsigned char optIters, float minimumResidual,
+					unsigned int downSampledSize);
 '''
-RGFCLib.RobustSingleGaussianTensor.argtypes = [
+RGFCLib.fitValueTensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
                 ctypes.c_float, ctypes.c_float, ctypes.c_float, 
-                ctypes.c_uint8, ctypes.c_float]
+                ctypes.c_uint8, ctypes.c_float, ctypes.c_uint32]
 
 '''
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, float* mP_Init,

@@ -19,8 +19,17 @@ float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA, unsigned int k,
 float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
                    float MSSE_LAMBDA, unsigned int k, float minimumResidual);
 	
-void RobustSingleGaussianVec(float *vec, float *modelParams, float theta, unsigned int N,
-		float topkPerc, float botkPerc, float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
+void fitValue(float* inVec,
+			  float* inWeights,
+			  float* modelParams,
+			  float theta,
+			  unsigned int inN,
+              float topkPerc,
+			  float botkPerc,
+              float MSSE_LAMBDA,
+			  unsigned char optIters,
+              float minimumResidual,
+			  unsigned int downSampledSize);
 
 void fitValue2Skewed(float *vec, float *weights, 
 					float *modelParams, float theta, unsigned int N,
@@ -46,10 +55,11 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, float*
 							float MSSE_LAMBDA, unsigned char stretch2CornersOpt, 
 							float minimumResidual, unsigned char optIters);
 
-void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
-				float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
-				float topkPerc, float botkPerc, float MSSE_LAMBDA, 
-				unsigned char optIters, float minimumResidual);
+void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
+		unsigned int N, unsigned int X, unsigned int Y,
+		float topkPerc, float botkPerc, float MSSE_LAMBDA,
+		unsigned char optIters, float minimumResidual,
+		unsigned int downSampledSize);
 
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,

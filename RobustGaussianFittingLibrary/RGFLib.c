@@ -2,11 +2,13 @@
 //# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
 //# Authors: Alireza Sadri, DESY/CFEL,															  #
 //#          Marjan Hadian Jazi, LaTrobe University,                                              #
+//# References:                                                                                   #
+//# 	https://research.ijcaonline.org/volume122/number21/pxc3905155.pdf                         #
 //#################################################################################################
 
 #include "RGFLib.h"
 #include <stdio.h>
-//https://research.ijcaonline.org/volume122/number21/pxc3905155.pdf
+
 
 void dfs(unsigned char* inMask, unsigned int* mask, 
          int x,  int y, unsigned int X, unsigned int Y,
@@ -118,7 +120,6 @@ void quickSort( struct sortStruct dataVec[], int l, int r) {
         quickSort( dataVec, j+1, r);
    }
 }
-
                                      
 void merge(struct sortStruct dataVec[], int l, int m, int r) { 
     // based on https://www.geeksforgeeks.org/c-program-for-merge-sort/
@@ -246,7 +247,8 @@ float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
 
     cumulative_sum = 0;
     i=0;
-    while ((i < vecLen) &&( (i<k) | (sortedSqWErrors[i].vecData < minimumResidual*minimumResidual) ) ){
+    while ((i < vecLen) &&( (i<k) | (sortedSqWErrors[i].vecData <
+    									minimumResidual*minimumResidual) ) ){
         cumulative_sum += sortedSqWErrors[i].vecData;
         i++;
     }
@@ -268,20 +270,41 @@ float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
     return estScale;
 }
 
-void RobustSingleGaussianVec(float* vec, float* modelParams, 
-                             float theta, unsigned int N,
-                             float topkPerc, float botkPerc, 
-                             float MSSE_LAMBDA, unsigned char optIters, 
-                             float minimumResidual) {
+void fitValue(float* inVec,
+			  float* inWeights,
+			  float* modelParams,
+			  float theta,
+			  unsigned int inN,
+              float topkPerc,
+			  float botkPerc,
+              float MSSE_LAMBDA,
+			  unsigned char optIters,
+              float minimumResidual,
+			  unsigned int downSampledSize) {
 
-    float tmp, estScale;
-    unsigned int i, iter;
+    float wAVG, estScale, dsCnt;
+    unsigned int i, iter, ds_N;
 
+    float *vec;
+    vec = (float*) malloc(inN * sizeof(float));
+    float *weights;
+    weights = (float*) malloc(inN * sizeof(float));
+    unsigned int N = 0;
+    for (i = 0; i < inN; i++) {
+    	if(inWeights[i]>0){
+			vec[N] = inVec[i];
+			weights[N] = inWeights[i];
+			N++;
+    	}
+    }
 
+    if ((downSampledSize>N) || (downSampledSize<5)) {
+    	downSampledSize = N;
+    }
 
     struct sortStruct* errorVec;
-    errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
-    
+    errorVec = (struct sortStruct*) malloc(downSampledSize * sizeof(struct sortStruct));
+
     if(N==0) {
         modelParams[0] = 0;
         modelParams[1] = 0;
@@ -305,74 +328,68 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     		theta = NEGATIVE_MAX;
 
         for(iter=0; iter<optIters; iter++) {
-            for (i = 0; i < N; i++) {
-                errorVec[i].vecData  = fabs(vec[i] - theta);
-                errorVec[i].indxs = i;
+        	ds_N = 0;
+        	dsCnt = 0;
+			i = 0;
+        	while (i < N) {
+                errorVec[ds_N].vecData  = weights[i]*fabs(vec[i] - theta);
+                errorVec[ds_N].indxs = i;
+                ds_N++;
+                dsCnt += (float)N/(float)downSampledSize;
+                i = (unsigned int) dsCnt;
             }
-            quickSort(errorVec,0,N-1);
+            quickSort(errorVec,0,ds_N-1);
 
             theta = 0;
-            tmp = 0;
-            for(i=(int)(N*botkPerc); i<(int)(N*topkPerc); i++) {
+            wAVG = 0;
+            for(i=(int)(ds_N*botkPerc); i<(int)(ds_N*topkPerc); i++) {
                 theta += vec[errorVec[i].indxs];
-                tmp++;
+                wAVG += weights[errorVec[i].indxs];
             }
-            theta = theta / tmp;
+            theta = theta / wAVG;
         }
 
-
-		float* weights;
-		weights = (float*) malloc(N * sizeof(float));
 		float* residual;
 		residual = (float*) malloc(N * sizeof(float));
-		estScale = 0;
 		for (i = 0; i < N; i++) {
 			residual[i]  = vec[i] - theta;
-			weights[i] = 1;
-			if(i<(int)(N*topkPerc)) {
-				estScale += (errorVec[i].vecData)*(errorVec[i].vecData);
+		}
+		estScale = MSSEWeighted(residual, weights,
+								N, MSSE_LAMBDA,
+								(int)(N*topkPerc),
+								minimumResidual);
+		if(optIters>1) {
+			theta = 0;
+			wAVG = 0;
+			for(i=0; i<N; i++) {
+				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+					theta += vec[i];
+					wAVG += weights[i];
+				}
+			}
+			theta = theta / wAVG;
+			for (i = 0; i < N; i++) {
+				residual[i]  = vec[i] - theta;
+			}
+			estScale = MSSEWeighted(residual, weights,
+									N, MSSE_LAMBDA,
+									(int)(N*topkPerc),
+									minimumResidual);
+			theta = 0;
+			wAVG = 0;
+			for(i=0; i<N; i++) {
+				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+					theta += vec[i];
+					wAVG += weights[i];
+				}
+			}
+			theta = theta / wAVG;
+			for (i = 0; i < N; i++) {
+				residual[i]  = vec[i] - theta;
 			}
 		}
-		estScale = sqrt(estScale/((int)(N*topkPerc)));
 
-		if(MSSE_LAMBDA>0) {
-				estScale = MSSEWeighted(residual, weights,
-						                N, MSSE_LAMBDA,
-										(int)(N*topkPerc),
-										minimumResidual);
-				if(optIters>1) {
-					theta = 0;
-					tmp = 0;
-					for(i=0; i<N; i++) {
-						if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
-							theta += vec[i];
-							tmp++;
-						}
-					}
-					theta = theta / tmp;
-					for (i = 0; i < N; i++) {
-						residual[i]  = vec[i] - theta;
-					}
-					estScale = MSSEWeighted(residual, weights,
-							                N, MSSE_LAMBDA,
-											(int)(N*topkPerc),
-											minimumResidual);
-					theta = 0;
-					tmp = 0;
-					for(i=0; i<N; i++) {
-						if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
-							theta += vec[i];
-							tmp++;
-						}
-					}
-					theta = theta / tmp;
-					for (i = 0; i < N; i++) {
-						residual[i]  = vec[i] - theta;
-					}
-				}
-        }
-		free(weights);
-        free(residual);
+		free(residual);
     }
     else {
         theta = 0;
@@ -388,6 +405,7 @@ void RobustSingleGaussianVec(float* vec, float* modelParams,
     modelParams[0] = theta;
     modelParams[1] = estScale;
 
+	free(weights);
     free(errorVec);
 }
 
@@ -615,7 +633,6 @@ void medianOfFits(float *vec, float *weights,
     free(rSTSDs);
 }
 
-
 void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
     unsigned int i;
     float xsum,x2sum,ysum,xysum, D; 
@@ -668,7 +685,8 @@ void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
     for(iter=0; iter<12; iter++) {
         
         for (i = 0; i < N; i++) {
-            errorVec[i].vecData  = fabs(y[i] - (model[0]*x[i] + model[1]));    //could have called the function
+            //could have called the function
+            errorVec[i].vecData  = fabs(y[i] - (model[0]*x[i] + model[1]));
             errorVec[i].indxs = i;
         }
         quickSort(errorVec,0,N-1);
@@ -866,10 +884,11 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z,
     free(sample_z);
 }
 
-void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
-                float *modelParamsMap, unsigned int N, unsigned int X, unsigned int Y,
-                float topkPerc, float botkPerc, float MSSE_LAMBDA, 
-                unsigned char optIters, float minimumResidual) {
+void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
+					unsigned int N, unsigned int X, unsigned int Y,
+					float topkPerc, float botkPerc, float MSSE_LAMBDA,
+					unsigned char optIters, float minimumResidual,
+					unsigned int downSampledSize) {
 
     float* vec;
     float* weights;
@@ -879,20 +898,17 @@ void RobustSingleGaussianTensor(float *inTensor, unsigned char* inMask,
 
     vec = (float*) malloc(N * sizeof(float));
     weights = (float*) malloc(N * sizeof(float));
-    for(i=0; i<N; i++)
-        weights[i]=1;
-
 
     for(rCnt=0; rCnt<X; rCnt++) {
         for(cCnt=0; cCnt<Y; cCnt++) {
-            
             L = 0;
-            for(i=0; i<N; i++)
-                if(inMask[cCnt + rCnt*Y + i*X*Y])
-                    vec[L++]=inTensor[cCnt + rCnt*Y + i*X*Y];
-
-            //fitValue2Skewed(vec, weights, mP, 0, L, topkPerc, botkPerc, MSSE_LAMBDA, optIters, -100000);
-            RobustSingleGaussianVec(vec, mP, 0, L, topkPerc, botkPerc, MSSE_LAMBDA, 10, minimumResidual);
+            for(i=0; i<N; i++) {
+				vec[L]=inTensor[cCnt + rCnt*Y + i*X*Y];
+				weights[L++]=inWeights[cCnt + rCnt*Y + i*X*Y];
+            }
+            fitValue(vec, weights, mP, 0, L, topkPerc, botkPerc,
+            						MSSE_LAMBDA, optIters, minimumResidual,
+									downSampledSize);
             modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0];
             modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP[1];
         }
@@ -915,6 +931,8 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
     y = (float*) malloc(winX*winY * sizeof(float));
     float* z;
     z = (float*) malloc(winX*winY * sizeof(float));
+    float* w;
+    w = (float*) malloc(winX*winY * sizeof(float));
     unsigned int rCnt, cCnt, numElem, pRowStart, pRowEnd, pClmStart, pClmEnd;
     float mP[4];
     float mP_MOne[2];
@@ -932,15 +950,19 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
                     for(cCnt = pClmStart; cCnt < pClmEnd; cCnt++) {
                         if(inMask[cCnt + rCnt*Y]) {
                             z[numElem] = inImage[cCnt + rCnt*Y];
+                            w[numElem] = inMask[cCnt + rCnt*Y];
                             numElem++;
+
                         }
 					}
 				}
                 mP_MOne[0] = 0;
 				mP_MOne[1] = 0;
-				RobustSingleGaussianVec(z, mP_MOne, 0, numElem, 
+				fitValue(z, w, mP_MOne, 0, numElem,
 										topkPerc, botkPerc, 
-										MSSE_LAMBDA, optIters, minimumResidual);
+										MSSE_LAMBDA, optIters,
+										minimumResidual,
+										numElem);
 				for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
 					for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
 						modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP_MOne[0];
@@ -964,12 +986,14 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
                     
                     RobustAlgebraicPlaneFitting(x, y, z, mP, mP,
                                                 numElem, topkPerc,
-                                                botkPerc, MSSE_LAMBDA, stretch2CornersOpt, 
+                                                botkPerc, MSSE_LAMBDA,
+												stretch2CornersOpt,
 												minimumResidual, 12);
                     
                     for(rCnt=pRowStart; rCnt<pRowEnd; rCnt++) {
                         for(cCnt=pClmStart; cCnt<pClmEnd; cCnt++) {
-                            modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0]*rCnt + mP[1]*cCnt + mP[2];
+                            modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0]*rCnt
+                            							  + mP[1]*cCnt + mP[2];
                             modelParamsMap[cCnt + rCnt*Y + 1*X*Y] = mP[3];
                         }
                     }
@@ -993,6 +1017,7 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
     free(x);
     free(y);
     free(z);
+    free(w);
 }
 
 void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tensor, 
@@ -1054,11 +1079,12 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                            unsigned char optIters,
 						   float minimumResidual) {
 
-    int r, maxR, shellCnt, pixX, pixY, i, j,pixInd, new_numElem;
+    int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
     int shell_low, shell_high, numElem;
     float theta, sCnt, jump, X_Cent, Y_Cent;
     float mP[2];
     float* inVec;
+    float* inWeight;
     float shellWidth_FSB, currentShell, area;
     float squareSide;
     
@@ -1090,7 +1116,8 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
         area = 0;
         while( (area<finiteSampleBias) && ( currentShell+shellWidth_FSB < maxRes ) ) {
 			if(currentShell+shellWidth_FSB > squareSide) {
-				area += 4*(M_PI/2 - 2*(acos(squareSide/(currentShell+shellWidth_FSB))))*(currentShell+shellWidth_FSB);
+				area += 4*(M_PI/2 - 2*(acos(squareSide/(currentShell+
+						shellWidth_FSB))))*(currentShell+shellWidth_FSB);
 			}
 			else {
 				area += 2*M_PI*(currentShell + shellWidth_FSB);
@@ -1111,7 +1138,10 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
         shell_high = resShells[i+1];
 
         //Fill in the vector of resolution shell
-        inVec = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*(shell_high+shell_low)/2 ) * sizeof(float));
+        inVec = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*
+        		                    (shell_high+shell_low)/2 ) * sizeof(float));
+        inWeight = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*
+                (shell_high+shell_low)/2 ) * sizeof(float));
         numElem = 0;
         for(r=shell_low; r<shell_high; r++) {
             for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
@@ -1120,6 +1150,7 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                 pixInd = pixY + pixX*Y;
                 if( (pixY>=0) && (pixY<Y) && (pixX>=0) && (pixX<X) && (inMask[pixInd]) ) {
                     inVec[numElem] = inImage[pixInd];
+                    inWeight[numElem] = inMask[pixInd];
                     numElem++;
                 }
             }
@@ -1128,27 +1159,19 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
         if(numElem > finiteSampleBias) {
             new_numElem = 0;
             jump = (float)numElem/((float)finiteSampleBias);
-            for(sCnt=0; sCnt<numElem; sCnt += jump)
+            for(sCnt=0; sCnt<numElem; sCnt += jump) {
                 inVec[new_numElem++] = inVec[(int)sCnt];
+                inWeight[new_numElem++] = inWeight[(int)sCnt];
+            }
             numElem = new_numElem;
         }
         //Get the model parameters
-        if(optIters>0) {
-            RobustSingleGaussianVec(inVec, mP, 0, numElem,
-                    topkPerc, botkPerc, MSSE_LAMBDA, optIters, minimumResidual);
-        }        
-        else {
-            mP[0] = 0;
-            for(j=0; j<numElem; j++)
-                mP[0] += inVec[j];
-            mP[0] /= numElem;
-            mP[1] = 0;
-            for(j=0; j<numElem; j++)
-                mP[1] += (inVec[j] - mP[0])*(inVec[j] - mP[0]);
-            mP[1] /= numElem;
-            mP[1] = sqrt(mP[1]);
-        }
-        free(inVec);
+		fitValue(inVec, inWeight, mP, 0, numElem,
+				 topkPerc, botkPerc, MSSE_LAMBDA,
+				 optIters, minimumResidual, numElem);
+
+		free(inVec);
+        free(inWeight);
         //Fill the output with model parameters
         //We will set four pixels around each radius as this shell
         //This way no pixel will be forgotten

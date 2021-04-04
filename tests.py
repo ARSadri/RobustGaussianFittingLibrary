@@ -1179,4 +1179,4 @@ if __name__ == '__main__':
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()
     print('This was robust fitting')
-    exit()
+    exit()    

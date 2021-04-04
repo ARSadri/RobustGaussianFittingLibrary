@@ -50,18 +50,18 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
 ################################### Value fitting library #######################################
 
 def fitValueTensor_MultiProcFunc(aQ, 
-                                partCnt, inTensor, inMask,
+                                partCnt, inTensor, inWeights,
                                 topKthPerc, bottomKthPerc, MSSE_LAMBDA):
 
     modelParams = fitValueTensor(inTensor=inTensor, 
-                                 inMask = inMask,
+                                 inWeights = inWeights,
                                  topKthPerc=topKthPerc,
                                  bottomKthPerc=bottomKthPerc,
                                  MSSE_LAMBDA = MSSE_LAMBDA)
     aQ.put(list([partCnt, modelParams]))
 
 def fitValueTensor_MultiProc(inTensor,
-                             inMask = None,
+                             inWeights = None,
                              numRowSegs = 1,
                              numClmSegs = 1,
                              topKthPerc = 0.5,
@@ -72,7 +72,7 @@ def fitValueTensor_MultiProc(inTensor,
     Input arguments
     ~~~~~~~~~~~~~~~
         inTensor: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
-        inMask: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, uint8
+        inWeights: n_F x n_R x n_C Tensor of n_R x n_C vectors, each with size n_F, float32
         numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
@@ -91,8 +91,8 @@ def fitValueTensor_MultiProc(inTensor,
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
 
     """
-    if(inMask is None):
-        inMask = np.ones(shape = inTensor.shape, dtype = 'uint8')
+    if(inWeights is None):
+        inWeights = np.ones(shape = inTensor.shape, dtype = 'float32')
     
     rowClmInds, segInds = bigTensor2SmallsInds(inTensor.shape, numRowSegs, numClmSegs)
 
@@ -130,7 +130,7 @@ def fitValueTensor_MultiProc(inTensor,
                             np.squeeze(inTensor[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
-                            np.squeeze(inMask[                                            :,
+                            np.squeeze(inWeights[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
                             topKthPerc,
