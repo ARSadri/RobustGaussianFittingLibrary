@@ -1,7 +1,8 @@
-#################################################################################################
-# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
-# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
-#################################################################################################
+###############################################################################
+# This file is part of RobustGaussianFittingLibrary, 
+# a free library WITHOUT ANY WARRANTY        # 
+# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                        
+###############################################################################
 
 import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
@@ -206,7 +207,8 @@ def test_fitValue_sweep():
             testData = np.concatenate((RNN0, RNN1)).flatten()
             np.random.shuffle(testData)
             time_time = time.time()
-            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData, 
+            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData,
+                                                                fit2Skewed = False, 
                                                                 topKthPerc=0.5, 
                                                                 bottomKthPerc=0.3,
                                                                 MSSE_LAMBDA=3.0,
@@ -333,7 +335,7 @@ def test_fitValueVSMeanShiftPy():
     fig.legend()
     plt.show()
     
-    mP = RobustGaussianFittingLibrary.fitValue2Skewed(inZ)
+    mP = RobustGaussianFittingLibrary.fitValue(inZ, fit2Skewed = False)
     print(mP)
     Xax = np.arange(inX.min(), inX.max())
     Yax = np.arange(inY.min(), inY.max())
@@ -721,7 +723,62 @@ def test_fitBackground():
     axes[2].set_ylim([winYL, winYU])
     fig.colorbar(im2, ax=axes[2], shrink = 0.5)
     plt.show()
+    
+def centeredDistanceMatrix(n):
+    n = int(2*int(n/2) + 1)
+    x,y = np.meshgrid(range(n),range(n))
+    return np.sqrt((x-(n/2)+1)**2+(y-(n/2)+1)**2)
 
+def test_fitBackgroundCylindrically():
+    print('test_fitBackgroundCylindrically')
+    n_F = 50
+    n_R = 1024
+    n_C = 1024
+    imDiag = (n_R**2 + n_C**2)**0.5
+    radii = centeredDistanceMatrix(imDiag)
+    water_avg_profile = np.exp(-(np.arange(imDiag)-n_R/4)**2/(2*(n_R/16)**2))
+    water2D_avg = np.exp(-(radii-n_R/4)**2/(2*(n_R/16)**2))
+    water2D_std = water2D_avg**0.5
+    r_cent = int(water2D_std.shape[0]/2)
+    c_cent = int(water2D_std.shape[1]/2)
+    water2D_avg = water2D_avg[r_cent - int(n_R/2):r_cent + int(n_R/2),
+                                          r_cent - int(n_C/2):r_cent + int(n_C/2)]
+    water2D_std = water2D_std[r_cent - int(n_R/2):r_cent + int(n_R/2),
+                                          r_cent - int(n_C/2):r_cent + int(n_C/2)]
+    normalNoisePattern = np.zeros((n_F, n_R, n_C), dtype='float32')
+    for fCnt in range(n_F):
+        normalNoisePattern[fCnt] = \
+            (np.random.randn(n_R, n_C) + water2D_avg)*water2D_std
+    
+    print(normalNoisePattern.shape)
+    mP, est_profile = \
+        RobustGaussianFittingLibrary.basic.fitBackgroundCylindrically(\
+        inTensor = normalNoisePattern, 
+        inMask = None,
+        minRes = 1,
+        includeCenter = 0,
+        maxRes = None,
+        shellWidth = 3,
+        topKthPerc = 0.5,
+        bottomKthPerc = 0.25,
+        MSSE_LAMBDA = 3.0,
+        optIters = 16,
+        numStrides = 2,
+        finiteSampleBias = 10000,
+        minimumResidual = 0,
+        return_vecMP = True)
+
+    plt.figure(1)
+    plt.imshow(normalNoisePattern[0])
+    plt.figure(2)
+    plt.imshow(mP[0])
+    plt.figure(3)
+    plt.imshow(mP[1])
+    plt.figure(4)
+    plt.plot(est_profile[0], label = 'ext_profile')
+    plt.plot(water_avg_profile, label = 'true_profile')
+    plt.show()
+    
 def test_fitBackgroundRadially():
     print('test_fitBackgroundRadially')
     XSZ = 1024
@@ -857,7 +914,11 @@ def test_SginleGaussianVec():
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing RobustSingleGaussianVecPy')
-    mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.5, bottomKthPerc=0.35, MSSE_LAMBDA=3.0)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, 
+                                               fit2Skewed = False,
+                                               topKthPerc = 0.5, 
+                                               bottomKthPerc=0.35, 
+                                               MSSE_LAMBDA=3.0)
     print(mP)
     RobustGaussianFittingLibrary.misc.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
@@ -875,7 +936,11 @@ def test_fitValue2Skewed():
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing fitValue2Skewed')
-    mP = RobustGaussianFittingLibrary.fitValue2Skewed(testData, topKthPerc = 0.43, bottomKthPerc=0.37, MSSE_LAMBDA=3.0)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, 
+                                               fit2Skewed = True,
+                                               topKthPerc = 0.43, 
+                                               bottomKthPerc=0.37, 
+                                               MSSE_LAMBDA=3.0)
     RobustGaussianFittingLibrary.misc.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
     plt.plot(testData,'.'), 
@@ -888,7 +953,7 @@ def test_fitValue2Skewed():
 def test_fitValue2Skewed_sweep_over_N():
     print('test_fitValue2Skewed_sweep_over_N')
     numIter = 1000
-    maxN = 64
+    maxN = 30
     minN = 3
     mean_inliers = np.zeros((maxN-minN, numIter))
     std_inliers = np.zeros((maxN-minN, numIter))
@@ -896,30 +961,28 @@ def test_fitValue2Skewed_sweep_over_N():
     robustSkew_std = np.zeros((maxN-minN, numIter))
     robust_mean = np.zeros((maxN-minN, numIter))
     robust_std = np.zeros((maxN-minN, numIter))
-    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
     x = np.zeros(maxN-minN)
-    
     timeSkew = 0
     timeR = 0
+    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
     for N in range(minN,maxN):
         for iter in range(numIter):
             RNN0 = np.random.randn(N)
-            RNN1 = 7+5*(np.random.rand(int(N*0.25))-0.5)
+            RNN1 = 12+3*(np.random.rand(int(N*0.5))-0.5)
             testData = np.concatenate((RNN0, RNN1)).flatten()
             np.random.shuffle(testData)
             time_time = time.time()
-            rmodeSkew, rstdSkew = RobustGaussianFittingLibrary.fitValue2Skewed(testData, 
-                                                                topKthPerc=0.5, 
-                                                                bottomKthPerc=0.3,
-                                                                MSSE_LAMBDA=3.0,
-                                                                optIters= 12)
+            rmodeSkew, rstdSkew = \
+                RobustGaussianFittingLibrary.fitValue(
+                    testData,
+                    topKthPerc = 0.5,
+                    bottomKthPerc = 0.45,
+                    optIters = 12,
+                    fit2Skewed = True)
             timeSkew = time.time() - time_time
             time_time = time.time()
-            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData, 
-                                                                topKthPerc=0.5, 
-                                                                bottomKthPerc=0.3,
-                                                                MSSE_LAMBDA=3.0,
-                                                                optIters= 12)
+            rmode, rstd = RobustGaussianFittingLibrary.fitValue(testData,
+                                                                fit2Skewed = False)
             timeR = time.time() - time_time
             mean_inliers[N-minN, iter] = RNN0.mean()
             std_inliers[N-minN, iter] = RNN0.std()
@@ -960,12 +1023,17 @@ def test_flatField():
 
     modelCnt = 0
     mP = RobustGaussianFittingLibrary.fitValue(testData, 
-                            topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=2.0)
+                            topKthPerc = 0.49, bottomKthPerc=0.45, 
+                            fit2Skewed = False, MSSE_LAMBDA=2.0)
     RobustGaussianFittingLibrary.misc.naiveHist(data, mP)
 
 
     for modelCnt in range(4):
-        mP = RobustGaussianFittingLibrary.fitValue(testData, topKthPerc = 0.49, bottomKthPerc=0.45, MSSE_LAMBDA=1.0)
+        mP = RobustGaussianFittingLibrary.fitValue(testData, 
+                                                   fit2Skewed = False,
+                                                   topKthPerc = 0.49, 
+                                                   bottomKthPerc=0.45, 
+                                                   MSSE_LAMBDA=1.0)
         probs = np.random.rand(testData.shape[0]) - np.exp(-(testData - mP[0])**2/(2*mP[1]**2))
         probs[testData<mP[0]] = 0
         probs[probs>mP[0]+3.0*mP[1]] = 1
@@ -1030,7 +1098,21 @@ def test_fitValueSmallSample():
     testData = np.hstack((inliers, outliers))
     np.random.shuffle(testData)
     print('testing fitValue with ' + str(inliers.shape[0]) + ' inliers and ' + str(outliers.shape[0]) + ' outliers.')
-    mP = RobustGaussianFittingLibrary.fitValue(testData, modelValueInit = 100)
+    mP = RobustGaussianFittingLibrary.fitValue(testData, fit2Skewed = False,
+                                               modelValueInit = 100)
+    print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
+    print(mP)
+
+def test_fitValue2SkewedSmallSample(): 
+    print('test_fitValue2SkewedSmallSample')
+    inliers = np.random.randn(100)
+    outliers = np.array([100, 64])
+    testData = np.hstack((inliers, outliers))
+    np.random.shuffle(testData)
+    print('testing fitValue with ' + str(inliers.shape[0]) + ' inliers and ' + str(outliers.shape[0]) + ' outliers.')
+    mP = RobustGaussianFittingLibrary.fitValue(testData, 
+                                               fit2Skewed = True, bottomKthPerc = 0.4, 
+                                                      modelValueInit = 100, optIters = 12)
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
     print(mP)
 
@@ -1082,7 +1164,8 @@ def test_fit2Poisson():
             SNRs_true = (((outliers - inliers_mu)/inliers_std) >= minSNR).sum()/numOutliers
             vec_contaminated = np.hstack((vec.copy(), outliers))
         
-            _mP[iters] = RobustGaussianFittingLibrary.fitValue(vec_contaminated, 
+            _mP[iters] = RobustGaussianFittingLibrary.fitValue(vec_contaminated,
+                                                               fit2Skewed = False,
                                                         minimumResidual = 0.2 * photon, MSSE_LAMBDA = 4.0)
             _meanShift[iters] = RobustGaussianFittingLibrary.basic.fitValue_by_meanShift(vec_contaminated, minSNR = 6.0)
         _mP = _mP.mean(0)
@@ -1142,7 +1225,6 @@ def test_medianOfFits():
                                                    topkMax = 0.7,
                                                    topkMin = 0.3,
                                                    numSamples = 50,
-                                                   samplePerc = 0.1,
                                                    MSSE_LAMBDA = 3.0,
                                                    modelValueInit = 0,
                                                    optIters = 12,
@@ -1150,8 +1232,20 @@ def test_medianOfFits():
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
     print(mP)    
 
+def test_getTriangularVertices():
+    RobustGaussianFittingLibrary.misc.getTriangularVertices(
+        n = 1000,
+        phi_start = 0,
+        phi_end = np.pi,
+        plotIt = True)
+
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_getTriangularVertices()
+    exit()
+    test_fitBackgroundCylindrically()
+    test_fitValue2Skewed_sweep_over_N()
+    test_fitValue2SkewedSmallSample()
     test_fitValue_sweep()
     test_fit2Poisson()
     test_medianOfFits()
@@ -1163,7 +1257,6 @@ if __name__ == '__main__':
     test_fitBackgroundTensor_multiproc()
     test_fitBackground()
     test_MSSE()
-    test_fitValue2Skewed_sweep_over_N()
     test_SginleGaussianVec()
     test_flatField()
     test_fitValueSmallSample()
@@ -1171,7 +1264,6 @@ if __name__ == '__main__':
     test_fitValue2Skewed()
     visOrderStat()
     test_removeIslands()
-    test_fitBackgroundRadially()
     test_fitLineTensor_MultiProc()
     test_textProgBar()
     test_bigTensor2SmallsInds()

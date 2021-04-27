@@ -3,7 +3,7 @@
 # Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
 #################################################################################################
 from distutils.core import setup, Extension
-_version = 'v0.1.29'
+_version = 'v0.1.30'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
@@ -20,7 +20,6 @@ setup(
           'scipy',
           'matplotlib'
       ],
-  #cmdclass={'install': 'make all'},
   ext_modules=[Extension(name = 'RGFLib', 
                          sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
                          language = 'c',

@@ -5,7 +5,6 @@ and should be provided here
 from .basic import MSSE
 from .basic import MSSEWeighted
 from .basic import fitValue
-from .basic import fitValue2Skewed
 from .basic import fitValueTensor
 from .basic import fitLine
 from .basic import fitLineTensor
@@ -13,4 +12,5 @@ from .basic import fitPlane
 from .basic import fitBackground
 from .basic import fitBackgroundTensor
 from .basic import fitBackgroundRadially
-from .misc import textProgBar
+from .basic import fitBackgroundCylindrically
+from .misc  import textProgBar

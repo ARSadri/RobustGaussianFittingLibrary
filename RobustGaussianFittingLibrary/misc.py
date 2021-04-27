@@ -50,15 +50,15 @@ class textProgBar:
             time_correct = 2-2*(self.ck/self.length)
             #remTimeS *= time_correct
             if(remTimeS>=5940):
-                progStr = "%02d" % int(remTimeS/3600)
+                progStr = "%02d" % int(np.ceil(remTimeS/3600))
                 print(progStr, end='')
                 print('h', end='', flush = True)
             elif(remTimeS>=99):
-                progStr = "%02d" % int(remTimeS/60)
+                progStr = "%02d" % int(np.ceil(remTimeS/60))
                 print(progStr, end='')
                 print('m', end='', flush = True)
             else:
-                progStr = "%02d" % int(remTimeS)
+                progStr = "%02d" % int(np.cel(remTimeS))
                 print(progStr, end='')
                 print('s', end='', flush = True)
     
@@ -269,9 +269,40 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
     plt.show()
 
-def printvar(p):
-    for name in globals():
-        if(globals()[name] is p):
-            print(name, end='')
-            break
-    print(' --> ' + str(p))
+def getTriangularVertices(n,
+                          phi_start = 0,
+                          phi_end = np.pi,
+                          plotIt = False):
+    """ Triangular approximation of a sphere
+    Two angular sweeps are necessary. One is theta that goes around a circle
+        and the other is phi that moves the circle from 0 to 180 degree back
+        and forth.
+    input argument
+    ~~~~~~~~~~~~~~
+    n : number of vertices on the sphere
+    phi_start: phi_end is the pitch
+        default: 0
+    phi_end: 
+        default: pi
+    output
+    ~~~~~~
+    numpy array of shape 3 x n, each coloumn vector is
+        x,y,z location of the vertex on a sphere
+        all norms are one.
+    """
+    goldenRatio = (1 + 5**0.5)/2
+    i = np.arange(0, n)
+    theta = (2 * np.pi / goldenRatio) * i 
+    phi = np.arccos(np.linspace(np.cos(phi_end), np.cos(phi_start), n))
+    triVecs = np.array([np.cos(theta) * np.sin(phi), 
+                        np.sin(theta) * np.sin(phi), 
+                        np.cos(phi)])
+
+    if(plotIt):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(triVecs[0], triVecs[1], triVecs[2])
+        plt.show()    
+
+    return(triVecs)
+

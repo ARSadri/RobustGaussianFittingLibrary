@@ -84,17 +84,31 @@ RGFCLib.fitValue.argtypes = [
                 ctypes.c_int]
 
 '''
-void fitValue2Skewed(float *vec, float *weights, 
-					float *modelParams, float theta, unsigned int N,
-					float topkPerc, float botkPerc,
-					float MSSE_LAMBDA, unsigned char optIters, float minimumResidual);
+void fitValue2Skewed(float* inVec,
+			         float* inWeights,
+			         float* modelParams,
+			         float theta,
+			         unsigned int inN,
+					 float topkPerc,
+			         float botkPerc,
+                     float MSSE_LAMBDA,
+			         unsigned char optIters,
+                     float minimumResidual,
+			         unsigned int downSampledSize);
 '''                    
 RGFCLib.fitValue2Skewed.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
-                ctypes.c_float, ctypes.c_uint32, ctypes.c_float, 
-                ctypes.c_float, ctypes.c_float, ctypes.c_uint8, ctypes.c_float]                
+                ctypes.c_float, 
+                ctypes.c_int,
+                ctypes.c_float, 
+                ctypes.c_float, 
+                ctypes.c_float, 
+                ctypes.c_uint8, 
+                ctypes.c_float, 
+                ctypes.c_int]
+
 
 '''
 void medianOfFits(float *vec, float *weights, 
@@ -226,5 +240,35 @@ RGFCLib.fitBackgroundRadially.argtypes = [
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_uint8, ctypes.c_uint32, 
                 ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_float, ctypes.c_float, 
+                ctypes.c_float, ctypes.c_uint8, ctypes.c_float]
+
+'''
+void fitBackgroundCylindrically(float* inTensor,
+								unsigned char* inMask,
+                                float* modelParamsMap,
+								float* vecMP,
+                                unsigned int minRes,
+                                unsigned int maxRes,
+                                unsigned int shellWidth,
+                                unsigned char includeCenter,
+                                unsigned int finiteSampleBias,
+								unsigned int N,
+                                unsigned int X,
+								unsigned int Y,
+                                float topkPerc,
+								float botkPerc,
+                                float MSSE_LAMBDA,
+                                unsigned char optIters,
+						        float minimumResidual)
+'''
+RGFCLib.fitBackgroundCylindrically.argtypes = [
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint8, ctypes.c_uint32, 
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_float, ctypes.c_float, 
                 ctypes.c_float, ctypes.c_uint8, ctypes.c_float]

@@ -58,6 +58,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	double *bottomKthPerc;
 	double *MSSE_LAMBDA;
 	double *optIters;
+	double *minimumResidual;
+	double *downSampledSize;
 
 	//associate inputs
 	inVec 			= mxGetPr(prhs[0]);
@@ -68,6 +70,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	bottomKthPerc	= mxGetPr(prhs[5]);
 	MSSE_LAMBDA		= mxGetPr(prhs[6]);
 	optIters		= mxGetPr(prhs[7]);
+	minimumResidual = mxGetPr(prhs[8]);
+	downSampledSize = mxGetPr(prhs[9]);
 	
 	float *_inVec;
 	float *_inWeights;
@@ -77,6 +81,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	float _bottomKthPerc;
 	float _MSSE_LAMBDA;
 	unsigned char _optIters;
+	float _minimumResidual;
+	unsigned int _downSampledSize;
 		
 	_initModel = (float)(initModel[0]);
 	_N = (unsigned int)(N[0]);
@@ -84,6 +90,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	_bottomKthPerc = (float)(bottomKthPerc[0]);
 	_MSSE_LAMBDA = (float)(MSSE_LAMBDA[0]);
 	_optIters = (unsigned char)(optIters[0]);
+	_minimumResidual = (float)(minimumResidual[0]);
+	_downSampledSize = (unsigned int) (downSampledSize[0]);
 	
 	_inVec=(float *) malloc( _N*sizeof(float));
 	for(i=0; i<_N; i++)
@@ -98,8 +106,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	_mP[1] = 0;
 	
 	fitValue2Skewed(_inVec, _inWeights, _mP, _initModel, _N,
-					   _topKthPerc, _bottomKthPerc,
-					   _MSSE_LAMBDA, _optIters);
+					_topKthPerc, _bottomKthPerc,
+					_MSSE_LAMBDA, _optIters,
+					_minimumResidual, _downSampledSize);
 	free(_inVec);
 	free(_inWeights);
 	

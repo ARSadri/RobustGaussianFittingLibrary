@@ -91,9 +91,10 @@ def fitValue(inVec, inWeights = None,
              bottomKthPerc = 0.35,
              MSSE_LAMBDA = 3.0,
              modelValueInit = 0,
-             optIters = 8,
+             optIters = 12,
              minimumResidual = 0,
-             downSampledSize = np.iinfo("uint32").max):
+             downSampledSize = np.iinfo("uint32").max,
+             fit2Skewed = True):
     """Fit a Gaussian to input vector robustly:
     The function returns the parameters of a single gaussian structure through FLKOS [DICTA'08]
     The default values are suggested in MCNC [CVIU '18]
@@ -132,6 +133,12 @@ def fitValue(inVec, inWeights = None,
             then down sample the whole thing before you send it to this function
             and set the downSampledSize to inf.
             default: np.iinfo('uint32').max
+            
+        fit2Skewed: Fit a skewed bell shaped unimodal sharp density robustly.
+            The function works exactly the same as the fitValue, it fits 
+            a Gaussian to inVec robustly. Except that it has a different strategy
+            for sampling from the worst residuals.
+            default = False
     Output
     ~~~~~~
         tuple of two numpy.1darrays, robust average and standard deviation of the guassian
@@ -139,84 +146,32 @@ def fitValue(inVec, inWeights = None,
     if (inWeights is None):
         inWeights = np.ones(shape = inVec.shape, dtype ='float32')
     modelParams = np.zeros(2, dtype='float32')
-    RGFCLib.fitValue((inVec.copy()).astype('float32'),
-                     (inWeights.copy()).astype('float32'),
-                     modelParams, 
-                     modelValueInit,
-                     inVec.shape[0],
-                     topKthPerc,
-                     bottomKthPerc,
-                     MSSE_LAMBDA,
-                     optIters,
-                     minimumResidual,
-                     downSampledSize)
+    if(fit2Skewed):
+        RGFCLib.fitValue2Skewed((inVec.copy()).astype('float32'),
+                                (inWeights.copy()).astype('float32'),
+                                modelParams, 
+                                modelValueInit,
+                                inVec.shape[0],
+                                topKthPerc,
+                                bottomKthPerc,
+                                MSSE_LAMBDA,
+                                optIters,
+                                minimumResidual,
+                                downSampledSize)
+    else:
+        RGFCLib.fitValue((inVec.copy()).astype('float32'),
+                         (inWeights.copy()).astype('float32'),
+                         modelParams, 
+                         modelValueInit,
+                         inVec.shape[0],
+                         topKthPerc,
+                         bottomKthPerc,
+                         MSSE_LAMBDA,
+                         optIters,
+                         minimumResidual,
+                         downSampledSize)
     return modelParams
 
-def fitValue2Skewed(inVec, 
-                    inWeights = None,
-                    topKthPerc = 0.5,
-                    bottomKthPerc = 0.35,
-                    MSSE_LAMBDA = 3.0,
-                    modelValueInit = 0,
-                    optIters = 8,
-                    minimumResidual = 0):
-    """Fit a skewed bell shaped unimodal sharp density robustly:
-    The function works exactly the same as the fitValue, it fits 
-    a Gaussian to inVec robustly. Except that it accepts weights 
-    as well and returns the average and standard deviation of a 
-    skewed density, it reports the bigger STD of two sides as 
-    standard deviation, and the median of inliers as the mode.
-    Input arguments
-    ~~~~~~~~~~~~~~~
-        inVec (numpy.1darray): a float32 input vector of values 
-            to fit the model to
-        inWeight (numpy.1darray): a float32 input vector of weights 
-            for each data point, doesn't need to sum to 1
-        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
-            mean of the Gaussian, data is considered inlier.
-            default: 3.0
-        optIters: number of iterations of FLKOS for this fitting
-            value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
-            value 8 and above is recommended for optimization similar 
-                to Newton method
-            default : 8
-        topKthPerc: A rough but certain guess of portion of inliers, 
-            between 0 and 1, e.g. 0.5. 
-            Choose the topKthPerc to be as high as you are 
-            sure the portion of data is inlier.
-            if you are not sure at all, refer to the note above this code.
-            default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst 
-            inliers from data points that are
-            between bottomKthPerc and topKthPerc of sorted residuals.
-            set it to 0.9*topKthPerc, if N is number of data points,
-            then make sure that
-            (topKthPerc - bottomKthPerc)*N>4, 
-            it is best if bottomKthPerc*N>12 then MSSE makes sense
-            otherwise the code may return non-robust results.
-        minimumResidual : minimum fitting error to initialize MSSE 
-            (dtype = 'float32')
-            default : 0
-    Output
-    ~~~~~~
-        tuple of two numpy.1darrays, robust mode and standard deviation of the density from the longer tail
-    """
-    if(inWeights is None):
-        inWeights = np.ones(inVec.shape, dtype='float32')
-    modelParams = np.zeros(2, dtype='float32')
-    RGFCLib.fitValue2Skewed((inVec.copy()).astype('float32'),
-                              (inWeights.copy()).astype('float32'),
-                               modelParams, 
-                               modelValueInit,
-                               inVec.shape[0],
-                               topKthPerc,
-                               bottomKthPerc,
-                               MSSE_LAMBDA,
-                               optIters,
-                               minimumResidual)
-    return (modelParams[0], modelParams[1])
-    
 def medianOfFits(inVec, 
                  inWeights = None,
                  topkMax = 0.5,
@@ -801,6 +756,114 @@ def fitBackgroundRadially(inImage,
         return(bckParam/_sums, vecMP/_sums)
     else:
         return(bckParam/_sums)
+
+def fitBackgroundCylindrically(inTensor, 
+                               inMask = None,
+                               minRes = 1,
+                               includeCenter = 0,
+                               maxRes = None,
+                               shellWidth = 2,
+                               topKthPerc = 0.5,
+                               bottomKthPerc = 0.35,
+                               MSSE_LAMBDA = 3.0,
+                               optIters = 12,
+                               numStrides = 0,
+                               finiteSampleBias = 200,
+                               minimumResidual = 0,
+                               return_vecMP = False):
+    """ fit a value to the ring around the image over all input images
+        hence a cylinder, and fine tune it by convolving the resolution shells
+        by number of stride and calculate the value of the background of the ring
+        and STD at the location of each pixel.
+    
+    Input arguments
+    ~~~~~~~~~~~~~~~
+        inTensor: a 3D float32 numpy array as the image
+            size: n_F x n_R x n_C
+        inMask: where 0 is bad and 1 is good. The masked pixels have not effect in the calculation of the parameters of the plane fit to background. However, the value of the background at their location can be found.
+        minRes: minimum distance to the center of the image
+            default: 0
+        maxRes: maximum distance to the center of the image
+        shellWidth : the ring around the center can have a width and a value will be fitted to
+                all calue in the ring.
+        finiteSampleBias : size of an area on a ring will be downsampled evenly to no more than finiteSampleBias
+            default : twice monte carlo finite sample bias 2x200
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
+        MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
+                        mean of the Gaussian, data is considered inlier.
+                        default: 3.0
+        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+                    if you are not sure at all, refer to the note above this code.
+                    default : 0.5
+        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
+                       between bottomKthPerc and topKthPerc of sorted residuals.
+                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
+                       (topKthPerc - bottomKthPerc)*N>4, 
+                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+                       otherwise the code may return non-robust results.
+        numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
+            number of strides.
+        minimumResidual: the minimum residual for MSSE to initialize with, similar to RANSAC,
+            default: 0
+        return_vecMP: True if you'd like to receive a vector with radial info as a vector
+            
+
+    Output
+    ~~~~~~
+        modelParametersMap: numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD. In case return_vecMP is set to True, you get a tuple in the output, the first element will be numpy array modelParametersMap which is the same size as the image and 
+        the second element will be a vector of size the maximum radius with two elements,
+        average and standard deviation.
+    """
+    
+    n_F, n_R, n_C = inTensor.shape
+
+    if(inMask is None):
+        inMask = np.ones(inTensor.shape, dtype='uint8')
+        
+    if(maxRes is None):
+        maxRes = int(((n_R/2)**2 + (n_C/2)**2)**0.5)
+
+    vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
+    _vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
+
+    bckParam = np.zeros((2, n_R, n_C), dtype='float32')
+    if(shellWidth<1):
+        shellWidth = 1
+    modelParamsMap = bckParam.copy()
+    _sums = 0
+    shellStrideList = np.linspace(0, shellWidth, numStrides + 1, dtype='uint8')
+    for shellStride in shellStrideList:
+        RGFCLib.fitBackgroundCylindrically(inTensor.astype('float32'),
+                                           inMask,
+                                           modelParamsMap,
+                                           _vecMP,
+                                           minRes+shellStride,
+                                           maxRes,
+                                           shellWidth,
+                                           includeCenter,
+                                           finiteSampleBias,
+                                           n_F,
+                                           n_R,
+                                           n_C,
+                                           topKthPerc,
+                                           bottomKthPerc,
+                                           MSSE_LAMBDA,
+                                           optIters,
+                                           minimumResidual)
+        bckParam += modelParamsMap
+        vecMP += _vecMP
+        _sums += 1
+    if(return_vecMP):
+        return(bckParam/_sums, vecMP/_sums)
+    else:
+        return(bckParam/_sums)
+
 
 def fitValue_by_meanShift(inVec, minSNR = 3.0, MS_numIter = 8):
     MS_mu = inVec.mean()

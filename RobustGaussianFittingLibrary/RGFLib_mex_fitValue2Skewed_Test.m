@@ -1,8 +1,9 @@
-%#################################################################################################
-%# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
-%# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
-%#################################################################################################
-%uncomment for MEX compile and then comment again for MATLAB use
+%##############################################################################
+%# This file is part of RobustGaussianFittingLibrary, 
+%# A free library WITHOUT ANY WARRANTY         
+%# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                       
+%##############################################################################
+%comment/uncomment for MEX compile and then comment again for MATLAB use
 mex RGFLib_mex_fitValue2Skewed.c, return
 
 numTests = 1000;
@@ -14,6 +15,8 @@ for test = 1: numTests
 	bottomKthPerc = 0.4;
 	MSSE_LAMBDA = 3.0;	%std away from mean is still a guassians.
 	optIters = 12;
+	minimumResidual = 0;
+	downSampledSize = N;
 	
 	Gaus_mean = 0;
 	Gaus_std = 1;
@@ -29,7 +32,10 @@ for test = 1: numTests
 	inWeights = [inliers_W outliers_W];
 	N = numel(inVec);
 
-	Rmode = RGFLib_mex_fitValue2Skewed(inVec, inWeights, initModel, N, topKthPerc, bottomKthPerc, MSSE_LAMBDA, optIters);
+	Rmode = RGFLib_mex_fitValue2Skewed(inVec, inWeights, initModel, N, ...
+									   topKthPerc, bottomKthPerc, ...
+									   MSSE_LAMBDA, optIters, ...
+									   minimumResidual, downSampledSize);
 	Rmode_rec(test) = Rmode;
 end
 disp(median(Rmode_rec))
