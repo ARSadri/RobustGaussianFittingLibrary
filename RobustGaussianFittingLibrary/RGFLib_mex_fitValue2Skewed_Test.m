@@ -1,8 +1,10 @@
-%##############################################################################
-%# This file is part of RobustGaussianFittingLibrary, 
-%# A free library WITHOUT ANY WARRANTY         
-%# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                       
-%##############################################################################
+% ------------------------------------------------------
+% This file is part of RobustGaussianFittingLibrary,
+% a free library WITHOUT ANY WARRANTY
+% Copyright: 2017-2020 LaTrobe University Melbourne,
+%            2019-2020 Deutsches Elektronen-Synchrotron
+% ------------------------------------------------------
+
 %comment/uncomment for MEX compile and then comment again for MATLAB use
 mex RGFLib_mex_fitValue2Skewed.c, return
 

@@ -1,4 +1,3 @@
-#ar -r RGFLib.a RGFLib.o
 CC = gcc
 SL = ar
 SLFLAGS = -r

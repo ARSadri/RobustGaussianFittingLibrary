@@ -1,9 +1,13 @@
-#################################################################################################
-# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
-# Copyright: 2017-2020 LaTrobe University Melbourne, 2019-2020 Deutsches Elektronen-Synchrotron # 
-#################################################################################################
+"""
+------------------------------------------------------
+This file is part of RobustGaussianFittingLibrary,
+a free library WITHOUT ANY WARRANTY
+Copyright: 2017-2020 LaTrobe University Melbourne,
+           2019-2020 Deutsches Elektronen-Synchrotron
+------------------------------------------------------
+"""
 from distutils.core import setup, Extension
-_version = 'v0.1.30'
+_version = 'v0.1.31'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
@@ -37,3 +41,12 @@ setup(
     'Programming Language :: Python :: 3.8',
   ],
 )
+'''
+try:
+    import RobustGaussianFittingLibrary
+    loc = RobustGaussianFittingLibrary.__file__
+    print('found the package in \n', loc)
+except:
+    print('I tried to locate the package but I can not find it.')
+    exit()
+'''

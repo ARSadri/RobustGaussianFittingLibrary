@@ -1,12 +1,17 @@
-#################################################################################################
-# This file is part of RobustGaussianFittingLibrary, a free library WITHOUT ANY WARRANTY        # 
-# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                                         # 
-#################################################################################################
+"""
+------------------------------------------------------
+This file is part of RobustGaussianFittingLibrary,
+a free library WITHOUT ANY WARRANTY
+Copyright: 2017-2020 LaTrobe University Melbourne,
+           2019-2020 Deutsches Elektronen-Synchrotron
+------------------------------------------------------
+"""
 
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 from .cWrapper import RGFCLib
+from multiprocessing import Process, Queue, cpu_count
 
 class textProgBar:
     """
@@ -58,7 +63,7 @@ class textProgBar:
                 print(progStr, end='')
                 print('m', end='', flush = True)
             else:
-                progStr = "%02d" % int(np.cel(remTimeS))
+                progStr = "%02d" % int(np.ceil(remTimeS))
                 print(progStr, end='')
                 print('s', end='', flush = True)
     
@@ -305,4 +310,118 @@ def getTriangularVertices(n,
         plt.show()    
 
     return(triVecs)
+
+class multiprocessor:
+    """ multiprocessor makes the use of multiprocessing in Python easy
+    You need a function that can interpret the input arguments. Then you
+    need to make the inputs argument to be an indexable list of tuples.
+    These N tuples each, will be the input given to a processor, which
+    is the function you provide. The function provides an output and it
+    will be given as a list of the ourputs with the same order as the input.
+    You need to use the list as the list of outputs associated with the list of
+    the inputs.
+    """    
+    def __init__(self, 
+        targetFunction,
+        inputs,
+        outputIsNumpy = False,
+        max_cpu = None,
+        showProgress = False):
+        """
+        input arguments
+        ~~~~~~~~~~~~~~~
+            targetFunction: Target function
+            inputs: an indexable list of tuples. Each tuple will be sent to
+                the targetFunction, such as by syntax:
+                    targetFunction(inputs[0])
+                Indeed we actually do this syntax before anything. 
+            outputIsNumpy: If outputIsNumpy is True, then a numpy array will
+                be allocated and filled in with outputs of the queue. This 
+                only works if the output of the targetFunction is numpy array.
+                notice that it cannot be a number, if it isa number you
+                must set the return of the targetFunction to np.array([output])
+                default: False
+            max_cpu: max number of allowed cpu
+                default: None
+            showProgress: using textProgBar, it shows the progress of 
+                multiprocessing of your task.
+                default: False
+        """
+        try:
+            targetFunction(inputs[0])
+        except:
+            print('Running the following syntax raised an exception:')
+            print('targetFunction(inputs[0])')
+            print('I cannot call your function with input[0]')
+            print('You need to make inputs mutable and indexable by axis 0')
+            exit()
+
+        self.targetFunction = targetFunction
+        self.inputs = inputs
+        self.outputIsNumpy = outputIsNumpy
+        self.showProgress = showProgress
+        self.max_cpu = max_cpu
+    
+    def _multiprocFunc(self, aQ, _procID, inputArgs):
+        result = self.targetFunction(inputArgs)
+        aQ.put(list([_procID, result]))
+
+    def __call__(self):
+        #for example allData is size N by D
+        try:
+            N = len(self.inputs)
+        except:
+            N = self.inputs.shape[0]
+        
+        myCPUCount = cpu_count()-1
+        if(self.max_cpu is not None):
+            myCPUCount = np.minimum(self.max_cpu, myCPUCount)
+        aQ = Queue()
+        numProc = N
+        procID = 0
+        numProcessed = 0
+        numBusyCores = 0
+        if(not self.outputIsNumpy):
+            allResults = []
+        Q_procID = np.zeros(N, dtype='uint')
+        while(numProcessed<numProc):
+            if (not aQ.empty()):
+                aQElement = aQ.get()
+                Q_procID[numProcessed] = aQElement[0]
+                if(not self.outputIsNumpy):
+                    allResults.append(aQElement[1])
+                else:
+                    if(numProcessed == 0):
+                        allResults = np.zeros(
+                            shape = ((N,) + aQElement[1].shape), 
+                            dtype = aQElement[1].dtype)
+                    else:
+                        allResults[aQElement[0]] = aQElement[1] 
+                numProcessed += 1
+                numBusyCores -= 1
+                if(self.showProgress):
+                    if(numProcessed == 1):
+                        pBar = textProgBar(numProc-1, title = 'starting ' \
+                            + str(numProc) + ' processes with ' \
+                            + str(myCPUCount) + ' CPUs')
+                    if(numProcessed > 1):
+                        pBar.go()
+    
+            if((procID<numProc) & (numBusyCores < myCPUCount)):
+                Process(target = self._multiprocFunc, args = (aQ, procID, 
+                                           self.inputs[procID])).start()
+                procID += 1
+                numBusyCores += 1
+        if(self.showProgress):
+            del pBar
+        
+        if(not self.outputIsNumpy):
+            sortInds = np.argsort(Q_procID)
+            _output = []
+            for cnt in sortInds:
+                _output.append(allResults[cnt])
+            return (_output)
+        else:
+            return (allResults)
+
 

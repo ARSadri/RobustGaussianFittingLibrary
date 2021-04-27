@@ -1,6 +1,10 @@
-"""The list of accessible functions by importing the RGFLib itself
-I think some of the functions are used more often 
-and should be provided here
+"""
+------------------------------------------------------
+This file is part of RobustGaussianFittingLibrary,
+a free library WITHOUT ANY WARRANTY
+Copyright: 2017-2020 LaTrobe University Melbourne,
+           2019-2020 Deutsches Elektronen-Synchrotron
+------------------------------------------------------
 """
 from .basic import MSSE
 from .basic import MSSEWeighted

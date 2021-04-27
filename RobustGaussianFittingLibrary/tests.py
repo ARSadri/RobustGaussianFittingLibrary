@@ -1,8 +1,11 @@
-###############################################################################
-# This file is part of RobustGaussianFittingLibrary, 
-# a free library WITHOUT ANY WARRANTY        # 
-# Copyright: 2019-2020 Deutsches Elektronen-Synchrotron                        
-###############################################################################
+"""
+------------------------------------------------------
+This file is part of RobustGaussianFittingLibrary,
+a free library WITHOUT ANY WARRANTY
+Copyright: 2017-2020 LaTrobe University Melbourne,
+           2019-2020 Deutsches Elektronen-Synchrotron
+------------------------------------------------------
+"""
 
 import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
@@ -1239,10 +1242,31 @@ def test_getTriangularVertices():
         phi_end = np.pi,
         plotIt = True)
 
+
+def myFunc(anInput):
+    data, op_type = anInput
+    if(op_type=='mean'):
+        to_return = data.mean()
+    if(op_type=='max'):
+        to_return = data.max()
+    return(np.array([to_return]))
+    
+def test_multiprocessor():
+    N = 10000
+    Data = np.random.randn(N,100)
+    Param = 'max'
+    inputs = []
+    for cnt in range(N):
+        inputs.append((Data[cnt], Param))
+    someMul = RobustGaussianFittingLibrary.misc.multiprocessor(
+        myFunc, inputs, outputIsNumpy = True, showProgress = True)
+    means = np.squeeze(someMul())
+    print(np.array([ [means], [Data.max(1)]]).T)
+
+
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
     test_getTriangularVertices()
-    exit()
     test_fitBackgroundCylindrically()
     test_fitValue2Skewed_sweep_over_N()
     test_fitValue2SkewedSmallSample()
@@ -1270,5 +1294,6 @@ if __name__ == '__main__':
     test_fitBackgroundRadiallyTensor_multiproc()
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()
+    test_multiprocessor()
     print('This was robust fitting')
     exit()
