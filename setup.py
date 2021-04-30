@@ -7,7 +7,7 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 ------------------------------------------------------
 """
 from distutils.core import setup, Extension
-_version = 'v0.1.31'
+_version = 'v0.1.32'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"

@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .cWrapper import RGFCLib
 from multiprocessing import Process, Queue, cpu_count
+from scipy.spatial.transform import Rotation as R
 
 class textProgBar:
     """
@@ -274,7 +275,26 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
     plt.show()
 
+def scatter3(mat, inFigure = None, returnFigure = False):
+    """ given a matrix input of size 3 x N, it scatters it in 3D
+    """
+    if(inFigure is None):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        figureCnt = 0
+    else:
+        fig, ax, figureCnt = inFigure
+        figureCnt += 1
+    ax.scatter(mat[0], mat[1], mat[2], label = 'Plot ' + str(figureCnt))
+    if(returnFigure):
+        return((fig, ax, figureCnt))
+    else:
+        if(figureCnt>0):
+            plt.legend()
+        plt.show()
+    
 def getTriangularVertices(n,
+                          rotationAngles = [0, 0, 0],
                           phi_start = 0,
                           phi_end = np.pi,
                           plotIt = False):
@@ -285,7 +305,11 @@ def getTriangularVertices(n,
     input argument
     ~~~~~~~~~~~~~~
     n : number of vertices on the sphere
-    phi_start: phi_end is the pitch
+    rotationAngles: input must be a numpy array of three values
+         in radian (0~2pi) and the output will rotate according 
+         to these angles around axes xyz.
+        default:[0, 0, 0]
+    phi_start: 
         default: 0
     phi_end: 
         default: pi
@@ -297,17 +321,16 @@ def getTriangularVertices(n,
     """
     goldenRatio = (1 + 5**0.5)/2
     i = np.arange(0, n)
-    theta = (2 * np.pi / goldenRatio) * i 
+    theta = (2*np.pi / goldenRatio) * i 
     phi = np.arccos(np.linspace(np.cos(phi_end), np.cos(phi_start), n))
     triVecs = np.array([np.cos(theta) * np.sin(phi), 
                         np.sin(theta) * np.sin(phi), 
                         np.cos(phi)])
+    rotMat = R.from_euler('xyz', rotationAngles)
+    triVecs = rotMat.as_matrix() @ triVecs
 
     if(plotIt):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(triVecs[0], triVecs[1], triVecs[2])
-        plt.show()    
+        scatter3(triVecs)    
 
     return(triVecs)
 

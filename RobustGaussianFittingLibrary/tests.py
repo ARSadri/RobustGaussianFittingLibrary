@@ -1242,8 +1242,7 @@ def test_getTriangularVertices():
         phi_end = np.pi,
         plotIt = True)
 
-
-def myFunc(anInput):
+def multiprocessor_targetFunc(anInput):
     data, op_type = anInput
     if(op_type=='mean'):
         to_return = data.mean()
@@ -1259,10 +1258,10 @@ def test_multiprocessor():
     for cnt in range(N):
         inputs.append((Data[cnt], Param))
     someMul = RobustGaussianFittingLibrary.misc.multiprocessor(
-        myFunc, inputs, outputIsNumpy = True, showProgress = True)
+        multiprocessor_targetFunc, inputs, 
+        outputIsNumpy = True, showProgress = True)
     means = np.squeeze(someMul())
     print(np.array([ [means], [Data.max(1)]]).T)
-
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
@@ -1286,7 +1285,6 @@ if __name__ == '__main__':
     test_fitValueSmallSample()
     test_fitValueTensor_MultiProc()
     test_fitValue2Skewed()
-    visOrderStat()
     test_removeIslands()
     test_fitLineTensor_MultiProc()
     test_textProgBar()
@@ -1295,5 +1293,6 @@ if __name__ == '__main__':
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()
     test_multiprocessor()
+    visOrderStat()
     print('This was robust fitting')
     exit()
