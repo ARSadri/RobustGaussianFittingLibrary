@@ -1244,27 +1244,39 @@ def test_getTriangularVertices():
 
 def multiprocessor_targetFunc(anInput):
     data, op_type = anInput
-    if(op_type=='mean'):
+    if(op_type=='median'):
+        to_return = np.median(data)
+    elif(op_type=='mean'):
         to_return = data.mean()
-    if(op_type=='max'):
+    elif(op_type=='max'):
         to_return = data.max()
     return(np.array([to_return]))
     
 def test_multiprocessor():
-    N = 10000
-    Data = np.random.randn(N,100)
-    Param = 'max'
+
+    ################### Data #################
+    N = 1000
+    Data = (10+100*np.random.randn(N,100)).astype('int')
+    Param = 'median'
+    
+    ################### mp #################
     inputs = []
     for cnt in range(N):
         inputs.append((Data[cnt], Param))
     someMul = RobustGaussianFittingLibrary.misc.multiprocessor(
-        multiprocessor_targetFunc, inputs, 
-        outputIsNumpy = True, showProgress = True)
-    means = np.squeeze(someMul())
-    print(np.array([ [means], [Data.max(1)]]).T)
+        multiprocessor_targetFunc, inputs, showProgress=True).start()
+    means = np.squeeze(someMul)
+    #######################################
+
+    directMethod = np.median(Data, axis = 1)
+    
+    print(np.array([ means, directMethod]).T)
+    print('difference of results: ', (directMethod - someMul).sum())
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_multiprocessor()
+    exit()
     test_getTriangularVertices()
     test_fitBackgroundCylindrically()
     test_fitValue2Skewed_sweep_over_N()
@@ -1292,7 +1304,6 @@ if __name__ == '__main__':
     test_fitBackgroundRadiallyTensor_multiproc()
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()
-    test_multiprocessor()
     visOrderStat()
     print('This was robust fitting')
     exit()

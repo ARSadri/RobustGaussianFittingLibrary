@@ -347,7 +347,6 @@ class multiprocessor:
     def __init__(self, 
         targetFunction,
         inputs,
-        outputIsNumpy = False,
         max_cpu = None,
         showProgress = False):
         """
@@ -358,12 +357,6 @@ class multiprocessor:
                 the targetFunction, such as by syntax:
                     targetFunction(inputs[0])
                 Indeed we actually do this syntax before anything. 
-            outputIsNumpy: If outputIsNumpy is True, then a numpy array will
-                be allocated and filled in with outputs of the queue. This 
-                only works if the output of the targetFunction is numpy array.
-                notice that it cannot be a number, if it isa number you
-                must set the return of the targetFunction to np.array([output])
-                default: False
             max_cpu: max number of allowed cpu
                 default: None
             showProgress: using textProgBar, it shows the progress of 
@@ -371,7 +364,7 @@ class multiprocessor:
                 default: False
         """
         try:
-            targetFunction(inputs[0])
+            funcOutput = targetFunction(inputs[0])
         except:
             print('Running the following syntax raised an exception:')
             print('targetFunction(inputs[0])')
@@ -379,9 +372,26 @@ class multiprocessor:
             print('You need to make inputs mutable and indexable by axis 0')
             exit()
 
+        if(type(inputs).__module__ == np.__name__):
+            self.n_pts = inputs.shape[0]
+            if(showProgress):
+                print('Input is a numpy ndArray')
+        else:
+            try:
+                self.n_pts = len(inputs)
+                if(showProgress):
+                    print('Input is not a numpy ndArray')
+            except:
+                print('I can not get the length of the input list')
+                print('we are supporting lists, tuples and numpy ndarrays')
+                exit()
+
+        if(type(funcOutput).__module__ == np.__name__):
+            self.outputIsNumpy = True
+            if(showProgress):
+                print('output is a numpy ndArray')
         self.targetFunction = targetFunction
         self.inputs = inputs
-        self.outputIsNumpy = outputIsNumpy
         self.showProgress = showProgress
         self.max_cpu = max_cpu
     
@@ -389,24 +399,18 @@ class multiprocessor:
         result = self.targetFunction(inputArgs)
         aQ.put(list([_procID, result]))
 
-    def __call__(self):
-        #for example allData is size N by D
-        try:
-            N = len(self.inputs)
-        except:
-            N = self.inputs.shape[0]
-        
+    def start(self):        
         myCPUCount = cpu_count()-1
         if(self.max_cpu is not None):
             myCPUCount = np.minimum(self.max_cpu, myCPUCount)
         aQ = Queue()
-        numProc = N
+        numProc = self.n_pts
         procID = 0
         numProcessed = 0
         numBusyCores = 0
         if(not self.outputIsNumpy):
             allResults = []
-        Q_procID = np.zeros(N, dtype='uint')
+        Q_procID = np.zeros(self.n_pts, dtype='uint')
         while(numProcessed<numProc):
             if (not aQ.empty()):
                 aQElement = aQ.get()
@@ -416,10 +420,9 @@ class multiprocessor:
                 else:
                     if(numProcessed == 0):
                         allResults = np.zeros(
-                            shape = ((N,) + aQElement[1].shape), 
+                            shape = ((self.n_pts,) + aQElement[1].shape), 
                             dtype = aQElement[1].dtype)
-                    else:
-                        allResults[aQElement[0]] = aQElement[1] 
+                    allResults[aQElement[0]] = aQElement[1] 
                 numProcessed += 1
                 numBusyCores -= 1
                 if(self.showProgress):
