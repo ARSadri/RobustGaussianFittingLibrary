@@ -223,25 +223,30 @@ RGFCLib.RSGImage_by_Image_Tensor.argtypes = [
                 ctypes.c_uint8, ctypes.c_uint8, ctypes.c_float]
 
 '''
-void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
-						   float* modelParamsMap, float* vecMP,
- 						   unsigned int minRes, 
-						   unsigned int maxRes, 
-						   unsigned int shellWidth,
-						   unsigned char includeCenter, 
-						   unsigned int finiteSampleBias,
-						   unsigned int X, unsigned int Y,
-						   float topkPerc, float botkPerc, 
-						   float MSSE_LAMBDA, 
-						   unsigned char optIters,
-						   float minimumResidual);
+void fitBackgroundRadially(float* inImage, unsigned char* inMask,
+                           float* modelParamsMap, float* vecMP,
+                           unsigned int minRes,
+                           unsigned int maxRes,
+                           unsigned int shellWidth,
+                           unsigned int stride,
+                           unsigned int X_Cent,
+                           unsigned int Y_Cent,
+                           unsigned char includeCenter,
+                           unsigned int finiteSampleBias,
+                           unsigned int X, unsigned int Y,
+                           float topkPerc, float botkPerc,
+                           float MSSE_LAMBDA,
+                           unsigned char optIters,
+                           float minimumResidual);
 '''
+
 RGFCLib.fitBackgroundRadially.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_uint8, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
                 ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
+                ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32,
                 ctypes.c_uint8, ctypes.c_uint32, 
                 ctypes.c_uint32, ctypes.c_uint32, 
                 ctypes.c_float, ctypes.c_float, 

@@ -55,13 +55,27 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
 
 def fitValueTensor_MultiProcFunc(aQ, 
                                 partCnt, inTensor, inWeights,
-                                topKthPerc, bottomKthPerc, MSSE_LAMBDA):
-
+                                topKthPerc, bottomKthPerc, 
+                                MSSE_LAMBDA, optIters,
+                                minimumResidual, downSampledSize):
+    """ following:
+    def fitValueTensor(inTensor,
+                       inWeights = None,
+                       topKthPerc = 0.5,
+                       bottomKthPerc=0.35,
+                       MSSE_LAMBDA = 3.0,
+                       optIters = 12,
+                       minimumResidual = 0.0,
+                       downSampledSize = np.iinfo('uint32').max)
+    """
     modelParams = fitValueTensor(inTensor=inTensor, 
                                  inWeights = inWeights,
                                  topKthPerc=topKthPerc,
                                  bottomKthPerc=bottomKthPerc,
-                                 MSSE_LAMBDA = MSSE_LAMBDA)
+                                 MSSE_LAMBDA = MSSE_LAMBDA,
+                                 optIters = optIters,
+                                 minimumResidual = minimumResidual,
+                                 downSampledSize = downSampledSize)
     aQ.put(list([partCnt, modelParams]))
 
 def fitValueTensor_MultiProc(inTensor,
@@ -71,7 +85,10 @@ def fitValueTensor_MultiProc(inTensor,
                              topKthPerc = 0.5,
                              bottomKthPerc = 0.4,
                              MSSE_LAMBDA = 3.0,
-                             showProgress = False):
+                             showProgress = False,
+                             optIters = 12,
+                             minimumResidual = 0, 
+                             downSampledSize = 400):
     """"Does fitValueTensor in RGFLib.py using multiprocessing
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -89,7 +106,23 @@ def fitValueTensor_MultiProc(inTensor,
                        set it to 0.9*topKthPerc, if N is number of data points, then make sure that
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
-                       otherwise the code may return non-robust results.         
+                       otherwise the code may return non-robust results.
+        optIters: number of iterations of FLKOS for this fitting
+            value 0: returns total mean and total STD
+            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 8 and above is recommended for optimization according 
+                    to Newton method
+            default : 12
+        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
+                          default : 0
+        downSampledSize: the data will be downsampled regualrly starting from
+            position 0 to have this length. This is used for finding the 
+            parameter model and not to find the noise scale. The entire
+            inVec will be used to find the noise scale. If you'd like to use
+            less part of data for edtimation of the noise which is not recommended
+            then down sample the whole thing before you send it to this function
+            and set the downSampledSize to inf.
+            default: np.iinfo('uint32').max
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
@@ -139,7 +172,10 @@ def fitValueTensor_MultiProc(inTensor,
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
                             topKthPerc,
                             bottomKthPerc,
-                            MSSE_LAMBDA)).start()
+                            MSSE_LAMBDA, 
+                            optIters,
+                            minimumResidual, 
+                            downSampledSize)).start()
             partCnt += 1
 
             numWiating -= 1
@@ -386,41 +422,64 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
         del pBar
     return(modelParamsMapTensor)
 
-def fitBackgroundRadiallyTensor_multiprocFunc(aQ, inImg, inMask, 
-                                              minRes, includeCenter, maxRes,
-                                              shellWidth, numStrides, 
+def fitBackgroundRadiallyTensor_multiprocFunc(aQ, 
+                                              inImg, 
+                                              inMask, 
+                                              minRes, 
+                                              includeCenter, 
+                                              maxRes,
+                                              shellWidth, 
+                                              stride,
+                                              x_Cent,
+                                              y_Cent,
                                               finiteSampleBias, 
                                               topKthPerc,
                                               bottomKthPerc,
                                               MSSE_LAMBDA,
                                               optIters,
                                               minimumResidual,
+                                              return_vecMP,
                                               imgCnt):
-    mP = fitBackgroundRadially(inImg, inMask, 
-                               minRes=minRes, includeCenter=includeCenter, maxRes=maxRes,
-                               shellWidth=shellWidth, numStrides=numStrides,
-                               finiteSampleBias = finiteSampleBias,
-                               topKthPerc = topKthPerc,
-                               bottomKthPerc = bottomKthPerc,
-                               MSSE_LAMBDA = MSSE_LAMBDA,
-                               optIters = optIters,
-                               minimumResidual = minimumResidual)
-    aQ.put(list([imgCnt, mP]))
+    toUnpack = fitBackgroundRadially(inImg, 
+                                    inMask, 
+                                    minRes = minRes, 
+                                    includeCenter = includeCenter, 
+                                    maxRes = maxRes,
+                                    shellWidth = shellWidth, 
+                                    stride = stride,
+                                    x_Cent = x_Cent,
+                                    y_Cent = y_Cent,
+                                    finiteSampleBias = finiteSampleBias,
+                                    topKthPerc = topKthPerc,
+                                    bottomKthPerc = bottomKthPerc,
+                                    MSSE_LAMBDA = MSSE_LAMBDA,
+                                    optIters = optIters,
+                                    minimumResidual = minimumResidual,
+                                    return_vecMP = return_vecMP)
+    if(return_vecMP):
+        mP, vec = toUnpack
+        aQ.put(list([imgCnt, mP, vec]))
+    else:
+        mP= toUnpack
+        aQ.put(list([imgCnt, mP]))
 
 def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                           inMask_Tensor = None,
-                                          minRes = 1,
+                                          minRes = 3,
                                           includeCenter = 0,
                                           maxRes = None,
-                                          shellWidth = 2,
-                                          numStrides = 0,
-                                          finiteSampleBias = 400,
+                                          shellWidth = 1,
+                                          stride = 1,
+                                          x_Cent = None,
+                                          y_Cent = None,
+                                          finiteSampleBias = 200,
                                           topKthPerc = 0.5,
                                           bottomKthPerc = 0.35,
                                           MSSE_LAMBDA = 3.0,
                                           optIters = 12,                         
                                           showProgress = False,
-                                          minimumResidual = 0):
+                                          minimumResidual = 0,
+                                          return_vecMP = False):
     """ using Multiprocessing in python, 
         fit a value to the ring around the image and fine tune it by convolving the resolution shells
         by number of stride and calculate the value of the background of the ring
@@ -470,11 +529,18 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
         minimumResidual : minimum residual to initialize MSSE just like RANSAC
             default: 0
         showProgress: shows progress, default: False
+        return_vecMP: return profile vectors for each frame 
+            defult: False
     Output
     ~~~~~~
-        numpy array with 3 parameters for each pixel : 2 x n_F x n_R, n_C : Rmean and RSTD.
+        if not return_vecMP:
+            numpy array with 3 parameters for each pixel : 2 x n_F x n_R, n_C : Rmean and RSTD.
+        else:
+            2-tuple
+                first is the above numpy array
+                and second is the profile vecotr in size 2 x n_F x res
+                
     """
-
 
     if(inMask_Tensor is None):
         inMask_Tensor = np.ones(inImg_Tensor.shape, dtype='uint8')
@@ -483,9 +549,33 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
     n_R = inImg_Tensor.shape[1]
     n_C = inImg_Tensor.shape[2]
 
+    if(x_Cent is None):
+        x_Cent = int(n_R/2)
+    if(y_Cent is None):
+        y_Cent = int(n_C/2)
+
+    
     if(showProgress):
-        print('Use radial info to find abnormal behaviour', flush=True)
-    imgAbMap = np.zeros((2, n_F, n_R, n_C), dtype='float32')
+        print('Getting radial profile of a ny image')
+    radial_mP = np.zeros((2, n_F, n_R, n_C), dtype='float32')
+    
+    maxDist = np.array([(x_Cent**2 + y_Cent**2)**0.5,
+                        ((n_R - x_Cent)**2 + y_Cent**2)**0.5,
+                        ((x_Cent)**2 + (n_C - y_Cent)**2)**0.5,
+                        ((n_R - x_Cent)**2 + (n_C - y_Cent)**2)**0.5])
+    print(maxDist)
+    maxDist = int(np.ceil(maxDist.max()))
+    if(maxRes is None):
+        maxRes = maxDist
+    if(maxRes > maxDist):
+        maxRes = maxDist
+
+    if(return_vecMP):
+        radial_prof = np.zeros((2, n_F, maxDist), dtype='float32')
+        if(showProgress):
+            print('maximum distance from the given center is ' + str(maxDist), 
+                  flush=True)
+
     if(showProgress):
         print('inImg_Tensor shape-->', inImg_Tensor.shape)
     
@@ -501,7 +591,9 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
         if (not aQ.empty()):
             aQElement = aQ.get()
             _imgCnt = aQElement[0]
-            imgAbMap[:, _imgCnt, :, :] = aQElement[1]
+            radial_mP[:, _imgCnt, :, :] = aQElement[1]
+            if(return_vecMP):
+                radial_prof[:, _imgCnt, :] = aQElement[2]
             numProcessed += 1
             numBusyCores -= 1
             if(showProgress):
@@ -519,17 +611,23 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                             includeCenter,
                             maxRes,
                             shellWidth, 
-                            numStrides,
+                            stride,
+                            x_Cent,
+                            y_Cent,
                             finiteSampleBias,
                             topKthPerc,
                             bottomKthPerc,
                             MSSE_LAMBDA,
                             optIters,
                             minimumResidual,
+                            return_vecMP,
                             procID)).start()
             procID += 1
             numBusyCores += 1
     if(showProgress):
         del pBar    
     
-    return(imgAbMap)
+    if(return_vecMP):
+        return(radial_mP, radial_prof)
+    else:
+        return(radial_mP)

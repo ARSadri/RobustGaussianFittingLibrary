@@ -406,13 +406,23 @@ void fitValue(float* inVec,
     }
     else {
         theta = 0;
-        for(i=0; i<N; i++)
-            theta += vec[i];
-        theta = theta / N;
-        estScale = 0;
-        for(i=0; i<N; i++)
-            estScale += (vec[i]-theta)*(vec[i]-theta);
-        estScale = sqrt(estScale/N);
+        wAVG = 0;
+        for(i=0; i<N; i++) {
+            theta += weights[i]*vec[i];
+            wAVG += weights[i];
+        }
+        if(wAVG>0) {
+			theta = theta / wAVG;
+
+			estScale = 0;
+	        for(i=0; i<N; i++)
+	            estScale += weights[i]*(vec[i]-theta)*weights[i]*(vec[i]-theta);
+	        estScale = sqrt(estScale/wAVG);
+        }
+        else {
+			theta = 0;
+			estScale = 0;
+        }
     }
 
     modelParams[0] = theta;
@@ -553,13 +563,23 @@ void fitValue2Skewed(float* inVec,
     }
     else {
         theta = 0;
-        for(i=0; i<N; i++)
-            theta += vec[i];
-        theta = theta / N;
-        estScale = 0;
-        for(i=0; i<N; i++)
-            estScale += (vec[i]-theta)*(vec[i]-theta);
-        estScale = sqrt(estScale/N);
+        wAVG = 0;
+        for(i=0; i<N; i++) {
+            theta += weights[i]*vec[i];
+            wAVG += weights[i];
+        }
+        if(wAVG>0) {
+			theta = theta / wAVG;
+
+			estScale = 0;
+	        for(i=0; i<N; i++)
+	            estScale += weights[i]*(vec[i]-theta)*weights[i]*(vec[i]-theta);
+	        estScale = sqrt(estScale/wAVG);
+        }
+        else {
+			theta = 0;
+			estScale = 0;
+        }
     }
 
     modelParams[0] = theta;
@@ -905,7 +925,7 @@ void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
 				vec[L]=inTensor[cCnt + rCnt*Y + i*X*Y];
 				weights[L++]=inWeights[cCnt + rCnt*Y + i*X*Y];
             }
-            fitValue(vec, weights, mP, 0, L, topkPerc, botkPerc,
+            fitValue2Skewed(vec, weights, mP, 0, L, topkPerc, botkPerc,
             						MSSE_LAMBDA, optIters, minimumResidual,
 									downSampledSize);
             modelParamsMap[cCnt + rCnt*Y + 0*X*Y] = mP[0];
@@ -957,7 +977,7 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
 				}
                 mP_MOne[0] = 0;
 				mP_MOne[1] = 0;
-				fitValue(z, w, mP_MOne, 0, numElem,
+				fitValue2Skewed(z, w, mP_MOne, 0, numElem,
 										topkPerc, botkPerc, 
 										MSSE_LAMBDA, optIters,
 										minimumResidual,
@@ -1070,7 +1090,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor,
     free(inMask);
 }
 
-void fitBackgroundRadially(float* inImage, unsigned char* inMask, 
+void _fitBackgroundRadially(float* inImage, unsigned char* inMask,
                            float* modelParamsMap, float* vecMP,
                            unsigned int minRes,
                            unsigned int maxRes, 
@@ -1374,3 +1394,170 @@ void fitBackgroundCylindrically(float* inTensor,
     free(resShells);
 }
 
+
+void fitBackgroundRadially(float* inImage, unsigned char* inMask,
+                           float* modelParamsMap, float* vecMP,
+                           unsigned int minRes,
+                           unsigned int maxRes,
+                           unsigned int shellWidth,
+						   unsigned int stride,
+						   unsigned int X_Cent,
+						   unsigned int Y_Cent,
+                           unsigned char includeCenter,
+                           unsigned int finiteSampleBias,
+                           unsigned int X, unsigned int Y,
+                           float topkPerc, float botkPerc,
+                           float MSSE_LAMBDA,
+                           unsigned char optIters,
+						   float minimumResidual) {
+
+    int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
+    int shell_low, shell_high, numElem;
+    float theta, sCnt, jump;
+    float mP[2];
+    float* inVec;
+    float* inWeights;
+    float currentShell;
+    int includeFarEnd = 0;
+    int X_righSide, Y_righSide, maxR_LU, maxR_LD, maxR_RU, maxR_RD;
+
+    if(shellWidth<1)
+    	shellWidth = 1;
+
+    if(stride == 0)
+    	stride = shellWidth;
+
+    if(finiteSampleBias<3)
+    	finiteSampleBias = 3;
+
+    if(minRes<3)
+    	minRes = 3;
+
+
+    X_righSide = X - X_Cent;
+    Y_righSide = Y - Y_Cent;
+
+    maxR_LU = (int)(ceil(sqrt(X_Cent*X_Cent + Y_Cent*Y_Cent)));
+    maxR_LD = (int)(ceil(sqrt(X_Cent*X_Cent + Y_righSide*Y_righSide)));
+    maxR_RU = (int)(ceil(sqrt(X_righSide*X_righSide + Y_Cent*Y_Cent)));
+    maxR_RD = (int)(ceil(sqrt(X_righSide*X_righSide + Y_righSide*Y_righSide)));
+
+    maxR = maxR_LU;
+    if(maxR < maxR_LD)    maxR = maxR_LD;
+    if(maxR < maxR_RU)    maxR = maxR_RU;
+    if(maxR < maxR_RD)    maxR = maxR_RD;
+
+    if(minRes >= maxR)
+    	return;
+
+    if(maxRes>maxR)
+    	includeFarEnd = 1;
+
+    if(maxRes>maxR - 10)
+    	maxRes = maxR - 10;
+
+    if(maxRes<minRes)
+    	maxRes = minRes + 1;
+
+    float *resShells;
+    resShells = (float*) malloc(maxR * sizeof(float));
+    for(i=0; i<maxR; i++)	resShells[i]=0;
+
+    shellCnt = 0;
+    if(includeCenter) {
+        resShells[shellCnt] = 1;	//radius 1
+        shellCnt++;
+    }
+    resShells[shellCnt] = minRes;
+    while(resShells[shellCnt] < maxRes) {
+    	shellCnt++;
+    	currentShell = resShells[shellCnt-1];
+        if(currentShell + stride >= maxRes) {
+        	if(includeFarEnd) {
+        		resShells[shellCnt] = maxR;
+        	}
+        	else {
+        		resShells[shellCnt] = maxRes;
+        	}
+        }
+        else {
+        	resShells[shellCnt] = currentShell + stride;
+        }
+    }
+
+    for(i=0; i<shellCnt; i++) {
+        shell_low = resShells[i];
+        shell_high = shell_low + shellWidth;
+
+        //Fill in the vector of resolution shell
+        inVec = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*
+        		                    (shell_high+shell_low)/2 ) * sizeof(float));
+        inWeights = (float*) malloc((int)ceil( 2*M_PI*(shell_high-shell_low+1)*
+                (shell_high+shell_low)/2 ) * sizeof(float));
+        numElem = 0;
+        for(r=shell_low; r<shell_high; r++) {
+            for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
+                pixX = (int)((float)r*cos(theta) + X_Cent);
+                pixY = (int)((float)r*sin(theta) + Y_Cent);
+                pixInd = pixY + pixX*Y;
+                if( (pixY>=0) && (pixY<Y) && (pixX>=0) &&
+                		(pixX<X) && (inMask[pixInd]) ) {
+                    inVec[numElem] = inImage[pixInd];
+                    inWeights[numElem] = inMask[pixInd];
+                    numElem++;
+                }
+            }
+        }
+        //Downsample it if it is too big
+        if(numElem > finiteSampleBias) {
+            new_numElem = 0;
+            jump = (float)numElem/((float)finiteSampleBias);
+            for(sCnt=0; sCnt<numElem; sCnt += jump) {
+                inVec[new_numElem] = inVec[(int)sCnt];
+                inWeights[new_numElem++] = inWeights[(int)sCnt];
+            }
+            numElem = new_numElem;
+        }
+        //Get the model parameters
+
+		fitValue2Skewed(inVec, inWeights, mP, 0, numElem,
+				 topkPerc, botkPerc, MSSE_LAMBDA,
+				 optIters, minimumResidual, numElem);
+
+		free(inVec);
+        free(inWeights);
+
+        //Fill the output with model parameters
+        //We will set four pixels around each radius as this shell
+        //This way no pixel will be forgotten
+        for(r=shell_low; r<resShells[i+1]; r++) {
+			vecMP[r + 0*maxR] = mP[0];
+			vecMP[r + 1*maxR] = mP[1];
+            for(theta = 0; theta < 2*M_PI; theta += 1.0/r) {
+                pixX = (int)((float)r*cos(theta) + X_Cent);
+                pixY = (int)((float)r*sin(theta) + Y_Cent);
+                pixInd = pixY + pixX*Y;
+                if( (pixY>=0) && (pixY<Y) && (pixX>=0) && (pixX<X)) {
+                    modelParamsMap[pixInd + 0*X*Y] = mP[0];
+                    modelParamsMap[pixInd + 1*X*Y] = mP[1];
+                }
+                pixInd = pixY + (pixX+1)*Y;
+                if( (pixY>=0) && (pixY<Y) && (pixX+1>=0) && (pixX+1<X)) {
+                    modelParamsMap[pixInd + 0*X*Y] = mP[0];
+                    modelParamsMap[pixInd + 1*X*Y] = mP[1];
+                }
+                pixInd = pixY+1 + pixX*Y;
+                if( (pixY+1>=0) && (pixY+1<Y) && (pixX>=0) && (pixX<X)) {
+                    modelParamsMap[pixInd + 0*X*Y] = mP[0];
+                    modelParamsMap[pixInd + 1*X*Y] = mP[1];
+                }
+                pixInd = pixY+1 + (pixX+1)*Y;
+                if( (pixY+1>=0) && (pixY+1<Y) && (pixX+1>=0) && (pixX+1<X)) {
+                    modelParamsMap[pixInd + 0*X*Y] = mP[0];
+                    modelParamsMap[pixInd + 1*X*Y] = mP[1];
+                }
+            }
+        }
+    }
+    free(resShells);
+}

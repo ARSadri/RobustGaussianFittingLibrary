@@ -3,11 +3,12 @@
 This file is part of RobustGaussianFittingLibrary,
 a free library WITHOUT ANY WARRANTY
 Copyright: 2017-2020 LaTrobe University Melbourne,
-           2019-2020 Deutsches Elektronen-Synchrotron
+           2019-2021 Deutsches Elektronen-Synchrotron
+Authors: Alireza Sadri, Marjan Hadian Jazi
 ------------------------------------------------------
 """
 from distutils.core import setup, Extension
-_version = 'v0.1.33'
+_version = 'v0.1.34'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"
@@ -33,7 +34,7 @@ setup(
     'Intended Audience :: Science/Research',      # Define that your audience are developers
     'Topic :: Scientific/Engineering :: Mathematics',
     'License :: OSI Approved :: MIT License',   # Again, pick a license
-    'Programming Language :: Python :: 3',      #Specify which pyhton versions that you want to support
+    'Programming Language :: Python :: 3',      #Specify which pyhthon versions that you want to support
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
@@ -41,12 +42,3 @@ setup(
     'Programming Language :: Python :: 3.8',
   ],
 )
-'''
-try:
-    import RobustGaussianFittingLibrary
-    loc = RobustGaussianFittingLibrary.__file__
-    print('found the package in \n', loc)
-except:
-    print('I tried to locate the package but I can not find it.')
-    exit()
-'''

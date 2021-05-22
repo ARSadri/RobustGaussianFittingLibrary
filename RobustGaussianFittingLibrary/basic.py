@@ -658,7 +658,7 @@ def fitBackgroundTensor(inImage_Tensor,
 
 def fitBackgroundRadially(inImage, 
                           inMask = None,
-                          minRes = 1,
+                          minRes = 3,
                           includeCenter = 0,
                           maxRes = None,
                           shellWidth = 2,
@@ -666,7 +666,9 @@ def fitBackgroundRadially(inImage,
                           bottomKthPerc = 0.35,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
-                          numStrides = 0,
+                          stride = 1,
+                          x_Cent = None,
+                          y_Cent = None,
                           finiteSampleBias = 200,
                           minimumResidual = 0,
                           return_vecMP = False):
@@ -704,8 +706,12 @@ def fitBackgroundRadially(inImage,
                        (topKthPerc - bottomKthPerc)*N>4, 
                        it is best if bottomKthPerc*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
-        numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
+        stride: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
+        x_cent: center of image x
+            default: n_R/2
+        y_Cent: center of image y
+            default: n_C/2
         minimumResidual: the minimum residual for MSSE to initialize with, similar to RANSAC,
             default: 0
         return_vecMP: True if you'd like to receive a vector with radial info as a vector
@@ -722,44 +728,49 @@ def fitBackgroundRadially(inImage,
         inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
         
     if(maxRes is None):
-        maxRes = int(((inImage.shape[0]/2)**2 + (inImage.shape[1]/2)**2)**0.5)
+        maxRes = int(((inImage.shape[0])**2 + (inImage.shape[1])**2)**0.5)
 
     n_R = inImage.shape[0]
     n_C = inImage.shape[1]
 
-    vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
-    _vecMP = np.zeros((2, int(np.ceil(np.sqrt(n_R*n_R/4+n_C*n_C/4)))), dtype='float32')
+    if(x_Cent is None):
+        x_Cent = int(n_R/2)
+    if(y_Cent is None):
+        y_Cent = int(n_C/2)
 
+    maxDist = np.array([(x_Cent**2 + y_Cent**2)**0.5,
+                        ((n_R - x_Cent)**2 + y_Cent**2)**0.5,
+                        ((x_Cent)**2 + (n_C - y_Cent)**2)**0.5,
+                        ((n_R - x_Cent)**2 + (n_C - y_Cent)**2)**0.5  ]).max()
+    maxDist = int(np.ceil(maxDist))
+
+    vecMP = np.zeros((2, maxDist), dtype='float32')
     bckParam = np.zeros((2, n_R, n_C), dtype='float32')
-    if(shellWidth<1):
-        shellWidth = 1
-    modelParamsMap = bckParam.copy()
-    _sums = 0
-    shellStrideList = np.linspace(0, shellWidth, numStrides + 1, dtype='uint8')
-    for shellStride in shellStrideList:
-        RGFCLib.fitBackgroundRadially(inImage.astype('float32'),
-                                      inMask,
-                                      modelParamsMap,
-                                      _vecMP,
-                                      minRes+shellStride,
-                                      maxRes,
-                                      shellWidth,
-                                      includeCenter,
-                                      finiteSampleBias,
-                                      inImage.shape[0],
-                                      inImage.shape[1],
-                                      topKthPerc,
-                                      bottomKthPerc,
-                                      MSSE_LAMBDA,
-                                      optIters,
-                                      minimumResidual)
-        bckParam += modelParamsMap
-        vecMP += _vecMP
-        _sums += 1
+
+    RGFCLib.fitBackgroundRadially(inImage.astype('float32'),
+                                  inMask,
+                                  bckParam,
+                                  vecMP,
+                                  minRes,
+                                  maxRes,
+                                  shellWidth,
+                                  stride,
+                                  x_Cent,
+                                  y_Cent,
+                                  includeCenter,
+                                  finiteSampleBias,
+                                  inImage.shape[0],
+                                  inImage.shape[1],
+                                  topKthPerc,
+                                  bottomKthPerc,
+                                  MSSE_LAMBDA,
+                                  optIters,
+                                  minimumResidual)
+
     if(return_vecMP):
-        return(bckParam/_sums, vecMP/_sums)
+        return(bckParam, vecMP)
     else:
-        return(bckParam/_sums)
+        return(bckParam)
 
 def fitBackgroundCylindrically(inTensor, 
                                inMask = None,

@@ -18,3 +18,4 @@ from .basic import fitBackgroundTensor
 from .basic import fitBackgroundRadially
 from .basic import fitBackgroundCylindrically
 from .misc  import textProgBar
+from .misc  import multiprocessor

@@ -793,12 +793,13 @@ def test_fitBackgroundRadially():
     inImage, inMask, randomLocations = diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers)
     time_time = time.time()
     print('Calculating mp', flush = True)
-    mP, vecMP = RobustGaussianFittingLibrary.fitBackgroundRadially(inImage, 
-                                                            inMask = inMask,
-                                                            shellWidth = 1,
-                                                            numStrides = 0,
-                                                            includeCenter=1,
-                                                            return_vecMP = True)
+    mP, vecMP = RobustGaussianFittingLibrary.fitBackgroundRadially(
+        inImage, 
+        inMask = inMask,
+        shellWidth = 5,
+        stride = 1,
+        includeCenter=1,
+        return_vecMP = True)
     print('time: ' + str(time.time() -time_time) + ' s', flush = True)
     plt.plot(vecMP[0] + vecMP[1] , label='avg + std')
     plt.plot(vecMP[0]            , label='avg')
@@ -819,7 +820,6 @@ def test_fitBackgroundRadially():
     winYL = 0
     winYU = 1024
     
-    
     im0 = axes[0].imshow(im0_img, vmin=0, vmax=1000)
     axes[0].set_xlim([winXL, winXU])
     axes[0].set_ylim([winYL, winYU])
@@ -828,7 +828,7 @@ def test_fitBackgroundRadially():
     axes[1].set_xlim([winXL, winXU])
     axes[1].set_ylim([winYL, winYU])
     fig.colorbar(im1, ax=axes[1], shrink = 0.5)
-    im2 = axes[2].imshow(im2_img)
+    im2 = axes[2].imshow(im2_img, vmin = -6, vmax = 6)
     axes[2].set_xlim([winXL, winXU])
     axes[2].set_ylim([winYL, winYU])
     fig.colorbar(im2, ax=axes[2], shrink = 0.5)
@@ -898,8 +898,8 @@ def test_fitBackgroundRadiallyTensor_multiproc():
 
     print('input Tensor shape is: ', str(inTensor.shape))
     modelParamsMap = RobustGaussianFittingLibrary.useMultiproc.fitBackgroundRadiallyTensor_multiproc(inTensor,
-                                                                                                     shellWidth = 32,
-                                                                                                     numStrides = 4,
+                                                                                                     shellWidth = 4,
+                                                                                                     stride = 1,
                                                                                                      topKthPerc = 0.5,
                                                                                                      bottomKthPerc = 0.25,
                                                                                                      finiteSampleBias = 400,
@@ -1235,6 +1235,18 @@ def test_medianOfFits():
     print('inliers mean ' + str(inliers.mean()) + ' inliers std ' + str(inliers.std()))
     print(mP)    
 
+def test_gradientPlot():
+    x = np.arange(0, 12, 0.01)
+    mu = 0*x
+    std = 1 + 0*x
+    mu2 = 6 + 0*x
+    std2 = 1 + 0*x
+    
+    gradPlot = RobustGaussianFittingLibrary.misc.plotGaussianGradient('x', 'y')
+    gradPlot.addPlot(x = x, mu = mu, std = std, gradient_color = 'green', label='lower')
+    gradPlot.addPlot(x = x, mu = mu2, std = std2, gradient_color = 'red', label='upper')
+    gradPlot.show()
+
 def test_getTriangularVertices():
     RobustGaussianFittingLibrary.misc.getTriangularVertices(
         n = 1000,
@@ -1242,41 +1254,97 @@ def test_getTriangularVertices():
         phi_end = np.pi,
         plotIt = True)
 
-def multiprocessor_targetFunc(anInput):
-    data, op_type = anInput
+def multiprocessor_targetFunc2(listOfTuple_of_indexables, listOfTuple_of_nonindexables):
+    op_type = listOfTuple_of_nonindexables
+    data, mask = listOfTuple_of_indexables
     if(op_type=='median'):
-        to_return = np.median(data)
-    elif(op_type=='mean'):
-        to_return = data.mean()
-    elif(op_type=='max'):
-        to_return = data.max()
+        to_return1 = np.median(data[mask==1])
+    return(to_return1, 'good')
+    
+def test_multiprocessor2():
+    N = 1000
+    D = 100000
+    Data = (10+100*np.random.randn(N,D)).astype('int')
+    Mask = (2*np.random.rand(N,D)).astype('int')
+    Param = 'median'
+    
+    listOfTuple_of_indexables = (Data, Mask)
+    listOfTuple_of_nonindexables = (Param) 
+    stats = RobustGaussianFittingLibrary.misc.multiprocessor(
+        multiprocessor_targetFunc2, 
+        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
+
+    medians, otherOutput = stats
+    print('type(medians)', type(medians))
+    print('type(otherOutput)', type(otherOutput))
+    print('len(otherOutput)', len(otherOutput))
+    print('otherOutput[1] ', otherOutput[1])
+    print('otherOutput[1][0] ', otherOutput[1][0])
+    
+    direct_medians = np.zeros(N)
+    for cnt in range(N):
+        direct_medians[cnt] = np.median(Data[cnt, Mask[cnt]==1])
+    
+    print(np.array([ medians, direct_medians] ).T)
+    print('difference of results: ', (direct_medians - medians).sum())
+
+def multiprocessor_targetFunc(listOfTuple_of_indexables, listOfTuple_of_nonindexables):
+    op_type = listOfTuple_of_nonindexables
+    data, mask = listOfTuple_of_indexables
+    if(op_type=='median'):
+        to_return = np.median(data[mask==1])
     return(np.array([to_return]))
     
 def test_multiprocessor():
-
-    ################### Data #################
     N = 1000
-    Data = (10+100*np.random.randn(N,100)).astype('int')
+    D = 100000
+    Data = (10+100*np.random.randn(N,D)).astype('int')
+    Mask = (2*np.random.rand(N,D)).astype('int')
     Param = 'median'
     
-    ################### mp #################
-    inputs = []
+    listOfTuple_of_indexables = (Data, Mask)
+    listOfTuple_of_nonindexables = (Param)
+    medians = RobustGaussianFittingLibrary.misc.multiprocessor(
+        multiprocessor_targetFunc, 
+        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
+    medians = np.squeeze(medians)
+    directMethod = np.zeros(N)
     for cnt in range(N):
-        inputs.append((Data[cnt], Param))
-    someMul = RobustGaussianFittingLibrary.misc.multiprocessor(
-        multiprocessor_targetFunc, inputs, showProgress=True).start()
-    means = np.squeeze(someMul)
-    #######################################
-
-    directMethod = np.median(Data, axis = 1)
+        directMethod[cnt] = np.median(Data[cnt, Mask[cnt]==1])
     
-    print(np.array([ means, directMethod]).T)
-    print('difference of results: ', (directMethod - someMul).sum())
+    print(np.array([ medians, directMethod]).T)
+    print('difference of results: ', (directMethod - medians).sum())
+
+def multiprocessor_targetFunc_minimal(listOfTuple_of_indexables, 
+                                      listOfTuple_of_nonindexables):
+    op_type = listOfTuple_of_nonindexables
+    data, mask = listOfTuple_of_indexables
+    if(op_type=='median'):
+        to_return = np.median(data[mask==1])
+    return(np.array([to_return]))
+    
+def test_multiprocessor_minimal():
+    N = 1000
+    D = 100000
+    Data = (10+100*np.random.randn(N,D)).astype('int')
+    Mask = (2*np.random.rand(N,D)).astype('int')
+    Param = 'median'
+    listOfTuple_of_indexables = (Data, Mask)
+    listOfTuple_of_nonindexables = (Param)
+    medians = RobustGaussianFittingLibrary.misc.multiprocessor(
+        multiprocessor_targetFunc_minimal, 
+        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
+    medians = np.squeeze(medians)
+    print('resuls is here')
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_gradientPlot()
+    test_multiprocessor2()
+    test_multiprocessor_minimal()
     test_multiprocessor()
-    exit()
+    test_fitBackgroundRadiallyTensor_multiproc()
+    test_fitBackgroundRadially()
     test_getTriangularVertices()
     test_fitBackgroundCylindrically()
     test_fitValue2Skewed_sweep_over_N()
@@ -1287,7 +1355,6 @@ if __name__ == '__main__':
     test_fitValueVSMeanShiftPy()
     test_fitPlaneVSMeanShiftPy()
     test_RobustAlgebraicPlaneFittingPy()
-    test_fitBackgroundRadially()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()
     test_fitBackground()
@@ -1301,7 +1368,6 @@ if __name__ == '__main__':
     test_fitLineTensor_MultiProc()
     test_textProgBar()
     test_bigTensor2SmallsInds()
-    test_fitBackgroundRadiallyTensor_multiproc()
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()
     visOrderStat()
