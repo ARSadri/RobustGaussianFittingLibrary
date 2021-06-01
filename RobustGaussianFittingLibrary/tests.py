@@ -48,10 +48,10 @@ def test_textProgBar():
     print('test_textProgBar')
     pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
     for _ in range(60):
-        for _ in range(10000000):
+        for _ in range(5000000):
             pass
         pBar.go(3)
-    del pBar 
+    pBar.end() 
 
 def visOrderStat():
     print('visOrderStat')
@@ -1254,32 +1254,39 @@ def test_getTriangularVertices():
         phi_end = np.pi,
         plotIt = True)
 
-def multiprocessor_targetFunc2(listOfTuple_of_indexables, listOfTuple_of_nonindexables):
-    op_type = listOfTuple_of_nonindexables
-    data, mask = listOfTuple_of_indexables
+def multiprocessor_targetFunc(idx, inputs):
+    data, mask, op_type, randNum = inputs
     if(op_type=='median'):
-        to_return1 = np.median(data[mask==1])
-    return(to_return1, 'good')
+        to_return1 = np.median(data[idx][mask[idx]==1])
+        to_return1 = np.array([to_return1])
+    to_return2 = np.ones((int(10*np.random.rand(1)), 2, 2))
     
-def test_multiprocessor2():
+    return(to_return1, 'median', to_return2)
+    
+def test_multiprocessor():
     N = 1000
     D = 100000
     Data = (10+100*np.random.randn(N,D)).astype('int')
     Mask = (2*np.random.rand(N,D)).astype('int')
     Param = 'median'
-    
-    listOfTuple_of_indexables = (Data, Mask)
-    listOfTuple_of_nonindexables = (Param) 
+    randNums = np.random.rand(10000,10000)
+    inputs  = (Data, Mask, Param, randNums)
+    print('id(randNums)', id(randNums))
     stats = RobustGaussianFittingLibrary.misc.multiprocessor(
-        multiprocessor_targetFunc2, 
-        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
+        multiprocessor_targetFunc, N, inputs,
+        showProgress = True).start()
 
-    medians, otherOutput = stats
+    medians, otherOutput, _ids = stats
     print('type(medians)', type(medians))
+    print('medians.shape', medians.shape)
     print('type(otherOutput)', type(otherOutput))
     print('len(otherOutput)', len(otherOutput))
     print('otherOutput[1] ', otherOutput[1])
     print('otherOutput[1][0] ', otherOutput[1][0])
+    print('type(_ids) ', type(_ids))
+    print('len(_ids) ', len(_ids))
+    print('type(_ids[0]) ', type(_ids[0]))
+    print('_ids.shape ', _ids.shape)
     
     direct_medians = np.zeros(N)
     for cnt in range(N):
@@ -1288,61 +1295,11 @@ def test_multiprocessor2():
     print(np.array([ medians, direct_medians] ).T)
     print('difference of results: ', (direct_medians - medians).sum())
 
-def multiprocessor_targetFunc(listOfTuple_of_indexables, listOfTuple_of_nonindexables):
-    op_type = listOfTuple_of_nonindexables
-    data, mask = listOfTuple_of_indexables
-    if(op_type=='median'):
-        to_return = np.median(data[mask==1])
-    return(np.array([to_return]))
-    
-def test_multiprocessor():
-    N = 1000
-    D = 100000
-    Data = (10+100*np.random.randn(N,D)).astype('int')
-    Mask = (2*np.random.rand(N,D)).astype('int')
-    Param = 'median'
-    
-    listOfTuple_of_indexables = (Data, Mask)
-    listOfTuple_of_nonindexables = (Param)
-    medians = RobustGaussianFittingLibrary.misc.multiprocessor(
-        multiprocessor_targetFunc, 
-        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
-    medians = np.squeeze(medians)
-    directMethod = np.zeros(N)
-    for cnt in range(N):
-        directMethod[cnt] = np.median(Data[cnt, Mask[cnt]==1])
-    
-    print(np.array([ medians, directMethod]).T)
-    print('difference of results: ', (directMethod - medians).sum())
-
-def multiprocessor_targetFunc_minimal(listOfTuple_of_indexables, 
-                                      listOfTuple_of_nonindexables):
-    op_type = listOfTuple_of_nonindexables
-    data, mask = listOfTuple_of_indexables
-    if(op_type=='median'):
-        to_return = np.median(data[mask==1])
-    return(np.array([to_return]))
-    
-def test_multiprocessor_minimal():
-    N = 1000
-    D = 100000
-    Data = (10+100*np.random.randn(N,D)).astype('int')
-    Mask = (2*np.random.rand(N,D)).astype('int')
-    Param = 'median'
-    listOfTuple_of_indexables = (Data, Mask)
-    listOfTuple_of_nonindexables = (Param)
-    medians = RobustGaussianFittingLibrary.misc.multiprocessor(
-        multiprocessor_targetFunc_minimal, 
-        listOfTuple_of_indexables, listOfTuple_of_nonindexables).start()
-    medians = np.squeeze(medians)
-    print('resuls is here')
-
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
-    test_gradientPlot()
-    test_multiprocessor2()
-    test_multiprocessor_minimal()
     test_multiprocessor()
+    test_textProgBar()
+    test_gradientPlot()
     test_fitBackgroundRadiallyTensor_multiproc()
     test_fitBackgroundRadially()
     test_getTriangularVertices()
@@ -1366,7 +1323,6 @@ if __name__ == '__main__':
     test_fitValue2Skewed()
     test_removeIslands()
     test_fitLineTensor_MultiProc()
-    test_textProgBar()
     test_bigTensor2SmallsInds()
     test_PDF2Uniform()
     test_RobustAlgebraicLineFittingPy()

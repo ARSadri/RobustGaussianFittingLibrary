@@ -18,13 +18,16 @@ class textProgBar:
     """
     While I respect all the codes and methods on web that use \r for this task,
     there are cases such as simple ssh terminals that do not support \r.
-    In such cases, if something is written at the end of the line it cannot be deleted.
-    The following code provides a good looking simple title for the progress bar
+    In such cases, if something is written at the end of 
+    the line it cannot be deleted. The following code provides a good 
+    looking simple title for the progress bar
     and shows the limits and is very simple to use.
     define the object with length of the for loop, call its go funciton 
     every time in the loop and delete the object afterwards.
     """
     def __init__(self, length, numTicks = 70 , title = 'progress'):
+        self.FLAG_ended = False
+        self.FLAG_warning = False
         self.startTime = time.time()
         self.ck = 0
         self.prog = 0
@@ -47,12 +50,19 @@ class textProgBar:
         print(' \\')
         print(' ', end='')
     def go(self, ck=1):
+        if(self.FLAG_ended):
+            if(not self.FLAG_warningGiven):
+                self.FLAG_warning = True
+                print('You have reached the end of you progress,\
+                    but you are still ticking')
         self.ck += ck
-        cProg = int(self.numTicks*self.ck/self.length/3)    #3: because 3 charachters are used
+        cProg = int(self.numTicks*self.ck/self.length/3)    
+        #3: because 3 charachters are used
         while (self.prog < cProg):
             self.prog += 1
-            remTimeS = self.startTime + \
-                       (time.time() - self.startTime)/(self.ck/self.length) - time.time()
+            remTimeS = self.startTime \
+                + (time.time() - self.startTime) \
+                / (self.ck/self.length) - time.time()
             time_correct = 2-2*(self.ck/self.length)
             #remTimeS *= time_correct
             if(remTimeS>=5940):
@@ -63,34 +73,40 @@ class textProgBar:
                 progStr = "%02d" % int(np.ceil(remTimeS/60))
                 print(progStr, end='')
                 print('m', end='', flush = True)
-            else:
+            elif(remTimeS>0):
                 progStr = "%02d" % int(np.ceil(remTimeS))
                 print(progStr, end='')
                 print('s', end='', flush = True)
-    
-    def __del__(self):
+            else:
+                self.end()
+    def end(self):
         print('\n ', end='')
         for _ in range(self.numTicks):
-            print('~', end='')
+            print('-', end='')
         print(' ', flush = True)
+        self.FLAG_ended = True
 
 def PDF2Uniform(inVec, inMask=None, numBins=10, 
                 nUniPoints=None, lowPercentile = 0, 
                 highPercentile=100, showProgress = False):
     """
     This function takes an array of numbers and returns indices of those who
-    form a uniform density over numBins bins, between lowPercentile and highPercentile
-    values in the array, and not masked by 0. The output vector will have indices with the size nUniPoints.
-    It is possible to only provide the vector with no parameter. I will calculate the maximum
+    form a uniform density over numBins bins, between lowPercentile and 
+    highPercentile values in the array, and not masked by 0. 
+    The output vector will have indices with the size nUniPoints.
+    It is possible to only provide the vector with no parameter. 
+    I will calculate the maximum
     number of elements it can, as long as it still provides a uniform density.
     """
     n_pts = inVec.shape[0]
     if((highPercentile - lowPercentile)*n_pts < nUniPoints):
         lowPercentile = 0
         highPercentile=100
-    indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, lowPercentile),
-                                          np.percentile(inVec, highPercentile), 
-                                          numBins) )
+    indPerBin = np.digitize(inVec, np.linspace(np.percentile(inVec, 
+                                                             lowPercentile),
+                                               np.percentile(inVec, 
+                                                             highPercentile), 
+                                               numBins) )
     binValue, counts = np.unique(indPerBin, return_counts = True)
     counts = counts[counts>0]
     if(nUniPoints is None):
@@ -123,17 +139,21 @@ def PDF2Uniform(inVec, inMask=None, numBins=10,
 
 def removeIslands(inMask, minSize = 1):
     """small islands of 0s in the middle of 1s will turn into 1s
-    Given a mask in the input where the good pixels are marked by zero and bad areas are 1,
-    the output will not have islands of zeros with size less or equal to minSize,
-    sorrounded by 1s. Notice that if the island has diagonal routes to other islands, it will
-    still be an isolated island. If it has a vertical or horizontal route to other good areas,
+    Given a mask in the input where the good pixels are marked by 
+    zero and bad areas are 1, the output will not have islands of 
+    zeros with size less or equal to minSize,
+    sorrounded by 1s. Notice that if the island has diagonal routes 
+    to other islands, it will still be an isolated island. If it has 
+    a vertical or horizontal route to other good areas,
     it is not an isolated island.
     Input arguments
     ~~~~~~~~~~~~~~~
         inMask : 2D array, numbers are either 0: good and 1: bad.
     Output
     ~~~~~~    
-        same size as input, some of the pixels that were 0s in the input are now 1s if they were on lonly islands of good pixels surrounded by bad 1s.
+        same size as input, some of the pixels that were 0s in 
+        the input are now 1s if they were on lonly islands of 
+        good pixels surrounded by bad 1s.
     """
     outMask = np.zeros(inMask.shape, dtype='uint8')
     RGFCLib.islandRemoval(1 - inMask.astype('uint8'),
@@ -166,8 +186,10 @@ def naiveHist_multi_mP(vec, mP):
     plt.bar(bin_edges[:-1], hist, width = 3, color='#0504aa',alpha=0.7)
     x = np.linspace(vec.min(), vec.max(), 1000)
     for modelCnt in range(mP.shape[1]):
-        yMax = hist[np.fabs(bin_edges[:-1]-mP[0, modelCnt]) < 3 * mP[1, modelCnt]].max()
-        y = yMax * np.exp(-(x-mP[0, modelCnt])*(x-mP[0, modelCnt])/(2*mP[1, modelCnt]*mP[1, modelCnt]))
+        yMax = hist[np.fabs(bin_edges[:-1]-mP[0, modelCnt]) \
+                    < 3 * mP[1, modelCnt]].max()
+        y = yMax * np.exp(-(x-mP[0, modelCnt])\
+            *(x-mP[0, modelCnt])/(2*mP[1, modelCnt]*mP[1, modelCnt]))
         plt.plot(x,y, 'r')
     plt.show()
 
@@ -182,10 +204,12 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
              'xtick.labelsize':'x-large',
              'ytick.labelsize':'x-large'}
 
-
-    tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
-    tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()
-    tmpH  = (inVec[  (inVec>=mP[0]+SNR_ACCEPT*mP[1]) & (inVec<=mP[0]+4*SNR_ACCEPT*mP[1]) ]).copy()
+    tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & 
+                   (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
+    tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & 
+                   (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()
+    tmpH  = (inVec[  (inVec>=mP[0]+SNR_ACCEPT*mP[1]) & 
+                   (inVec<=mP[0]+4*SNR_ACCEPT*mP[1]) ]).copy()
     _xlimMin = tmpM.min()
     _xlimMax = tmpM.max()
 
@@ -195,23 +219,26 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
 
     if (tmpL.any()):
         hist,bin_edges = np.histogram(tmpL, tmpL.shape[0])
-        plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
+        plt.bar(bin_edges[:-1], hist, 
+                width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
         _xlimMin = tmpL.min()
     hist,bin_edges = np.histogram(tmpM, 20)
     tmpMmax = hist.max()
-    plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='blue',alpha=0.5)
+    plt.bar(bin_edges[:-1], hist, 
+            width = tmpM.std()/SNR_ACCEPT, color='blue',alpha=0.5)
     if (tmpH.any()):
         hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
-        plt.bar(bin_edges[:-1], hist, width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
+        plt.bar(bin_edges[:-1], hist, 
+                width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
         _xlimMax = tmpH.max()
     x = np.linspace(mP[0]-SNR_ACCEPT*mP[1], mP[0]+SNR_ACCEPT*mP[1], 1000)
     y = tmpMmax * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
     
-    plt.plot(np.array([mP[0] - SNR_ACCEPT*mP[1], mP[0] - SNR_ACCEPT*mP[1]]) ,
+    plt.plot(np.array([mP[0] - SNR_ACCEPT*mP[1], mP[0] - SNR_ACCEPT*mP[1]]),
              np.array([0, tmpMmax]), linewidth = LWidth, color = 'm')
-    plt.plot(np.array([mP[0] - 0*SNR_ACCEPT*mP[1], mP[0] - 0*SNR_ACCEPT*mP[1]]) ,
+    plt.plot(np.array([mP[0] - 0*SNR_ACCEPT*mP[1], mP[0] - 0*SNR_ACCEPT*mP[1]]),
              np.array([0, tmpMmax]), linewidth = LWidth, color = 'g')
-    plt.plot(np.array([mP[0] + SNR_ACCEPT*mP[1], mP[0] + SNR_ACCEPT*mP[1]]) ,
+    plt.plot(np.array([mP[0] + SNR_ACCEPT*mP[1], mP[0] + SNR_ACCEPT*mP[1]]),
              np.array([0, tmpMmax]), linewidth = LWidth, color = 'r')
     plt.plot(x,y, 'orange', linewidth = LWidth)
 
@@ -225,22 +252,28 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
     plt.show()
 
 def sGHist(inVec, mP, SNR_ACCEPT=3.0):
-    tmpL  = (inVec[  (inVec<=mP[0]-SNR_ACCEPT*mP[1]) & (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
-    tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()
-    tmpH  = (inVec[  (inVec>=mP[0]+SNR_ACCEPT*mP[1]) & (inVec<=mP[0]+4*SNR_ACCEPT*mP[1]) ]).copy()
+    tmpL  = (inVec[(inVec<=mP[0]-SNR_ACCEPT*mP[1]) & 
+                   (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
+    tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & 
+                   (inVec<mP[0]+SNR_ACCEPT*mP[1])]).copy()
+    tmpH  = (inVec[(inVec>=mP[0]+SNR_ACCEPT*mP[1]) & 
+                   (inVec<=mP[0]+4*SNR_ACCEPT*mP[1]) ]).copy()
     _xlimMin = tmpM.min()
     _xlimMax = tmpM.max()
     plt.figure()
     if (tmpL.any()):
         hist,bin_edges = np.histogram(tmpL, tmpL.shape[0])
-        plt.bar(bin_edges[:-1], hist, width = 0.1*tmpL.std()/SNR_ACCEPT, color='b',alpha=0.5)
+        plt.bar(bin_edges[:-1], hist, 
+                width = 0.1*tmpL.std()/SNR_ACCEPT, color='b',alpha=0.5)
         _xlimMin = tmpL.min()
     hist,bin_edges = np.histogram(tmpM, 40)
     tmpMmax = hist.max()
-    plt.bar(bin_edges[:-1], hist, width = 0.5*tmpM.std()/SNR_ACCEPT, color='g',alpha=0.5)
+    plt.bar(bin_edges[:-1], hist, 
+            width = 0.5*tmpM.std()/SNR_ACCEPT, color='g',alpha=0.5)
     if (tmpH.any()):
         hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
-        plt.bar(bin_edges[:-1], hist, width = 0.1*tmpH.std()/SNR_ACCEPT, color='r',alpha=0.5)
+        plt.bar(bin_edges[:-1], hist, 
+                width = 0.1*tmpH.std()/SNR_ACCEPT, color='r',alpha=0.5)
         _xlimMax = tmpH.max()
     x = np.linspace(mP[0]-SNR_ACCEPT*mP[1], mP[0]+SNR_ACCEPT*mP[1], 1000)
     y = tmpMmax * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
@@ -260,12 +293,15 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     flag = np.zeros(inVec.size)
     plt.figure()
     for mCnt in range(numModels):
-        flag[(inVec>=mP[0, mCnt]-SNR*mP[1, mCnt]) & (inVec<=mP[0, mCnt]+SNR*mP[1, mCnt])] = mCnt + 1
+        flag[(inVec>=mP[0, mCnt]-SNR*mP[1, mCnt]) & 
+             (inVec<=mP[0, mCnt]+SNR*mP[1, mCnt])] = mCnt + 1
         modelVec = inVec[flag == mCnt + 1].copy()
         hist,bin_edges = np.histogram(modelVec, 40)
         tmpMmax = hist.max()
         plt.bar(bin_edges[:-1], hist, width = mP[1, mCnt]/SNR,alpha=0.5)
-        x = np.linspace(mP[0, mCnt]-SNR*mP[1, mCnt], mP[0, mCnt]+SNR*mP[1, mCnt], 1000)
+        x = np.linspace(mP[0, mCnt]-SNR*mP[1, mCnt], 
+                        mP[0, mCnt]+SNR*mP[1, mCnt], 
+                        1000)
         y = tmpMmax * np.exp(-((x-mP[0, mCnt])**2)/(2*mP[1, mCnt]**2)) 
         plt.plot(x,y)
     
@@ -308,6 +344,12 @@ def scatter3(mat, inFigure = None, returnFigure = False, label = None):
         plt.show()
 
 class plotGaussianGradient:
+    """Plot curves by showing their average, and standard deviatoin
+    by shading the area around the average according to a Gaussian that
+    reduces the alpha as it gets away from the average.
+    You need to init() the object then add() plots and then show() it.
+    refer to the tests.py
+    """
     def __init__(self, xlabel, ylabel, num_bars = 100, 
                  title = None, xmin = None, xmax = None, 
                  ymin = None, ymax = None):
@@ -333,7 +375,8 @@ class plotGaussianGradient:
         plt.figure(figsize=(8, 6), dpi=50)
         self.ax1 = plt.subplot(111)
 
-    def addPlot(self, x, mu, std, gradient_color, label, snr = 3.0):
+    def addPlot(self, x, mu, std, gradient_color, label, 
+                snr = 3.0, mu_color = None, general_alpha = 1):
 
         for idx in range(self.num_bars-1):
             y1 = ((self.num_bars-idx)*mu + idx*(mu + snr*std))/self.num_bars
@@ -341,26 +384,29 @@ class plotGaussianGradient:
             
             prob = np.exp(-(snr*idx/self.num_bars)**2/2)
             plt.fill_between(
-                x, y1, y2, color = gradient_color, alpha = prob  )
+                x, y1, y2, color = gradient_color, alpha = prob*general_alpha)
 
             y1 = ((self.num_bars-idx)*mu + idx*(mu - snr*std))/self.num_bars
             y2 = y1 - snr*std/self.num_bars
             
             plt.fill_between(
-                x, y1, y2, color = gradient_color, alpha = prob  )
-        plt.plot(x, mu, linewidth = 3, color = gradient_color, label = label)
+                x, y1, y2, color = gradient_color, alpha = prob*general_alpha)
+        if(mu_color is None):
+            mu_color = gradient_color
+        plt.plot(x, mu, linewidth = 3, color = mu_color, label = label)
         
     def show(self, show_legend = True):
         if(self.xmin is not None) & (self.xmax is not None):
             plt.xlim([self.xmin, self.xmax])
         if(self.ymin is not None) & (self.ymax is not None):
             plt.ylim([self.ymin, self.ymax])
-        plt.xlabel(self.xlabel)
-        plt.ylabel(self.ylabel)
+        plt.xlabel(self.xlabel, weight='bold')
+        plt.ylabel(self.ylabel, weight='bold')
         if(self.title is not None):
             plt.title(self.title)
         if(show_legend):
             plt.legend()
+        plt.grid()
         plt.tight_layout()
         plt.show()
     
@@ -407,24 +453,22 @@ def getTriangularVertices(n,
 
 class multiprocessor:
     """ multiprocessor makes the use of multiprocessing in Python easy
-    You need a function that can interpret the input arguments. Then you
-    need to make the inputs argument to be an indexable object by inputes[0]
-    to inputs[N].
-    These N tuples each, will be the input given to a processor, which
-    is the function you provide. The function provides an output and it
-    will be given as a list of the ourputs with the same order as the input.
-    You need to use the list as the list of outputs associated with the list of
-    the inputs.
-    parameters: they will not be indexed but will be sent to the function
-        without change.
-        
+    You need a function that takes two inputs:
+        1 - the index of current processes.
+        2 - all inputs you send as a list or tuple and you intrepret them
+            yourself...notice that for "READING" in multiprocessing the id
+            of an object before sending it to processors is the same 
+            inside each processor.
+            This is NOT the case for "Writing to things", the output must
+            be queued. Multiprocessing realizes if you write to something
+            but does not keep track of those who you just read from.
+            
     A code snippet is brought here for the case of non numpy input output
     
-    def multiprocessor_targetFunc(tuple_of_indexables, tuple_of_nonindexables):
-        op_type = tuple_of_nonindexables
-        data, mask = tuple_of_indexables
+    def multiprocessor_targetFunc(idx, allInputs):
+        data, mask, op_type = allInputs
         if(op_type=='median'):
-            to_return = np.median(data[mask==1])
+            to_return = np.median(data[idx][mask==1])
         return(np.array([to_return]))
         
     def test_multiprocessor():
@@ -434,77 +478,82 @@ class multiprocessor:
         Mask = (2*np.random.rand(N,D)).astype('int')
         Param = 'median'
         
-        tuple_of_indexables = (Data, Mask)
-        tuple_of_nonindexables = (Param) 
+        allInputs = (Data, Mask, Param)
         medians = RobustGaussianFittingLibrary.misc.multiprocessor(
-            multiprocessor_targetFunc, 
-            tuple_of_indexables, tuple_of_nonindexables).start()
+            multiprocessor_targetFunc, allInputs).start()
         
     """    
     def __init__(self, 
         targetFunction,
-        inputs, 
-        parameters = None,
+        indices,
+        inputs = None, 
         max_cpu = None,
         batchSize = None,
+        concatenateOutput = True,
         showProgress = False):
         """
         input arguments
         ~~~~~~~~~~~~~~~
             targetFunction: Target function
-            inputs: an indexable list of tuples. Each tuple will be sent to
-                the targetFunction, such as by syntax:
-                    targetFunction(inputs[0])
-                Indeed we actually do this syntax before anything. 
-            parameters: they will not be indexed but will be sent to the function
-                without change. default = None
-            max_cpu: max number of allowed cpu
+            indices: should be the indices of indexable parts of your input
+                example: if you have N processes, just send np.arange(N)
+                    but if you like to only processes certain indices 
+                    send those in. We will be sending these indices
+                    to your function, The first element of your function
+                    will see each of these indices.
+            inputs: all READ-ONLY inputs....notice: READ-ONLY 
+            max_cpu: max number of allowed CPU
                 default: None
             batchSize: how many data points are sent to each CPU at a time
                 default: n_CPU/n_points/2
+            concatenateOutput: If an output is np.ndarray and it can be
+                concatenated along axis = 0, with this flag, we will
+                put it as a whole ndarray in the output. Otherwise 
+                the output will be a list.
             showProgress: using textProgBar, it shows the progress of 
                 multiprocessing of your task.
                 default: False
         """
-        if(type(inputs).__module__ == np.__name__):
-            self.inputIsNumpy = True
-            self.n_pts = inputs.shape[0]     
+        try:
+            indices = int(indices)
             if(showProgress):
-                print('Input is a numpy ndArray with ', 
-                      self.n_pts, ' data points')
-        else:
-            self.inputIsNumpy = False
+                print('Indices you gave will be arange(',indices,').')
+            indices = np.arange(indices)
+        except:
+            pass;
+        if(not type(indices).__module__ == np.__name__):
             try:
-                self.n_individualInputs = len(inputs)
-                self.n_pts = inputs[0].shape[0]
+                indices = np.array(indices)
                 if(showProgress):
-                    print('Input is not a numpy ndArray, yet with ', 
-                          self.n_pts, ' data points')
+                    print('Input indices are turned into numpy array')
             except:
-                print('I can not get the length of the input list')
-                print('we are supporting list or tuple of indexable objects')
+                print('I can not interpret the input indices')
+                print('They are not numpy ints or cannot be turned into it.')
                 exit()
-
-        if(not self.inputIsNumpy):
-            inputs_first_tst = []
-            for memberCnt in range(self.n_individualInputs):
-                inputs_first_tst.append(inputs[memberCnt][0])
-        else:
-            inputs_first_tst = inputs[0]
+        if((indices != indices.astype('int64')).any()):
+            print('Input indices are not integers?')
+            exit()
+        indices = indices.astype('int64')
+        self.n_pts = indices.shape[0]     
+        if(showProgress):
+            print('Input indices are a numpy ndArray with ', 
+                  self.n_pts, ' data points')
             
         try:
-            if(parameters is not None):
-                funcOutput = targetFunction(inputs_first_tst, parameters)
+            if(inputs is not None):
+                funcOutput = targetFunction(0, inputs)
             else:
-                funcOutput = targetFunction(inputs_first_tst)
+                funcOutput = targetFunction(0)
         except:
             print('I cannot call your function')
             print('Running the following syntax raised an exception:')
-            if(parameters is not None):
-                print('targetFunction(inputs[0], parameters)')
+            if(inputs is not None):
+                print('funcOutput = targetFunction(0, inputs)')
             else:
-                print('targetFunction(inputs[0])')
-            print('You need to make inputs mutable and indexable by axis 0')
+                print('funcOutput = targetFunction(0)')
+            print('You need to make your function work with the above syntax')
+            print('The first input will be the index of data point and the \
+                second input will be all of your inputs that you gave me.')
             exit()
         if(showProgress):
             print('I could call your given function with first data point')
@@ -526,28 +575,31 @@ class multiprocessor:
             self.n_individualOutputs = len(funcOutput)
             
             self.allResults = []
-            self.Q_procID = np.array([])
+            self.Q_procID = np.array([], dtype='int')
             if(showProgress):
                 print('output is a list with ', 
                       self.n_individualOutputs, ' members.')
                 output_types = []
-            
+        
+        self.concatenateOutput = concatenateOutput
+        self.indices = indices
         self.targetFunction = targetFunction
         self.inputs = inputs
-        self.parameters = parameters
         self.showProgress = showProgress
         if(max_cpu is not None):
             self.max_cpu = max_cpu
         else:
-            self.max_cpu = cpu_count()
+            self.max_cpu = cpu_count() - 1  #Let's keep one for the queue
         self.default_batchSize = int(np.ceil(self.n_pts/self.max_cpu/2))
         if(batchSize is not None):
-            self.default_batchSize = batchSize
+            if(self.default_batchSize >= batchSize):
+                self.default_batchSize = batchSize
         if(showProgress):
             print('RGFLib multiprocessor initialized with:') 
             print('max_cpu: ', self.max_cpu)
             print('n_pts: ', self.n_pts)
             print('default_batchSize: ', self.default_batchSize)
+            print('concatenateOutput: ', self.concatenateOutput)
         
     def _multiprocFunc(self, theQ, procID_range):
         if(self.outputIsNumpy):
@@ -557,22 +609,16 @@ class multiprocessor:
         else:
             allResults = []
         for idx, procCnt in enumerate(procID_range):
-            if(not self.inputIsNumpy):
-                inputs_single = []
-                for memberCnt in range(self.n_individualInputs):
-                    inputs_single.append(self.inputs[memberCnt][procCnt])
+            funcIdx = self.indices[procCnt]
+            if(self.inputs is not None):
+                results = self.targetFunction(funcIdx, self.inputs)
             else:
-                inputs_single = self.inputs[procCnt]
-            
-            if(self.parameters is not None):
-                results = self.targetFunction(inputs_single, self.parameters)
-            else:
-                results = self.targetFunction(inputs_single)
+                results = self.targetFunction(funcIdx)
             if(self.outputIsNumpy):
                 allResults[idx] = results
             else:
                 allResults.append(results)
-                
+        
         theQ.put(list([procID_range, allResults]))
         
     def start(self):        
@@ -589,7 +635,8 @@ class multiprocessor:
                 if(self.outputIsNumpy):
                     self.allResults[aQElement[0]] = aQElement[1]
                 else:
-                    self.Q_procID = np.concatenate((self.Q_procID, aQElement[0]))
+                    self.Q_procID = np.concatenate((self.Q_procID, 
+                                                    aQElement[0]))
                     self.allResults += aQElement[1]
                 numProcessed += _batchSize
                 numBusyCores -= 1
@@ -601,16 +648,16 @@ class multiprocessor:
                         firstProcess = False
                     else:
                         pBar.go(_batchSize)
-    
             if((procID<numProc) & (numBusyCores < self.max_cpu)):
                 batchSize = np.minimum(self.default_batchSize, numProc - procID)
-                procID_arange = np.arange(procID, procID + batchSize, dtype = 'int')
+                procID_arange = np.arange(procID, procID + batchSize, 
+                                          dtype = 'int')
                 Process(target = self._multiprocFunc, 
                         args = (aQ, procID_arange)).start()
                 procID += batchSize
                 numBusyCores += 1
         if(self.showProgress):
-            del pBar
+            pBar.end()
         
         if(self.outputIsNumpy):
             return (self.allResults)
@@ -619,13 +666,35 @@ class multiprocessor:
             ret_list = [self.allResults[i] for i in sortArgs]
             endResultList = []
             for memberCnt in range(self.n_individualOutputs):
-                _currentList = []
-                for ptCnt in range(self.n_pts):
-                    _currentList.append(ret_list[ptCnt][memberCnt])
+                FLAG_output_is_numpy = False
+                if(self.concatenateOutput):
+                    firstInstance = ret_list[0][memberCnt]
+                    if(type(firstInstance).__module__ == np.__name__):
+                        if(isinstance(firstInstance, np.ndarray)):
+                            n_F = 0
+                            for ptCnt in range(0, self.n_pts):
+                                n_F += ret_list[ptCnt][memberCnt].shape[0]
+                            outShape = ret_list[ptCnt][memberCnt].shape[1:]
+                            _currentList = np.zeros(
+                                shape = ( (n_F,) + outShape ), 
+                                dtype = ret_list[0][memberCnt].dtype)
+                            n_F = 0
+                            for ptCnt in range(0, self.n_pts):
+                                ndarr = ret_list[ptCnt][memberCnt]
+                                _n_F = ndarr.shape[0]
+                                _currentList[n_F: n_F + _n_F] = ndarr
+                                n_F += _n_F
+                            FLAG_output_is_numpy = True
+                        else:
+                            print('Output member', memberCnt, 'could not be',
+                                'concatenated along axis 0. exported as list.',
+                                '\nThis usually happens when you use ',
+                                'np.mean(), np.std() or np.median().',
+                                ' Make sure you present it as np.array([]).')
+                if(not FLAG_output_is_numpy):
+                    _currentList = []
+                    for ptCnt in range(self.n_pts):
+                        _currentList.append(ret_list[ptCnt][memberCnt])
                 endResultList.append(_currentList)
-            for memberCnt in range(self.n_individualOutputs):
-                if(type(endResultList[memberCnt][0]).__module__ == np.__name__):
-                    endResultList[memberCnt] = \
-                        np.vstack(endResultList[memberCnt])
             return (endResultList)
 

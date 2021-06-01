@@ -181,7 +181,7 @@ def fitValueTensor_MultiProc(inTensor,
             numWiating -= 1
             numBusyCores += 1
     if(showProgress):
-        del pBar
+        pBar.end()
     return (modelParamsMap)
 
 ################################################################################################
@@ -278,7 +278,7 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
             numWiating -= 1
             numBusyCores += 1
     if(showProgress):
-        del pBar
+        pBar.end()
     return (modelParamsMap)
     
 ############################################
@@ -419,7 +419,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
             numSubmitted += stride
             numBusyCores += 1
     if(showProgress):
-        del pBar
+        pBar.end()
     return(modelParamsMapTensor)
 
 def fitBackgroundRadiallyTensor_multiprocFunc(aQ, 
@@ -625,7 +625,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
             procID += 1
             numBusyCores += 1
     if(showProgress):
-        del pBar    
+        pBar.end()    
     
     if(return_vecMP):
         return(radial_mP, radial_prof)
