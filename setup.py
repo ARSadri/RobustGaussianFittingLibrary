@@ -8,7 +8,7 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 ------------------------------------------------------
 """
 from distutils.core import setup, Extension
-_version = 'v0.1.35'
+_version = 'v0.1.36'
 setup(
   name = 'RobustGaussianFittingLibrary',         # How you named your package folder (MyLib)
   packages = ['RobustGaussianFittingLibrary'],   # Chose the same as "name"

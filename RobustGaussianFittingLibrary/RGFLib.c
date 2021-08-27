@@ -359,7 +359,10 @@ void fitValue(float* inVec,
                 theta += vec[errorVec[i].indxs];
                 wAVG += weights[errorVec[i].indxs];
             }
-            theta = theta / wAVG;
+            if(wAVG>0)
+            	theta = theta / wAVG;
+            else
+            	theta = 0;
         }
 
 		float* residual;
@@ -375,12 +378,19 @@ void fitValue(float* inVec,
 			theta = 0;
 			wAVG = 0;
 			for(i=0; i<N; i++) {
-				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+				if(fabs(residual[i]) <= MSSE_LAMBDA*estScale) {
 					theta += vec[i];
 					wAVG += weights[i];
 				}
 			}
-			theta = theta / wAVG;
+			if(wAVG>0) {
+				theta = theta / wAVG;
+			}
+			else {
+				theta = 0;
+				estScale = 0;
+			}
+
 			for (i = 0; i < N; i++) {
 				residual[i]  = vec[i] - theta;
 			}
@@ -391,15 +401,21 @@ void fitValue(float* inVec,
 			theta = 0;
 			wAVG = 0;
 			for(i=0; i<N; i++) {
-				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+				if(fabs(residual[i]) <= MSSE_LAMBDA*estScale) {
 					theta += vec[i];
 					wAVG += weights[i];
 				}
 			}
-			theta = theta / wAVG;
-			for (i = 0; i < N; i++) {
-				residual[i]  = vec[i] - theta;
+			if(wAVG > 0) {
+				theta = theta / wAVG;
 			}
+			else {
+				estScale = 0;
+				theta = 0;
+			}
+			//for (i = 0; i < N; i++) {
+			//	residual[i]  = vec[i] - theta;
+			//}
 		}
 
 		free(residual);
@@ -516,7 +532,10 @@ void fitValue2Skewed(float* inVec,
                 theta += vec[errorVec[i].indxs];
                 wAVG += weights[errorVec[i].indxs];
             }
-            theta = theta / wAVG;
+            if(wAVG>0)
+            	theta = theta / wAVG;
+            else
+            	theta = 0;
         }
 
 		float* residual;
@@ -532,30 +551,41 @@ void fitValue2Skewed(float* inVec,
 			theta = 0;
 			wAVG = 0;
 			for(i=0; i<N; i++) {
-				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+				if(fabs(residual[i]) <= MSSE_LAMBDA*estScale) {
 					theta += vec[i];
 					wAVG += weights[i];
 				}
 			}
-			theta = theta / wAVG;
-			for (i = 0; i < N; i++) {
-				residual[i]  = vec[i] - theta;
+			if(wAVG>0) {
+				theta = theta / wAVG;
+				for (i = 0; i < N; i++) {
+					residual[i]  = vec[i] - theta;
+				}
+				estScale = MSSEWeighted(residual, weights,
+										N, MSSE_LAMBDA,
+										(int)(N*topkPerc),
+										minimumResidual);
 			}
-			estScale = MSSEWeighted(residual, weights,
-									N, MSSE_LAMBDA,
-									(int)(N*topkPerc),
-									minimumResidual);
+			else {
+				estScale = 0;
+			}
 			theta = 0;
 			wAVG = 0;
 			for(i=0; i<N; i++) {
-				if(fabs(residual[i])<MSSE_LAMBDA*estScale) {
+				if(fabs(residual[i]) <= MSSE_LAMBDA*estScale) {
 					theta += vec[i];
 					wAVG += weights[i];
 				}
 			}
-			theta = theta / wAVG;
-			for (i = 0; i < N; i++) {
-				residual[i]  = vec[i] - theta;
+			if(wAVG>0) {
+				theta = theta / wAVG;
+				//for (i = 0; i < N; i++) {
+				//	residual[i]  = vec[i] - theta;
+				//}
+			}
+			else {
+				theta = 0;
+				estScale = 0;
 			}
 		}
 

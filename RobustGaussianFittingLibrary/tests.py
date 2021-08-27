@@ -1297,6 +1297,7 @@ def test_multiprocessor():
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitValueSmallSample()
     test_multiprocessor()
     test_textProgBar()
     test_gradientPlot()
@@ -1318,7 +1319,6 @@ if __name__ == '__main__':
     test_MSSE()
     test_SginleGaussianVec()
     test_flatField()
-    test_fitValueSmallSample()
     test_fitValueTensor_MultiProc()
     test_fitValue2Skewed()
     test_removeIslands()

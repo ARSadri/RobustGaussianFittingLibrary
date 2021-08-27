@@ -25,66 +25,79 @@ class textProgBar:
     define the object with length of the for loop, call its go funciton 
     every time in the loop and delete the object afterwards.
     """
-    def __init__(self, length, numTicks = 70 , title = 'progress'):
+    def __init__(self, length, numTicks = 78 , title = None,
+                 printFunction = print):
+        if(length != int(length)):
+            print('textProgBar takes integers no less than 2 ')
+            length = int(length)
+        #if(length<2):
+        #    length = 2
+        if (title is None):
+            title = f'Progress bar for {length} steps in {numTicks} ticks'
         self.FLAG_ended = False
         self.FLAG_warning = False
         self.startTime = time.time()
         self.ck = 0
         self.prog = 0
         self.length = length
+        self.printer = printFunction
         if(numTicks < len(title) + 2 ):
             self.numTicks = len(title)+2
         else:
             self.numTicks = numTicks
-        print(' ', end='')
+        self.printer(' ', end='')
         for _ in range(self.numTicks):
-            print('_', end='')
-        print(' ', flush = True)
+            self.printer('_', end='')
+        self.printer(' ', flush = True)
 
-        print('/', end='')
+        self.printer('/', end='')
         for idx in range(self.numTicks - len(title)):
             if(idx==int((self.numTicks - len(title))/2)):
-                print(title, end='')
+                self.printer(title, end='')
             else:
-                print(' ', end='')
-        print(' \\')
-        print(' ', end='')
+                self.printer(' ', end='')
+        self.printer(' \\')
+        self.printer(' ', end='')
     def go(self, ck=1):
-        if(self.FLAG_ended):
-            if(not self.FLAG_warningGiven):
-                self.FLAG_warning = True
-                print('You have reached the end of you progress,\
-                    but you are still ticking')
         self.ck += ck
-        cProg = int(self.numTicks*self.ck/self.length/3)    
-        #3: because 3 charachters are used
-        while (self.prog < cProg):
-            self.prog += 1
-            remTimeS = self.startTime \
-                + (time.time() - self.startTime) \
-                / (self.ck/self.length) - time.time()
-            time_correct = 2-2*(self.ck/self.length)
-            #remTimeS *= time_correct
-            if(remTimeS>=5940):
-                progStr = "%02d" % int(np.ceil(remTimeS/3600))
-                print(progStr, end='')
-                print('h', end='', flush = True)
-            elif(remTimeS>=99):
-                progStr = "%02d" % int(np.ceil(remTimeS/60))
-                print(progStr, end='')
-                print('m', end='', flush = True)
-            elif(remTimeS>0):
-                progStr = "%02d" % int(np.ceil(remTimeS))
-                print(progStr, end='')
-                print('s', end='', flush = True)
-            else:
+        if(self.FLAG_ended):
+            if(not self.FLAG_warning):
+                self.FLAG_warning = True
+                self.printer('You have reached the end of you progress,\
+                    but you are still ticking')
+        if(not self.FLAG_ended):
+            if(self.ck >= self.length):
                 self.end()
+        if(not self.FLAG_ended):
+            cProg = int(self.numTicks*self.ck/(self.length-1)/3)    
+            #3: because 3 charachters are used
+            while (self.prog < cProg):
+                self.prog += 1
+                remTimeS = self.startTime \
+                    + (time.time() - self.startTime) \
+                    / (self.ck/self.length) - time.time()
+                time_correct = 2-2*(self.ck/self.length)
+                if(remTimeS>=5940):
+                    progStr = "%02d" % int(np.ceil(remTimeS/3600))
+                    self.printer(progStr, end='')
+                    self.printer('h', end='', flush = True)
+                elif(remTimeS>=99):
+                    progStr = "%02d" % int(np.ceil(remTimeS/60))
+                    self.printer(progStr, end='')
+                    self.printer('m', end='', flush = True)
+                elif(remTimeS>0):
+                    progStr = "%02d" % int(np.ceil(remTimeS))
+                    self.printer(progStr, end='')
+                    self.printer('s', end='', flush = True)
+                else:
+                    self.end()
     def end(self):
-        print('\n ', end='')
-        for _ in range(self.numTicks):
-            print('-', end='')
-        print(' ', flush = True)
-        self.FLAG_ended = True
+        if(not self.FLAG_ended):
+            self.printer('\n ', end='')
+            for _ in range(self.numTicks):
+                self.printer('-', end='')
+            self.printer(' ', flush = True)
+            self.FLAG_ended = True
 
 def PDF2Uniform(inVec, inMask=None, numBins=10, 
                 nUniPoints=None, lowPercentile = 0, 
@@ -451,6 +464,14 @@ def getTriangularVertices(n,
 
     return(triVecs)
 
+
+#################
+#TO DOL
+#make sure function always generates proper output
+#can we estimate Qeueu size before submitting results and new jobs?
+#make sure runction output can be None
+###############
+
 class multiprocessor:
     """ multiprocessor makes the use of multiprocessing in Python easy
     You need a function that takes two inputs:
@@ -602,6 +623,7 @@ class multiprocessor:
             print('concatenateOutput: ', self.concatenateOutput)
         
     def _multiprocFunc(self, theQ, procID_range):
+        local_time = time.time()
         if(self.outputIsNumpy):
             allResults = np.zeros(
                 shape = ((procID_range.shape[0],) + self.output_shape), 
@@ -610,15 +632,19 @@ class multiprocessor:
             allResults = []
         for idx, procCnt in enumerate(procID_range):
             funcIdx = self.indices[procCnt]
-            if(self.inputs is not None):
-                results = self.targetFunction(funcIdx, self.inputs)
-            else:
-                results = self.targetFunction(funcIdx)
+            try:
+                if(self.inputs is not None):
+                    results = self.targetFunction(funcIdx, self.inputs)
+                else:
+                    results = self.targetFunction(funcIdx)
+            except:
+                print('Something in multiprocessing went wrong.')
+                print('funcIdx-->.', funcIdx)
+                exit()
             if(self.outputIsNumpy):
                 allResults[idx] = results
             else:
                 allResults.append(results)
-        
         theQ.put(list([procID_range, allResults]))
         
     def start(self):        
@@ -631,13 +657,15 @@ class multiprocessor:
         while(numProcessed<numProc):
             if (not aQ.empty()):
                 aQElement = aQ.get()
-                _batchSize = aQElement[0].shape[0]
+                ret_procID_range = aQElement[0]
+                _batchSize = ret_procID_range.shape[0]
+                ret_result = aQElement[1]
                 if(self.outputIsNumpy):
-                    self.allResults[aQElement[0]] = aQElement[1]
+                    self.allResults[ret_procID_range] = ret_result
                 else:
                     self.Q_procID = np.concatenate((self.Q_procID, 
-                                                    aQElement[0]))
-                    self.allResults += aQElement[1]
+                                                    ret_procID_range))
+                    self.allResults += ret_result
                 numProcessed += _batchSize
                 numBusyCores -= 1
                 if(self.showProgress):
