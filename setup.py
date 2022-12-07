@@ -15,6 +15,8 @@ setup(
   version = _version,      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'A library for robust Gaussian fitting using geometric models in presence of outliers. ',   # Give a short description about your library
+  long_description="""#RGFLib \n Robust Gaussian Fitting Library helps you fit robust linear models,""",
+  long_description_content_type='text/markdown',      
   author = 'Alireza Sadri',                   # Type in your name
   author_email = 'ARSadri@domain.com',      # Type in your E-Mail
   url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary',   # Provide either the link to your github or to your website
