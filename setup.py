@@ -15,10 +15,10 @@ setup(
   version = _version,      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'A library for robust Gaussian fitting using geometric models in presence of outliers. ',   # Give a short description about your library
-  long_description="""#RGFLib \n Robust Gaussian Fitting Library helps you fit robust linear models,""",
+  long_description = """#RGFLib \n Robust Gaussian Fitting Library helps you fit robust linear models,""",
   long_description_content_type='text/markdown',      
   author = 'Alireza Sadri',                   # Type in your name
-  author_email = 'ARSadri@domain.com',      # Type in your E-Mail
+  author_email = 'arsadri@gmail.com',      # Type in your E-Mail
   url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary',   # Provide either the link to your github or to your website
   download_url = 'https://github.com/ARSadri/RobustGaussianFittingLibrary/archive/'+_version+'.tar.gz',    # I explain this later on
   keywords = ['outlier', 'outlier detection', 'outlier removal', 'anamoly detection', 'curve fitting', 'line fitting', 'plane fitting', 'fit a Gaussian', 'Gaussian fitting'],   # Keywords that define your package best
@@ -37,10 +37,10 @@ setup(
     'Topic :: Scientific/Engineering :: Mathematics',
     'License :: OSI Approved :: MIT License',   # Again, pick a license
     'Programming Language :: Python :: 3',      #Specify which pyhthon versions that you want to support
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11'
   ],
 )
