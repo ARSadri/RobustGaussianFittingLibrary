@@ -11,6 +11,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from .cWrapper import RGFCLib
+from .basic import fitValue
 from multiprocessing import Process, Queue, cpu_count
 from scipy.spatial.transform import Rotation as R
 
@@ -176,11 +177,13 @@ def removeIslands(inMask, minSize = 1):
                           minSize)
     return(outMask + inMask)      
     
-def naiveHist(vec, mP):
+def naiveHist(inVec, mP = None):
+    if(mP is None):
+        mP = fitValue(inVec)    
     plt.figure(figsize=[10,8])
-    hist,bin_edges = np.histogram(vec, 100)
+    hist,bin_edges = np.histogram(inVec, 100)
     plt.bar(bin_edges[:-1], hist, width = mP[1], color='#0504aa',alpha=0.7)
-    x = np.linspace(vec.min(), vec.max(), 1000)
+    x = np.linspace(inVec.min(), inVec.max(), 1000)
     y = hist.max() * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1]))
     plt.plot(x,y, 'r')
     plt.xlim(min(bin_edges), max(bin_edges))
@@ -264,7 +267,19 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
     plt.yticks(fontsize=15)
     plt.show()
 
-def sGHist(inVec, mP, SNR_ACCEPT=3.0):
+def robust_hist(inVec, mP = None, SNR_ACCEPT=3.0):
+    """Histogram of data using parameters of a single Gaussian fitted to data
+    Inputs
+    ~~~~~~
+        inVec: np 1D array
+        mP: you must have obtained it by mP = RGFLib.fitValue(inVec)
+            if you have not it will here
+        SNR_ACCEPT: how far from its mean, samples of a normal density are 
+            considered inliers ni the histogram plot
+            default: 3.0
+    """
+    if(mP is None):
+        mP = fitValue(inVec)
     tmpL  = (inVec[(inVec<=mP[0]-SNR_ACCEPT*mP[1]) & 
                    (inVec>=mP[0]-4*SNR_ACCEPT*mP[1])  ]).copy()
     tmpM  = (inVec[(inVec>mP[0]-SNR_ACCEPT*mP[1]) & 
@@ -282,7 +297,7 @@ def sGHist(inVec, mP, SNR_ACCEPT=3.0):
     hist,bin_edges = np.histogram(tmpM, 40)
     tmpMmax = hist.max()
     plt.bar(bin_edges[:-1], hist, 
-            width = 0.5*tmpM.std()/SNR_ACCEPT, color='g',alpha=0.5)
+            width = 0.75*tmpM.std()/SNR_ACCEPT, color='g',alpha=0.5)
     if (tmpH.any()):
         hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
         plt.bar(bin_edges[:-1], hist, 
@@ -324,7 +339,8 @@ def sGHist_multi_mP(inVec, mP, SNR=3.0):
     plt.bar(modelVec, np.ones(modelVec.size), color='g',alpha=0.5)
     plt.show()
 
-def scatter3(mat, inFigure = None, returnFigure = False, label = None):
+def scatter3(mat, inFigure = None, returnFigure = False, 
+             label = None, plt_show = None):
     """ given a matrix input of size 3 x N, it scatters it in 3D
     """
     LWidth = 3
@@ -354,6 +370,9 @@ def scatter3(mat, inFigure = None, returnFigure = False, label = None):
     else:
         if(figureCnt>0):
             plt.legend()
+        if(plt_show is None):
+            plt_show = True
+    if(plt_show):
         plt.show()
 
 class plotGaussianGradient:
@@ -363,7 +382,7 @@ class plotGaussianGradient:
     You need to init() the object then add() plots and then show() it.
     refer to the tests.py
     """
-    def __init__(self, xlabel, ylabel, num_bars = 100, 
+    def __init__(self, xlabel = None, ylabel = None, num_bars = 100, 
                  title = None, xmin = None, xmax = None, 
                  ymin = None, ymax = None):
         self.xlabel = xlabel
@@ -387,9 +406,10 @@ class plotGaussianGradient:
         plt.rcParams.update(params)
         plt.figure(figsize=(8, 6), dpi=50)
         self.ax1 = plt.subplot(111)
-
+    
     def addPlot(self, x, mu, std, gradient_color, label, 
-                snr = 3.0, mu_color = None, general_alpha = 1):
+                snr = 3.0, mu_color = None, general_alpha = 1,
+				mu_linewidth = 1):
 
         for idx in range(self.num_bars-1):
             y1 = ((self.num_bars-idx)*mu + idx*(mu + snr*std))/self.num_bars
@@ -397,24 +417,31 @@ class plotGaussianGradient:
             
             prob = np.exp(-(snr*idx/self.num_bars)**2/2)
             plt.fill_between(
-                x, y1, y2, color = gradient_color, alpha = prob*general_alpha)
+                x, y1, y2, 
+                color = (gradient_color + (prob*general_alpha,)), 
+                edgecolor=(gradient_color + (0,)))
 
             y1 = ((self.num_bars-idx)*mu + idx*(mu - snr*std))/self.num_bars
             y2 = y1 - snr*std/self.num_bars
             
             plt.fill_between(
-                x, y1, y2, color = gradient_color, alpha = prob*general_alpha)
+                x, y1, y2, 
+                color = (gradient_color + (prob*general_alpha,)), 
+                edgecolor=(gradient_color + (0,)))
         if(mu_color is None):
             mu_color = gradient_color
-        plt.plot(x, mu, linewidth = 3, color = mu_color, label = label)
+        plt.plot(x, mu, linewidth = mu_linewidth, color = mu_color, 
+		         label = label)
         
     def show(self, show_legend = True):
         if(self.xmin is not None) & (self.xmax is not None):
             plt.xlim([self.xmin, self.xmax])
         if(self.ymin is not None) & (self.ymax is not None):
             plt.ylim([self.ymin, self.ymax])
-        plt.xlabel(self.xlabel, weight='bold')
-        plt.ylabel(self.ylabel, weight='bold')
+        if(self.xlabel is not None):
+            plt.xlabel(self.xlabel, weight='bold')
+        if(self.ylabel is not None):
+            plt.ylabel(self.ylabel, weight='bold')
         if(self.title is not None):
             plt.title(self.title)
         if(show_legend):
