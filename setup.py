@@ -11,7 +11,8 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 ------------------------------------------------------
 """
 
-from setuptools import setup, Extension
+from setuptools import setup
+# from setuptools import Extension
 
 _version = '0.2.0'
 
@@ -40,7 +41,8 @@ setup(
     ],
     install_requires=requirements,
     license='MIT',
-    description = 'A library for robust Gaussian fitting of geometric models in presence of outliers. ',   # Give a short description about your library
+    description = 'A library for robust Gaussian fitting '\
+                + 'of geometric models in presence of outliers. ',   # Give a short description about your library
     long_description_content_type = 'text/markdown',
     long_description=readme,
     include_package_data=True,
@@ -61,8 +63,8 @@ setup(
     url='https://github.com/arsadri/RobustGaussianFittingLibrary',
     version=_version,
     zip_safe=False,
-    ext_modules=[Extension(name = 'RGFLib', 
-                           sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
-                           language = 'c',
-                           extra_compile_args = ['-shared'])],
+    # ext_modules=[Extension(name = 'RGFLib', 
+    #                        sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
+    #                        language = 'c',
+    #                        extra_compile_args = ['-shared'])],
 )
