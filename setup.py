@@ -38,9 +38,10 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11'
     ],
-    description = 'A library for robust Gaussian fitting of geometric models in presence of outliers. ',   # Give a short description about your library
     install_requires=requirements,
     license='MIT',
+    description = 'A library for robust Gaussian fitting of geometric models in presence of outliers. ',   # Give a short description about your library
+    long_description_content_type = 'text/markdown',
     long_description=readme,
     include_package_data=True,
     keywords=['rgflib', 
