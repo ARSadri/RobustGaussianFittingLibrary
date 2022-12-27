@@ -2,7 +2,6 @@ import time
 import numpy as np
 import RobustGaussianFittingLibrary as RGF
 
-
 def calcMyThing(cnt, inputs, iterable_inputs):
     mask, = inputs
     data, weights = iterable_inputs
@@ -24,11 +23,9 @@ intensity = RGF.misc.multiprocessor(
 time_rec1 = time.time() - time_time
 print('Now single CPU', flush = True)
 time_time = time.time()
-#pBar = RGF.misc.textProgBar(N)
 out = np.zeros(N)
 for cnt in range(N):
     out[cnt] = calcMyThing(cnt, (mask, ), (data[cnt], weights[cnt]))
-    #pBar.go()
 time_rec2 = time.time() - time_time
 
 print(time_rec1, time_rec2, time_rec2/time_rec1)

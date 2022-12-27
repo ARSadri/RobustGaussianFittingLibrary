@@ -15,90 +15,7 @@ from .basic import fitValue
 from multiprocessing import Process, Queue, cpu_count
 from scipy.spatial.transform import Rotation as R
 
-class textProgBar:
-    """
-    While I respect all the codes and methods on web that use \r for this task,
-    there are cases such as simple ssh terminals that do not support \r.
-    In such cases, if something is written at the end of 
-    the line it cannot be deleted. The following code provides a good 
-    looking simple title for the progress bar
-    and shows the limits and is very simple to use.
-    define the object with length of the for loop, call its go funciton 
-    every time in the loop and delete the object afterwards.
-    """
-    def __init__(self, length, numTicks = 78 , title = None,
-                 printFunction = print):
-        if(length != int(length)):
-            print('textProgBar takes integers no less than 2 ')
-            length = int(length)
-        #if(length<2):
-        #    length = 2
-        if (title is None):
-            title = f'Progress bar for {length} steps in {numTicks} ticks'
-        self.FLAG_ended = False
-        self.FLAG_warning = False
-        self.startTime = time.time()
-        self.ck = 0
-        self.prog = 0
-        self.length = length
-        self.printer = printFunction
-        if(numTicks < len(title) + 2 ):
-            self.numTicks = len(title)+2
-        else:
-            self.numTicks = numTicks
-        self.printer(' ', end='')
-        for _ in range(self.numTicks):
-            self.printer('_', end='')
-        self.printer(' ', flush = True)
-
-        self.printer('/', end='')
-        for idx in range(self.numTicks - len(title)):
-            if(idx==int((self.numTicks - len(title))/2)):
-                self.printer(title, end='')
-            else:
-                self.printer(' ', end='')
-        self.printer(' \\')
-        self.printer(' ', end='')
-    def go(self, ck=1):
-        self.ck += ck
-        if(self.FLAG_ended):
-            if(not self.FLAG_warning):
-                self.FLAG_warning = True
-                self.printer('You have reached the end of you progress,\
-                    but you are still ticking')
-        if(not self.FLAG_ended):
-            if(self.ck >= self.length):
-                self.end()
-        if(not self.FLAG_ended):
-            cProg = int(self.numTicks*self.ck/(self.length-1)/3)    
-            #3: because 3 charachters are used
-            while (self.prog < cProg):
-                self.prog += 1
-                remTimeS = self.startTime \
-                    + (time.time() - self.startTime) \
-                    / (self.ck/self.length) - time.time()
-                time_correct = 2-2*(self.ck/self.length)
-                if(remTimeS>=5940):
-                    progStr = "%02d" % int(np.ceil(remTimeS/3600))
-                    self.printer(progStr, end='')
-                    self.printer('h', end='', flush = True)
-                elif(remTimeS>=99):
-                    progStr = "%02d" % int(np.ceil(remTimeS/60))
-                    self.printer(progStr, end='')
-                    self.printer('m', end='', flush = True)
-                elif(remTimeS>0):
-                    progStr = "%02d" % int(np.ceil(remTimeS))
-                    self.printer(progStr, end='')
-                    self.printer('s', end='', flush = True)
-                else:
-                    self.end()
-    def end(self):
-        if(not self.FLAG_ended):
-            self.printer('\n ', end='')
-            for _ in range(self.numTicks):
-                self.printer('-', end='')
-            self.printer(' ', flush = True)
-            self.FLAG_ended = True
+from lognflow import printprogress
 
 def PDF2Uniform(inVec, inMask=None, numBins=10, 
                 nUniPoints=None, lowPercentile = 0, 
@@ -135,7 +52,7 @@ def PDF2Uniform(inVec, inMask=None, numBins=10,
     uniInds = np.zeros(nUniPoints, dtype='uint32')
     ptCnt = 0
     if(showProgress):
-        pBar = textProgBar(nUniPoints)
+        pBar = printprogress(nUniPoints)
     while(ptCnt < nUniPoints):
         for bin in binValue:
             if(ptCnt >= nUniPoints):
@@ -146,9 +63,7 @@ def PDF2Uniform(inVec, inMask=None, numBins=10,
                 indPerBin[uniInds[ptCnt]] = outIndicator
                 ptCnt += 1
                 if(showProgress):
-                    pBar.go()            
-    if(showProgress):
-        del pBar
+                    pBar()            
     return(uniInds)
 
 def removeIslands(inMask, minSize = 1):
@@ -209,11 +124,11 @@ def naiveHist_multi_mP(vec, mP):
         plt.plot(x,y, 'r')
     plt.show()
 
-def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
+def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0, figsize = (4,4)):
     LWidth = 3
     font = {
             'weight' : 'bold',
-            'size'   : 8}
+            'size'   : 14}
     params = {'legend.fontsize': 'x-large',
              'axes.labelsize': 'x-large',
              'axes.titlesize':'x-large',
@@ -229,7 +144,7 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
     _xlimMin = tmpM.min()
     _xlimMax = tmpM.max()
 
-    plt.figure()
+    plt.figure(figsize = figsize)
     plt.rc('font', **font)
     plt.rcParams.update(params)
 
@@ -245,7 +160,7 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
     if (tmpH.any()):
         hist,bin_edges = np.histogram(tmpH, tmpH.shape[0])
         plt.bar(bin_edges[:-1], hist, 
-                width = tmpM.std()/SNR_ACCEPT, color='royalblue',alpha=0.5)
+                width = tmpM.std()/SNR_ACCEPT, color='red',alpha=0.5)
         _xlimMax = tmpH.max()
     x = np.linspace(mP[0]-SNR_ACCEPT*mP[1], mP[0]+SNR_ACCEPT*mP[1], 1000)
     y = tmpMmax * np.exp(-(x-mP[0])*(x-mP[0])/(2*mP[1]*mP[1])) 
@@ -253,9 +168,9 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0):
     plt.plot(np.array([mP[0] - SNR_ACCEPT*mP[1], mP[0] - SNR_ACCEPT*mP[1]]),
              np.array([0, tmpMmax]), linewidth = LWidth, color = 'm')
     plt.plot(np.array([mP[0] - 0*SNR_ACCEPT*mP[1], mP[0] - 0*SNR_ACCEPT*mP[1]]),
-             np.array([0, tmpMmax]), linewidth = LWidth, color = 'g')
+             np.array([0, tmpMmax]), linewidth = LWidth, color = 'red')
     plt.plot(np.array([mP[0] + SNR_ACCEPT*mP[1], mP[0] + SNR_ACCEPT*mP[1]]),
-             np.array([0, tmpMmax]), linewidth = LWidth, color = 'r')
+             np.array([0, tmpMmax]), linewidth = LWidth, color = 'm')
     plt.plot(x,y, 'orange', linewidth = LWidth)
 
     
@@ -558,7 +473,8 @@ class multiprocessor:
                 concatenated along axis = 0, with this flag, we will
                 put it as a whole ndarray in the output. Otherwise 
                 the output will be a list.
-            showProgress: using textProgBar, it shows the progress of 
+            showProgress: using printprogress from lognflow, 
+                it shows the progress of 
                 multiprocessing of your task.
                 default: False
         """
@@ -697,12 +613,12 @@ class multiprocessor:
                 numBusyCores -= 1
                 if(self.showProgress):
                     if(firstProcess):
-                        pBar = textProgBar(numProc-1, title = 'starting ' \
+                        pBar = printprogress(numProc-1, title = 'starting ' \
                             + str(numProc) + ' processes with ' \
                             + str(self.max_cpu) + ' CPUs')
                         firstProcess = False
                     else:
-                        pBar.go(_batchSize)
+                        pBar(_batchSize)
             if((procID<numProc) & (numBusyCores < self.max_cpu)):
                 batchSize = np.minimum(self.default_batchSize, numProc - procID)
                 procID_arange = np.arange(procID, procID + batchSize, 
@@ -711,8 +627,6 @@ class multiprocessor:
                         args = (aQ, procID_arange)).start()
                 procID += batchSize
                 numBusyCores += 1
-        if(self.showProgress):
-            pBar.end()
         
         if(self.outputIsNumpy):
             return (self.allResults)

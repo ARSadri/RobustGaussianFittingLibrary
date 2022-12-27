@@ -331,12 +331,12 @@ def fitLine(inX, inY,
     
     modelParams = np.zeros(3, dtype='float32')
     RGFCLib.RobustAlgebraicLineFitting((inX.copy()).astype('float32'),
-                                            (inY.copy()).astype('float32'),
-                                            modelParams, 
-                                            inX.shape[0],
-                                            topKthPerc,
-                                            bottomKthPerc,
-                                            MSSE_LAMBDA)
+                                       (inY.copy()).astype('float32'),
+                                       modelParams, 
+                                       inX.shape[0],
+                                       topKthPerc,
+                                       bottomKthPerc,
+                                       MSSE_LAMBDA)
     
     return (modelParams)
 

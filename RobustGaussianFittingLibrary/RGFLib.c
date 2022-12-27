@@ -701,9 +701,13 @@ void lineAlgebraicModelEval(float* x, float* y_fit,
         y_fit[i]=mP[0]*x[i]+mP[1];
 }
 
-void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
-                                unsigned int N, float topkPerc,
-								float botkPerc, float MSSE_LAMBDA) {
+void RobustAlgebraicLineFitting(float* x,
+								float* y,
+								float* mP,
+                                unsigned int N,
+								float topkPerc,
+								float botkPerc,
+								float MSSE_LAMBDA) {
     float model[2];
     unsigned int i, iter, cnt;
     unsigned int sampleSize;

@@ -10,7 +10,7 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
 from .basic import fitValueTensor, fitLineTensor, fitBackgroundTensor, fitBackgroundRadially
-from .misc import textProgBar
+from lognflow import printprogress
 
 def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
     """
@@ -155,10 +155,10 @@ def fitValueTensor_MultiProc(inTensor,
             numBusyCores -= 1
             if(showProgress):
                 if(firstProcessed==0):
-                    pBar = textProgBar(numProc-1, title = 'Calculationg Values')
+                    pBar = printprogress(numProc-1, title = 'Calculationg Values')
                     firstProcessed = 1
                 else:
-                    pBar.go(1)
+                    pBar(1)
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
             
@@ -254,10 +254,10 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
             numBusyCores -= 1
             if(showProgress):
                 if(firstProcessed==0):
-                    pBar = textProgBar(numProc-1, title = 'Calculationg line parameters')
+                    pBar = printprogress(numProc-1, title = 'Calculationg line parameters')
                     firstProcessed = 1
                 else:
-                    pBar.go(1)
+                    pBar(1)
 
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
@@ -395,10 +395,10 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
             numProcessed += _stride
             if(showProgress):
                 if(firstProcessed==0):
-                    pBar = textProgBar(numProc-_stride, title = 'Calculationg background')
+                    pBar = printprogress(numProc-_stride, title = 'Calculationg background')
                     firstProcessed = 1
                 else:
-                    pBar.go(_stride)
+                    pBar(_stride)
 
         if((numSubmitted<numProc) & (numBusyCores < mycpucount)):
             stride = np.minimum(default_stride, numProc - numSubmitted)
@@ -598,9 +598,9 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
             numBusyCores -= 1
             if(showProgress):
                 if(numProcessed == 1):
-                    pBar = textProgBar(numProc-1, title = 'Multiprocessing results progress bar')
+                    pBar = printprogress(numProc-1, title = 'Multiprocessing results progress bar')
                 if(numProcessed > 1):
-                    pBar.go()
+                    pBar()
 
         if((procID<numProc) & (numBusyCores < myCPUCount)):
             Process(target = fitBackgroundRadiallyTensor_multiprocFunc, 

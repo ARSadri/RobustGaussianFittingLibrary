@@ -7,29 +7,26 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 ------------------------------------------------------
 """
 
+import os
+import time
+import scipy.stats
+import numpy as np
+import matplotlib.pyplot as plt
+from lognflow import printprogress
+
 import RobustGaussianFittingLibrary 
 import RobustGaussianFittingLibrary.useMultiproc
 import RobustGaussianFittingLibrary.misc
 import RobustGaussianFittingLibrary.basic
-import numpy as np
-import time
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import os
-import scipy.stats
-from cProfile import label
-from docutils.nodes import inline
 
-np.set_printoptions(suppress = True)
-np.set_printoptions(precision = 2)
 LWidth = 3
 font = {'weight' : 'bold',
         'size'   : 8}
 params = {'legend.fontsize': 'x-large',
-         'axes.labelsize': 'x-large',
-         'axes.titlesize':'x-large',
-         'xtick.labelsize':'x-large',
-         'ytick.labelsize':'x-large'}
+          'axes.labelsize' : 'x-large',
+          'axes.titlesize' : 'x-large',
+          'xtick.labelsize': 'x-large',
+          'ytick.labelsize': 'x-large'}
  
 def test_PDF2Uniform():
     inVec = np.random.randn(20000)
@@ -44,15 +41,6 @@ def test_PDF2Uniform():
     plt.plot(e2, b2/b2.sum())
     plt.show()
   
-def test_textProgBar():
-    print('test_textProgBar')
-    pBar = RobustGaussianFittingLibrary.misc.textProgBar(180)
-    for _ in range(60):
-        for _ in range(5000000):
-            pass
-        pBar.go(3)
-    pBar.end() 
-
 def visOrderStat():
     print('visOrderStat')
     # std of a few closests samplse of a gaussian to its average
@@ -65,12 +53,11 @@ def visOrderStat():
         inds = np.argsort(res)
         result_STD = np.zeros(intervals.shape[0])
         result_MSSE = np.zeros(intervals.shape[0])
-        pBar = RobustGaussianFittingLibrary.misc.textProgBar(intervals.shape[0])
+        pBar = printprogress(intervals.shape[0])
         for idx, k in enumerate(intervals):
             result_STD[idx] = Data[inds[:int(k*N)]].std()
             result_MSSE[idx] = RobustGaussianFittingLibrary.MSSE(Data[inds[:int(k*N)]], k=2)
-            pBar.go()
-        del pBar
+            pBar()
         plt.plot(intervals, result_STD)
         plt.plot(intervals, result_MSSE)
     plt.plot(intervals, intervals)
@@ -120,10 +107,10 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
     
     for cnt in np.arange(inputPeaksNumber):    
         bellShapedCurve = 600*gkern(WINSIZE)
-        winXStart = (randomLocations[0, cnt] - (WINSIZE-1)/2).astype(np.int)
-        winXEnd = (randomLocations[0, cnt] + (WINSIZE+1)/2).astype(np.int)
-        winYStart = (randomLocations[1, cnt] - (WINSIZE-1)/2).astype(np.int)
-        winYEnd = (randomLocations[1, cnt] + (WINSIZE+1)/2).astype(np.int)
+        winXStart = (randomLocations[0, cnt] - (WINSIZE-1)/2).astype(np.int32)
+        winXEnd = (randomLocations[0, cnt] + (WINSIZE+1)/2).astype(np.int32)
+        winYStart = (randomLocations[1, cnt] - (WINSIZE-1)/2).astype(np.int32)
+        winYEnd = (randomLocations[1, cnt] + (WINSIZE+1)/2).astype(np.int32)
         inData[ winXStart : winXEnd, winYStart : winYEnd ] += bellShapedCurve;
         if (cnt >= inputPeaksNumber - numOutliers):
             inMask[ winXStart : winXEnd, winYStart : winYEnd ] = 0;    
@@ -199,7 +186,7 @@ def test_fitValue_sweep():
     std_inliers = np.zeros((maxN-minN, numIter))
     robust_mean = np.zeros((maxN-minN, numIter))
     robust_std = np.zeros((maxN-minN, numIter))
-    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
+    pBar = printprogress(maxN-minN)
     x = np.zeros(maxN-minN)
 
     timeR = 0
@@ -223,8 +210,7 @@ def test_fitValue_sweep():
             robust_mean[N-minN, iter] = rmode
             robust_std[N-minN, iter] = rstd
         x[N-minN] = N
-        pBar.go()
-    del pBar
+        pBar()
         
     plt.plot(x, ((robust_mean-mean_inliers)/std_inliers).mean(1) - \
                ((robust_mean-mean_inliers)/std_inliers).std(1), 
@@ -280,16 +266,16 @@ def test_RobustAlgebraicPlaneFittingPy():
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(inX, inY, inZ, color = 'black', label='data')
     c1 = ax.plot_surface(X, Y, Zax_H, color = 'blue', label='upper threshold')
-    c1._facecolors2d = c1._facecolors3d
-    c1._edgecolors2d = c1._edgecolors3d    
+    c1._facecolors2d = c1._facecolor3d
+    c1._edgecolors2d = c1._edgecolor3d    
     
     c2 = ax.plot_surface(X, Y, Zax_U, color = 'green', label='model plane')
-    c2._facecolors2d = c2._facecolors3d
-    c2._edgecolors2d = c2._edgecolors3d    
+    c2._facecolors2d = c2._facecolor3d
+    c2._edgecolors2d = c2._edgecolor3d    
 
     c3 = ax.plot_surface(X, Y, Zax_L, color = 'red', label='lower threshold')
-    c3._facecolors2d = c3._facecolors3d
-    c3._edgecolors2d = c3._edgecolors3d    
+    c3._facecolors2d = c3._facecolor3d
+    c3._edgecolors2d = c3._edgecolor3d    
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -321,16 +307,16 @@ def test_fitValueVSMeanShiftPy():
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(inX, inY, inZ, color = 'black', label='data')
     c1 = ax.plot_surface(X, Y, Zax_H, color = 'blue', label='upper threshold')
-    c1._facecolors2d = c1._facecolors3d
-    c1._edgecolors2d = c1._edgecolors3d    
+    c1._facecolors2d = c1._facecolor3d
+    c1._edgecolors2d = c1._edgecolor3d    
     
     c2 = ax.plot_surface(X, Y, Zax_U, color = 'green', label='model plane')
-    c2._facecolors2d = c2._facecolors3d
-    c2._edgecolors2d = c2._edgecolors3d    
+    c2._facecolors2d = c2._facecolor3d
+    c2._edgecolors2d = c2._edgecolor3d    
 
     c3 = ax.plot_surface(X, Y, Zax_L, color = 'red', label='lower threshold')
-    c3._facecolors2d = c3._facecolors3d
-    c3._edgecolors2d = c3._edgecolors3d    
+    c3._facecolors2d = c3._facecolor3d
+    c3._edgecolors2d = c3._edgecolor3d    
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -353,16 +339,16 @@ def test_fitValueVSMeanShiftPy():
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(inX, inY, inZ, color = 'black', label='data')
     c1 = ax.plot_surface(X, Y, Zax_H, color = 'blue', label='upper threshold')
-    c1._facecolors2d = c1._facecolors3d
-    c1._edgecolors2d = c1._edgecolors3d    
+    c1._facecolors2d = c1._facecolor3d
+    c1._edgecolors2d = c1._edgecolor3d    
     
     c2 = ax.plot_surface(X, Y, Zax_U, color = 'green', label='model plane')
-    c2._facecolors2d = c2._facecolors3d
-    c2._edgecolors2d = c2._edgecolors3d    
+    c2._facecolors2d = c2._facecolor3d
+    c2._edgecolors2d = c2._edgecolor3d    
 
     c3 = ax.plot_surface(X, Y, Zax_L, color = 'red', label='lower threshold')
-    c3._facecolors2d = c3._facecolors3d
-    c3._edgecolors2d = c3._edgecolors3d    
+    c3._facecolors2d = c3._facecolor3d
+    c3._edgecolors2d = c3._edgecolor3d    
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -930,7 +916,7 @@ def test_SginleGaussianVec():
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
-    RobustGaussianFittingLibrary.misc.sGHist(testData, mP)
+    RobustGaussianFittingLibrary.misc.robust_hist(testData, mP)
     
 def test_fitValue2Skewed():
     print('test_fitValue2Skewed')
@@ -951,7 +937,7 @@ def test_fitValue2Skewed():
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
     plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
-    RobustGaussianFittingLibrary.misc.sGHist(testData, mP)    
+    RobustGaussianFittingLibrary.misc.robust_hist(testData, mP)    
     
 def test_fitValue2Skewed_sweep_over_N():
     print('test_fitValue2Skewed_sweep_over_N')
@@ -967,7 +953,7 @@ def test_fitValue2Skewed_sweep_over_N():
     x = np.zeros(maxN-minN)
     timeSkew = 0
     timeR = 0
-    pBar = RobustGaussianFittingLibrary.misc.textProgBar(maxN-minN)
+    pBar = printprogress(maxN-minN)
     for N in range(minN,maxN):
         for iter in range(numIter):
             RNN0 = np.random.randn(N)
@@ -994,8 +980,7 @@ def test_fitValue2Skewed_sweep_over_N():
             robust_mean[N-minN, iter] = rmode
             robust_std[N-minN, iter] = rstd
         x[N-minN] = testData.shape[0]
-        pBar.go()
-    del pBar
+        pBar()
         
     print(timeR/timeSkew)
     
@@ -1190,7 +1175,7 @@ def test_fit2Poisson():
     plt.plot(pois_lambda_list, pois_lambda_list, marker = '.', color = 'gold',     label='Reference')
     plt.plot(pois_lambda_list, inliers_mP[:, 0], marker = '.', color = 'red',      label='Inliers $\mu$')
     plt.plot(pois_lambda_list, inliers_mP[:, 1], marker = '.', color = 'red',      label='Inliers $\sigma^2$')
-    plt.plot(pois_lambda_list,         mP[:, 0], marker = '.', color = 'green',    label='FLKOS $\mu^2$')
+    plt.plot(pois_lambda_list,         mP[:, 0], marker = '.', color = 'green',    label='FLKOS $\mu$')
     plt.plot(pois_lambda_list,         mP[:, 1], marker = '.', color = 'green',    label='FLKOS $\sigma^2$')
     plt.plot(pois_lambda_list,  meanShift[:, 0], marker = '.', color = 'blue',     label='MeanShift $\mu$')
     plt.plot(pois_lambda_list,  meanShift[:, 1], marker = '.', color = 'tab:blue', label='MeanShift $\sigma^2$')
@@ -1204,10 +1189,10 @@ def test_fit2Poisson():
 
     plt.rc('font', **font)
     plt.rcParams.update(params)
-    plt.plot(pois_lambda_list,         mP[:, 0]/inliers_mP[:, 0], marker = '.', color = 'green',    label='FLKOS $\mu^2$')
-    plt.plot(pois_lambda_list,         mP[:, 1]/inliers_mP[:, 1], marker = '.', color = 'green',    label='FLKOS $\sigma^2$')
-    plt.plot(pois_lambda_list,  meanShift[:, 0]/inliers_mP[:, 0], marker = '.', color = 'blue',     label='MeanShift $\mu$')
-    plt.plot(pois_lambda_list,  meanShift[:, 1]/inliers_mP[:, 1], marker = '.', color = 'tab:blue', label='MeanShift $\sigma^2$')
+    plt.plot(pois_lambda_list,         mP[:, 0]/inliers_mP[:, 0], marker = '.', color = 'blue',    label='FLKOS $\mu$')
+    plt.plot(pois_lambda_list,         mP[:, 1]/inliers_mP[:, 1], marker = '*', color = 'tab:blue',    label='FLKOS $\sigma^2$')
+    plt.plot(pois_lambda_list,  meanShift[:, 0]/inliers_mP[:, 0], marker = '.', color = 'red',     label='MeanShift $\mu$')
+    plt.plot(pois_lambda_list,  meanShift[:, 1]/inliers_mP[:, 1], marker = '*', color = 'tab:red', label='MeanShift $\sigma^2$')
     plt.xlim([0, pois_lambda_list.max()])
     plt.ylim([0, pois_lambda_list.max()])
     plt.xlabel('Poisson density average')
@@ -1243,8 +1228,8 @@ def test_gradientPlot():
     std2 = 1 + 0*x
     
     gradPlot = RobustGaussianFittingLibrary.misc.plotGaussianGradient('x', 'y')
-    gradPlot.addPlot(x = x, mu = mu, std = std, gradient_color = 'green', label='lower')
-    gradPlot.addPlot(x = x, mu = mu2, std = std2, gradient_color = 'red', label='upper')
+    gradPlot.addPlot(x = x, mu = mu, std = std, gradient_color = (1, 0, 0), label='lower')
+    gradPlot.addPlot(x = x, mu = mu2, std = std2, gradient_color = (0, 1, 0), label='upper')
     gradPlot.show()
 
 def test_getTriangularVertices():
@@ -1297,9 +1282,28 @@ def test_multiprocessor():
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fit2Poisson()
+    print('This was robust fitting')
+    exit()
+    test_fitValue2Skewed()
+    test_removeIslands()
+    test_fitLineTensor_MultiProc()
+    test_bigTensor2SmallsInds()
+    test_PDF2Uniform()
+    test_RobustAlgebraicLineFittingPy()
+    visOrderStat()
+    test_SginleGaussianVec()
+    test_flatField()
+    test_fitValueTensor_MultiProc()
+    test_fitValueVSMeanShiftPy()
+    test_fitPlaneVSMeanShiftPy()
+    test_RobustAlgebraicPlaneFittingPy()
+    test_fitBackgroundTensor()
+    test_fitBackgroundTensor_multiproc()
+    test_fitBackground()
+    test_MSSE()
     test_fitValueSmallSample()
     test_multiprocessor()
-    test_textProgBar()
     test_gradientPlot()
     test_fitBackgroundRadiallyTensor_multiproc()
     test_fitBackgroundRadially()
@@ -1308,24 +1312,5 @@ if __name__ == '__main__':
     test_fitValue2Skewed_sweep_over_N()
     test_fitValue2SkewedSmallSample()
     test_fitValue_sweep()
-    test_fit2Poisson()
     test_medianOfFits()
-    test_fitValueVSMeanShiftPy()
-    test_fitPlaneVSMeanShiftPy()
-    test_RobustAlgebraicPlaneFittingPy()
-    test_fitBackgroundTensor()
-    test_fitBackgroundTensor_multiproc()
-    test_fitBackground()
-    test_MSSE()
-    test_SginleGaussianVec()
-    test_flatField()
-    test_fitValueTensor_MultiProc()
-    test_fitValue2Skewed()
-    test_removeIslands()
-    test_fitLineTensor_MultiProc()
-    test_bigTensor2SmallsInds()
-    test_PDF2Uniform()
-    test_RobustAlgebraicLineFittingPy()
-    visOrderStat()
-    print('This was robust fitting')
-    exit()
+    
