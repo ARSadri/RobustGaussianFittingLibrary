@@ -12,9 +12,9 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 """
 
 from setuptools import setup
-# from setuptools import Extension
+from setuptools import Extension
 
-_version = '0.2.0'
+_version = '0.2.1'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
@@ -63,8 +63,8 @@ setup(
     url='https://github.com/arsadri/RobustGaussianFittingLibrary',
     version=_version,
     zip_safe=False,
-    # ext_modules=[Extension(name = 'RGFLib', 
-    #                        sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
-    #                        language = 'c',
-    #                        extra_compile_args = ['-shared'])],
+    ext_modules=[Extension(name = 'RGFLib', 
+                           sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
+                           language = 'c',
+                           extra_compile_args = ['-shared'])],
 )
