@@ -1,11 +1,32 @@
 # Robust Gaussian Fitting Library
+A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Basically, many machine learning methods are based on and limited to cost functions that are differentiable with respect to their parameters. However, a class of machine learning methods supported by "order statistics" do not need derivatives to be known for initilization of the learning process. This library is based on such methods. Currently, this library supports only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. More novel methods are on their way.
+
+## Introduction
 <img src="images/use_of_lib_lineFitting_2.jpg" width="400">
-A Library for Robust Gaussian Fitting using geometric models in presence of outliers. Currently, this library support only two core algorithms, FLKOS for finding the average of Gaussian, and MSSE for finding the scales. The intention is to provide more methods and convenient solutions.
+Try it with 30% outliers:
+
+```
+from RobustGaussianFittingLibrary import fitValue
+import numpy as np
+
+inliers = 50 + 5*np.random.randn(70)
+outliers = 500*(np.random.rand(30)-0.5)
+inVec = np.hstack((inliers, outliers))
+np.random.shuffle(inVec)
+
+mP = fitValue(inVec)
+print('inliers.mean -> ' + str(inliers.mean()) + ', inliers.std -> ' + str(inliers.std()))
+print('robust.mean -> ' + str(mP[0]) + ', robust.std -> ' + str(mP[1]))
+```
+
+Are average and standard deviation good enough as statistics? Are they proper statistics to use for fitting lines and planes to data? What would happen to these statistics in presence of outliers? One solution seems to be Median, but what would happen if number of outliers increase?
+
+In this library, we have put together one of the state-of-the-art methods in robust statistics for curve fitting that is easy to understand and tune. If you are currently using mean and median, you can simply replace them with these methods.
 
 ## Prior knowledge: Rough estimate of structure size
 In this robust model fitting method, the main assumption is that, the Gaussian we are looking for, has the majority of data points. If it doesn't, this turns the problem into a clustering problem. If the structure does not have the majority of data and the outliers do not form a structure, this reduces the problem back to segmentation where the structure size is smaller than half of data. 
 
-If the structure size cannot be guessed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are the most efficient and yet accurate methods.
+If the structure size cannot be guessed, you can follow MCNC which uses covariance of data points to sample from structure density. However, if that seems hard to implement, you can just run the method with many structure sizes and fuse the models by taking Median of them. IMHO these are among the top most efficient and yet accurate methods.
 
 ## Usage from Python
 You can install this library via pip.
@@ -39,14 +60,25 @@ pip3 install RobustGaussianFittingLibrary
 ### Examples in Python ###
 Many test functions are availble in the tests.py script. in the script, look for the main function and choose one of them to run. 
 
-* Fitting a single value to a vector of data
 ```
-import RobustGaussianFittingLibrary 
-import numpy as np
-inliers = np.random.randn(30)
-outliers = np.array([10, 20, 1000])
-inVec = np.random.shuffle(np.hstack((inliers, outliers)))
-print(RobustGaussianFittingLibrary.fitValue(inVec))
+    test_fitBackgroundRadiallyTensor_multiproc()
+    test_fitValueTensor_MultiProc()
+    test_PDF2Uniform()
+    test_fitBackgroundTensor()
+    test_fitBackgroundTensor_multiproc()
+    test_RobustAlgebraicLineFittingPy()
+    test_fitBackground()
+    test_fitValue2Skewed()
+    test_for_textProgBar()
+    test_removeIslands()
+    test_fitValueSmallSample()
+    test_bigTensor2SmallsInds()
+    test_RobustAlgebraicPlaneFittingPy()
+    test_SginleGaussianVec()
+    test_flatField()
+    test_fitValue2Skewed_sweep_over_N()
+    test_fitBackgroundRadially()
+    test_fitLineTensor_MultiProc()
 ```
 
 ## Compilation into static and shared library
@@ -69,5 +101,5 @@ Currently, only the fitValue funciton is supported by a mex C code for MATLAB. H
 This library is an effort to implement a set of robsut statistical functions. However, part of the core of the RGFLib.c, (MSSE) was implemented as part of the package [RobustPeakFinder](https://github.com/MarjanHJ/RobustPeakFinder) for crystallography data analysis in 2017 under free license in LaTrobe University Australia. Afterwards, since robust Gaussian fitting can solve many problems, we put them all together into the current library in CFEL/DESY Hamburg. The RPF project now imports this library as it well serves the purpose of that project.
 
 ## Authors
-* Alireza Sadri <Alireza[Dot]Sadri[At]desy[Dot]de>
-* Marjan Hadian Jazi  <M[Dot]HadianJazi[At]latrobe[Dot]edu[Dot]au>
+* Alireza Sadri <Alireza[Dot]Sadri[At]Monash[Dot]edu>
+* Marjan Hadian Jazi <Hadian-Jazi.M[At]WEHI[Dot]edu[Dot]au>

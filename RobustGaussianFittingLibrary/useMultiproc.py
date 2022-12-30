@@ -55,14 +55,14 @@ def bigTensor2SmallsInds(inTensor_shape, numRowSegs, numClmSegs):
 
 def fitValueTensor_MultiProcFunc(aQ, 
                                 partCnt, inTensor, inWeights,
-                                topKthPerc, bottomKthPerc, 
+                                likelyRatio, certainRatio, 
                                 MSSE_LAMBDA, optIters,
                                 minimumResidual, downSampledSize):
     """ following:
     def fitValueTensor(inTensor,
                        inWeights = None,
-                       topKthPerc = 0.5,
-                       bottomKthPerc=0.35,
+                       likelyRatio = 0.5,
+                       certainRatio=0.35,
                        MSSE_LAMBDA = 3.0,
                        optIters = 12,
                        minimumResidual = 0.0,
@@ -70,8 +70,8 @@ def fitValueTensor_MultiProcFunc(aQ,
     """
     modelParams = fitValueTensor(inTensor=inTensor, 
                                  inWeights = inWeights,
-                                 topKthPerc=topKthPerc,
-                                 bottomKthPerc=bottomKthPerc,
+                                 likelyRatio=likelyRatio,
+                                 certainRatio=certainRatio,
                                  MSSE_LAMBDA = MSSE_LAMBDA,
                                  optIters = optIters,
                                  minimumResidual = minimumResidual,
@@ -82,8 +82,8 @@ def fitValueTensor_MultiProc(inTensor,
                              inWeights = None,
                              numRowSegs = 1,
                              numClmSegs = 1,
-                             topKthPerc = 0.5,
-                             bottomKthPerc = 0.4,
+                             likelyRatio = 0.5,
+                             certainRatio = 0.4,
                              MSSE_LAMBDA = 3.0,
                              showProgress = False,
                              optIters = 12,
@@ -97,19 +97,19 @@ def fitValueTensor_MultiProc(inTensor,
         numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
@@ -170,8 +170,8 @@ def fitValueTensor_MultiProc(inTensor,
                             np.squeeze(inWeights[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
-                            topKthPerc,
-                            bottomKthPerc,
+                            likelyRatio,
+                            certainRatio,
                             MSSE_LAMBDA, 
                             optIters,
                             minimumResidual, 
@@ -189,21 +189,21 @@ def fitValueTensor_MultiProc(inTensor,
 
 def fitLineTensor_MultiProcFunc(aQ, partCnt, 
                                 inX, inY,
-                                topKthPerc,
-                                bottomKthPerc,
+                                likelyRatio,
+                                certainRatio,
                                 MSSE_LAMBDA):
 
     modelParams = fitLineTensor(inX, inY,
-                                topKthPerc,
-                                bottomKthPerc,
+                                likelyRatio,
+                                certainRatio,
                                 MSSE_LAMBDA)
     aQ.put(list([partCnt, modelParams]))
 
 def fitLineTensor_MultiProc(inTensorX, inTensorY,
                               numRowSegs = 1,
                               numClmSegs = 1,
-                              topKthPerc = 0.5,
-                              bottomKthPerc = 0.4,
+                              likelyRatio = 0.5,
+                              certainRatio = 0.4,
                               MSSE_LAMBDA = 3.0,
                               showProgress = False):
     """"Does fitLineTensor in RGFLib.py using multiprocessing
@@ -214,15 +214,15 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
         numRowSegs, numClmSegs: if you have 80 processors, and the image is 512x128, then set them to 7, 11. This way, the patches are almost equal and the processes are spread among the cores. It has no mathematical value.
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.         
     Output
     ~~~~~~
@@ -270,8 +270,8 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
                             np.squeeze(inTensorY[                                            :,
                                                 rowClmInds[partCnt, 0]:rowClmInds[partCnt, 1],
                                                 rowClmInds[partCnt, 2]:rowClmInds[partCnt, 3] ]),
-                            topKthPerc,
-                            bottomKthPerc,
+                            likelyRatio,
+                            certainRatio,
                             MSSE_LAMBDA)).start()
             partCnt += 1
 
@@ -289,8 +289,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                             inMask_Tensor,
                             winX,
                             winY,
-                            topKthPerc,
-                            bottomKthPerc,
+                            likelyRatio,
+                            certainRatio,
                             MSSE_LAMBDA,
                             stretch2CornersOpt,
                             numModelParams,
@@ -301,8 +301,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
                                          inMask_Tensor,
                                          winX,
                                          winY,
-                                         topKthPerc,
-                                         bottomKthPerc,
+                                         likelyRatio,
+                                         certainRatio,
                                          MSSE_LAMBDA,
                                          stretch2CornersOpt,
                                          numModelParams,
@@ -313,8 +313,8 @@ def fitBackgroundTensor_multiprocFunc(aQ, imgCnt,
     
 def fitBackgroundTensor_multiproc(inDataSet, inMask = None, 
                                         winX = None, winY = None,
-                                        topKthPerc = 0.5,
-                                        bottomKthPerc = 0.3,
+                                        likelyRatio = 0.5,
+                                        certainRatio = 0.3,
                                         MSSE_LAMBDA = 3.0,
                                         stretch2CornersOpt = 0,
                                         numModelParams = 4,
@@ -332,20 +332,20 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                         mean of the Gaussian, data is considered inlier.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
         numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.     
         numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
@@ -408,8 +408,8 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
                             inMask[numSubmitted:numSubmitted+stride, :, :],
                             winX,
                             winY,
-                            topKthPerc,
-                            bottomKthPerc,
+                            likelyRatio,
+                            certainRatio,
                             MSSE_LAMBDA,
                             stretch2CornersOpt,
                             numModelParams,
@@ -433,8 +433,8 @@ def fitBackgroundRadiallyTensor_multiprocFunc(aQ,
                                               x_Cent,
                                               y_Cent,
                                               finiteSampleBias, 
-                                              topKthPerc,
-                                              bottomKthPerc,
+                                              likelyRatio,
+                                              certainRatio,
                                               MSSE_LAMBDA,
                                               optIters,
                                               minimumResidual,
@@ -450,8 +450,8 @@ def fitBackgroundRadiallyTensor_multiprocFunc(aQ,
                                     x_Cent = x_Cent,
                                     y_Cent = y_Cent,
                                     finiteSampleBias = finiteSampleBias,
-                                    topKthPerc = topKthPerc,
-                                    bottomKthPerc = bottomKthPerc,
+                                    likelyRatio = likelyRatio,
+                                    certainRatio = certainRatio,
                                     MSSE_LAMBDA = MSSE_LAMBDA,
                                     optIters = optIters,
                                     minimumResidual = minimumResidual,
@@ -473,8 +473,8 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                                           x_Cent = None,
                                           y_Cent = None,
                                           finiteSampleBias = 200,
-                                          topKthPerc = 0.5,
-                                          bottomKthPerc = 0.35,
+                                          likelyRatio = 0.5,
+                                          certainRatio = 0.35,
                                           MSSE_LAMBDA = 3.0,
                                           optIters = 12,                         
                                           showProgress = False,
@@ -507,22 +507,22 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
             default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
@@ -615,8 +615,8 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
                             x_Cent,
                             y_Cent,
                             finiteSampleBias,
-                            topKthPerc,
-                            bottomKthPerc,
+                            likelyRatio,
+                            certainRatio,
                             MSSE_LAMBDA,
                             optIters,
                             minimumResidual,

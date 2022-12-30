@@ -23,7 +23,7 @@ Currently we will write a mex for the following function(s):
 		void RobustSingleGaussianVec(float *vec, 
 					float *modelParams, float theta, 
 					unsigned int N,
-					float topKthPerc, float bottomKthPerc, 
+					float likelyRatio, float certainRatio, 
 					float MSSE_LAMBDA, unsigned char optIters)
 
 Written by Alireza Sadri, arsadri@gmail.com 
@@ -58,8 +58,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	double *inWeights;
 	double *initModel;
 	double *N;
-	double *topKthPerc;
-	double *bottomKthPerc;
+	double *likelyRatio;
+	double *certainRatio;
 	double *MSSE_LAMBDA;
 	double *optIters;
 	double *minimumResidual;
@@ -70,8 +70,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	inWeights	    = mxGetPr(prhs[1]);
 	initModel		= mxGetPr(prhs[2]);
 	N				= mxGetPr(prhs[3]);
-	topKthPerc		= mxGetPr(prhs[4]);
-	bottomKthPerc	= mxGetPr(prhs[5]);
+	likelyRatio		= mxGetPr(prhs[4]);
+	certainRatio	= mxGetPr(prhs[5]);
 	MSSE_LAMBDA		= mxGetPr(prhs[6]);
 	optIters		= mxGetPr(prhs[7]);
 	minimumResidual = mxGetPr(prhs[8]);
@@ -90,8 +90,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 		
 	_initModel = (float)(initModel[0]);
 	_N = (unsigned int)(N[0]);
-	_topKthPerc = (float)(topKthPerc[0]);
-	_bottomKthPerc = (float)(bottomKthPerc[0]);
+	_topKthPerc = (float)(likelyRatio[0]);
+	_bottomKthPerc = (float)(certainRatio[0]);
 	_MSSE_LAMBDA = (float)(MSSE_LAMBDA[0]);
 	_optIters = (unsigned char)(optIters[0]);
 	_minimumResidual = (float)(minimumResidual[0]);

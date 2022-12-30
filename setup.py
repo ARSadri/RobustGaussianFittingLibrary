@@ -14,7 +14,7 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 from setuptools import setup
 from setuptools import Extension
 
-_version = '0.2.1'
+_version = '0.2.2'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()

@@ -67,8 +67,8 @@ void fitValue(float* inVec,
 			  float* modelParams,
 			  float theta,
 			  unsigned int inN,
-              float topkPerc,
-			  float botkPerc,
+              float likelyRatio,
+			  float certainRatio,
               float MSSE_LAMBDA,
 			  unsigned char optIters,
               float minimumResidual,
@@ -93,8 +93,8 @@ void fitValue2Skewed(float* inVec,
 			         float* modelParams,
 			         float theta,
 			         unsigned int inN,
-					 float topkPerc,
-			         float botkPerc,
+					 float likelyRatio,
+			         float certainRatio,
                      float MSSE_LAMBDA,
 			         unsigned char optIters,
                      float minimumResidual,
@@ -117,7 +117,7 @@ RGFCLib.fitValue2Skewed.argtypes = [
 '''
 void medianOfFits(float *vec, float *weights, 
                   float *modelParams, float theta, unsigned int N,
-                  float topkMin, float topkMax, unsigned int numSamples, float samplePerc,
+                  float likelyRatio_min, float likelyRatio_max, unsigned int numSamples, float sampleRatio,
                   float MSSE_LAMBDA, unsigned char optIters, float minimumResidual) 
 '''
 RGFCLib.medianOfFits.argtypes = [
@@ -130,7 +130,7 @@ RGFCLib.medianOfFits.argtypes = [
 
 '''
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N,
-							  float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
+							  float likelyRatio, float certainRatio, float MSSE_LAMBDA)
 '''                
 RGFCLib.RobustAlgebraicLineFitting.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
@@ -143,7 +143,7 @@ RGFCLib.RobustAlgebraicLineFitting.argtypes = [
 void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY, 
                                         float *modelParamsMap, unsigned int N,
                                         unsigned int X, unsigned int Y, 
-                            float topKthPerc, float bottomKthPerc, float MSSE_LAMBDA)
+                            float likelyRatio, float certainRatio, float MSSE_LAMBDA)
 '''
 RGFCLib.RobustAlgebraicLineFittingTensor.argtypes = [
                 np.ctypeslib.ndpointer(ctypes.c_float, flags='C_CONTIGUOUS'),
@@ -155,7 +155,7 @@ RGFCLib.RobustAlgebraicLineFittingTensor.argtypes = [
 '''
 void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
 					unsigned int N, unsigned int X, unsigned int Y,
-					float topkPerc, float botkPerc, float MSSE_LAMBDA,
+					float likelyRatio, float certainRatio, float MSSE_LAMBDA,
 					unsigned char optIters, float minimumResidual,
 					unsigned int downSampledSize);
 '''
@@ -169,7 +169,7 @@ RGFCLib.fitValueTensor.argtypes = [
 
 '''
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, float* mP, float* mP_Init,
-							unsigned int N, float topkPerc, float botkPerc,
+							unsigned int N, float likelyRatio, float certainRatio,
 							float MSSE_LAMBDA, unsigned char stretch2CornersOpt, 
 							float minimumResidual, unsigned char optIters)
 '''
@@ -186,7 +186,7 @@ RGFCLib.RobustAlgebraicPlaneFitting.argtypes = [
 void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
 				unsigned int winX, unsigned int winY,
 				unsigned int X, unsigned int Y,
-				float topkPerc, float botkPerc,
+				float likelyRatio, float certainRatio,
 				float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 				unsigned char numModelParams, unsigned char optIters,
                 float minimumResidual)
@@ -206,7 +206,7 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor, unsigned char* inMask_Tenso
 						float *model_mean, float *model_std,
 						unsigned int winX, unsigned int winY,
 						unsigned int N, unsigned int X, unsigned int Y,
-						float topkPerc, float botkPerc,
+						float likelyRatio, float certainRatio,
 						float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
 						unsigned char numModelParams, unsigned char optIters,
                         float minimumResidual)
@@ -234,7 +234,7 @@ void fitBackgroundRadially(float* inImage, unsigned char* inMask,
                            unsigned char includeCenter,
                            unsigned int finiteSampleBias,
                            unsigned int X, unsigned int Y,
-                           float topkPerc, float botkPerc,
+                           float likelyRatio, float certainRatio,
                            float MSSE_LAMBDA,
                            unsigned char optIters,
                            float minimumResidual);
@@ -265,8 +265,8 @@ void fitBackgroundCylindrically(float* inTensor,
 								unsigned int N,
                                 unsigned int X,
 								unsigned int Y,
-                                float topkPerc,
-								float botkPerc,
+                                float likelyRatio,
+								float certainRatio,
                                 float MSSE_LAMBDA,
                                 unsigned char optIters,
 						        float minimumResidual)

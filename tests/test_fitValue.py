@@ -39,14 +39,14 @@ def test_fitValue():
     label[np.fabs(testData) <= 3*inSigma] = 0
     mP_R = rgflib.fitValue(testData, 
                          fit2Skewed = True,
-                         topKthPerc = 0.5, 
-                         bottomKthPerc=0.35, 
+                         likelyRatio = 0.5, 
+                         certainRatio=0.35, 
                          MSSE_LAMBDA=3.0)
     print(mP_R)
     mP_nR = rgflib.fitValue(testData, 
                          fit2Skewed = False,
-                         topKthPerc = 1, 
-                         bottomKthPerc=0, 
+                         likelyRatio = 1, 
+                         certainRatio=0, 
                          MSSE_LAMBDA=3.0)
     print(mP_nR)
 
@@ -125,10 +125,10 @@ def test_fitValue():
     
     plt.xlim(_xlimMin, _xlimMax)
     plt.grid(axis='y', alpha=0.75)
-    plt.xlabel('Model parameter',fontsize=15)
-    plt.ylabel('Histogram',fontsize=15)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    plt.xlabel('Model parameter')
+    plt.ylabel('Histogram')
+    plt.xticks()
+    plt.yticks()
     plt.grid()
     plt.legend(loc='upper right')
     plt.show()

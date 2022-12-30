@@ -13,21 +13,23 @@ Input arguments
     MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-    topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
-                    if you are not sure at all, you have a problem of estimating structure size
-                    That can be solved by the MCNC method which develops covariance of data. 
-                    One simpler solution (that maybe slower and less accurate) is to try many and 
+    likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1,
+                    e.g. 0.5. Choose the likelyRatio to be as high as you are 
+                    sure the ratio of data is inlier.
+                    if you are not sure at all, you have a problem of estimating
+                    structure size that can be solved by the MCNC method which
+                    develops covariance of data. One simpler solution (that 
+                    maybe slower and less accurate) is to try many and 
                     ensemble the models by their median.
                 default : 0.5
-    bottomKthPerc : set it to 0.9*topKthPerc, 
+    certainRatio : set it to 0.9*likelyRatio, 
                     if N is number of data points, then make sure that
-                    (topKthPerc - bottomKthPerc)*N>p+4 [RuwanAliTPAMI16], where p is 
-                    number of parameters of the model, 
+                    (likelyRatio - certainRatio)*N>p+4 [RuwanAliTPAMI16], 
+                    where p is the number of parameters of the model, 
                     p_valuefitting = 1
                     p_linefitting = 2
                     p_planefitting = 3
-                    it is best if bottomKthPerc*N>12 then MSSE makes sense
+                    it is best if certainRatio*N>12 then MSSE makes sense
                     otherwise the code returns non-robust results.
 Output
 ~~~~~~
@@ -46,8 +48,9 @@ def MSSE(inVec, MSSE_LAMBDA = 3.0, k = 12, minimumResidual = 0):
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
         k : minimum number of inliers, 12 is the least.
-        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
-                          default : 0
+        minimumResidual : 
+            minimum fitting error to initialize MSSE (dtype = 'float32')
+            default : 0
         
         Output
         ~~~~~~
@@ -71,8 +74,9 @@ def MSSEWeighted(inVec, inWeights = None,
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
         k : minimum number of inliers, 12 is the least.
-        minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
-                          default : 0
+        minimumResidual : 
+            minimum fitting error to initialize MSSE (dtype = 'float32')
+            default : 0
         
         Output
         ~~~~~~
@@ -91,8 +95,8 @@ def MSSEWeighted(inVec, inWeights = None,
 ################################### Robust AVG and STD ####################################
                                        
 def fitValue(inVec, inWeights = None,
-             topKthPerc = 0.5,
-             bottomKthPerc = 0.35,
+             likelyRatio = 0.5,
+             certainRatio = 0.35,
              MSSE_LAMBDA = 3.0,
              modelValueInit = 0,
              optIters = 12,
@@ -100,10 +104,12 @@ def fitValue(inVec, inWeights = None,
              downSampledSize = np.iinfo("uint32").max,
              fit2Skewed = True):
     """Fit a Gaussian to input vector robustly:
-    The function returns the parameters of a single gaussian structure through FLKOS [DICTA'08]
-    The default values are suggested in MCNC [CVIU '18]
-    if used to remove a large structure, a few points can be left behind as in [cybernetics '19]
-    **Note**: This function will only help if you do not have a clustering problem.
+    The function returns the parameters of a single gaussian structure through
+        FLKOS [DICTA'08] The default values are suggested in MCNC [CVIU '18]
+        if used to remove a large structure, a few points can be left behind 
+        as in [cybernetics '19]
+    **Note**: This function will only help if you do not 
+        have a clustering problem.
     Input arguments
     ~~~~~~~~~~~~~~~
         inVec (numpy.1darray): a float32 input vector
@@ -113,19 +119,19 @@ def fitValue(inVec, inWeights = None,
                         default: 3.0
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 8
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
                           default : 0
@@ -156,8 +162,8 @@ def fitValue(inVec, inWeights = None,
                                 modelParams, 
                                 modelValueInit,
                                 inVec.shape[0],
-                                topKthPerc,
-                                bottomKthPerc,
+                                likelyRatio,
+                                certainRatio,
                                 MSSE_LAMBDA,
                                 optIters,
                                 minimumResidual,
@@ -168,8 +174,8 @@ def fitValue(inVec, inWeights = None,
                          modelParams, 
                          modelValueInit,
                          inVec.shape[0],
-                         topKthPerc,
-                         bottomKthPerc,
+                         likelyRatio,
+                         certainRatio,
                          MSSE_LAMBDA,
                          optIters,
                          minimumResidual,
@@ -178,10 +184,10 @@ def fitValue(inVec, inWeights = None,
 
 def medianOfFits(inVec, 
                  inWeights = None,
-                 topkMax = 0.5,
-                 topkMin = 0.35,
+                 likelyRatio_min = 0.35,
+                 likelyRatio_max = 0.5,
+                 sampleRatio = 0.1,
                  numSamples = 50,
-                 samplePerc = 0.1,
                  MSSE_LAMBDA = 3.0,
                  modelValueInit = 0,
                  optIters = 12,
@@ -197,19 +203,19 @@ def medianOfFits(inVec,
                         default: 3.0
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
                           default : 0
@@ -225,10 +231,10 @@ def medianOfFits(inVec,
                          modelParams, 
                          modelValueInit,
                          inVec.shape[0],
-                         topkMin,
-                         topkMax,
+                         likelyRatio_min,
+                         likelyRatio_max,
                          numSamples,
-                         samplePerc,
+                         sampleRatio,
                          MSSE_LAMBDA,
                          optIters,
                          minimumResidual)
@@ -236,8 +242,8 @@ def medianOfFits(inVec,
 
 def fitValueTensor(inTensor,
                    inWeights = None,
-                   topKthPerc = 0.5,
-                   bottomKthPerc=0.35,
+                   likelyRatio = 0.5,
+                   certainRatio = 0.35,
                    MSSE_LAMBDA = 3.0,
                    optIters = 12,
                    minimumResidual = 0.0,
@@ -252,19 +258,19 @@ def fitValueTensor(inTensor,
                         default: 3.0
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.       
         minimumResidual : minimum fitting error to initialize MSSE (dtype = 'float32')
                           default : 0
@@ -290,8 +296,8 @@ def fitValueTensor(inTensor,
                            inTensor.shape[0],
                            inTensor.shape[1],
                            inTensor.shape[2],
-                           topKthPerc,
-                           bottomKthPerc,
+                           likelyRatio,
+                           certainRatio,
                            MSSE_LAMBDA,
                            optIters,
                            minimumResidual,
@@ -302,8 +308,8 @@ def fitValueTensor(inTensor,
 ################################### Line fitting library #################################
     
 def fitLine(inX, inY,
-            topKthPerc = 0.5,
-            bottomKthPerc=0.45,
+            likelyRatio = 0.5,
+            certainRatio=0.45,
             MSSE_LAMBDA = 3.0):
     """ fit a line assuming a Gaussian noise to data points with x and y.
     The line is supposed to be y = ax + Normal(Rmean, RSTD^2)
@@ -314,15 +320,15 @@ def fitLine(inX, inY,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.8*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.        
     Output
     ~~~~~~
@@ -334,15 +340,15 @@ def fitLine(inX, inY,
                                        (inY.copy()).astype('float32'),
                                        modelParams, 
                                        inX.shape[0],
-                                       topKthPerc,
-                                       bottomKthPerc,
+                                       likelyRatio,
+                                       certainRatio,
                                        MSSE_LAMBDA)
     
     return (modelParams)
 
 def fitLineTensor(inX, inY,
-                  topKthPerc = 0.5,
-                  bottomKthPerc = 0.35,
+                  likelyRatio = 0.5,
+                  certainRatio = 0.35,
                   MSSE_LAMBDA = 3.0):
     """fit a line to every pixel in a Tensor
     Input arguments
@@ -352,15 +358,15 @@ def fitLineTensor(inX, inY,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.        
     Output
     ~~~~~~
@@ -375,8 +381,8 @@ def fitLineTensor(inX, inY,
                                                         inX.shape[0],
                                                         inX.shape[1],
                                                         inX.shape[2],
-                                                        topKthPerc,
-                                                        bottomKthPerc,
+                                                        likelyRatio,
+                                                        certainRatio,
                                                         MSSE_LAMBDA)
     return (modelParams)
 
@@ -384,8 +390,8 @@ def fitLineTensor(inX, inY,
 ############################### background estimation library ############################
     
 def fitPlane(inX, inY, inZ,
-             topKthPerc = 0.5,
-             bottomKthPerc = 0.35,
+             likelyRatio = 0.5,
+             certainRatio = 0.35,
              MSSE_LAMBDA = 3.0,
              stretch2CornersOpt = 0,
              modelParamsInitial = None,
@@ -401,15 +407,15 @@ def fitPlane(inX, inY, inZ,
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.        
     Output
     ~~~~~~
@@ -425,8 +431,8 @@ def fitPlane(inX, inY, inZ,
                                             modelParams, 
                                             modelParamsInitial, 
                                             inZ.shape[0],
-                                            topKthPerc,
-                                            bottomKthPerc,
+                                            likelyRatio,
+                                            certainRatio,
                                             MSSE_LAMBDA, 
                                             stretch2CornersOpt,
                                             minimumResidual,
@@ -437,8 +443,8 @@ def fitBackground(inImage,
                   inMask = None,
                   winX = None,
                   winY = None,
-                  topKthPerc = 0.5,
-                  bottomKthPerc = 0.35,
+                  likelyRatio = 0.5,
+                  certainRatio = 0.35,
                   MSSE_LAMBDA = 3.0,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,
@@ -460,22 +466,22 @@ def fitBackground(inImage,
         numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
@@ -508,8 +514,8 @@ def fitBackground(inImage,
                      winY,
                      inImage.shape[0],
                      inImage.shape[1],
-                     topKthPerc,
-                     bottomKthPerc,
+                     likelyRatio,
+                     certainRatio,
                      MSSE_LAMBDA,
                      stretch2CornersOpt,
                      numModelParams,
@@ -532,8 +538,8 @@ def fitBackground(inImage,
                                  winY,
                                  _inImage.shape[0],
                                  _inImage.shape[1],
-                                 topKthPerc,
-                                 bottomKthPerc,
+                                 likelyRatio,
+                                 certainRatio,
                                  MSSE_LAMBDA,
                                  stretch2CornersOpt,
                                  numModelParams,
@@ -547,8 +553,8 @@ def fitBackgroundTensor(inImage_Tensor,
                         inMask_Tensor = None,
                         winX = None,
                         winY = None,
-                        topKthPerc = 0.5,
-                        bottomKthPerc = 0.3,
+                        likelyRatio = 0.5,
+                        certainRatio = 0.3,
                         MSSE_LAMBDA = 3.0,
                         stretch2CornersOpt = 0,
                         numModelParams = 4,
@@ -567,19 +573,19 @@ def fitBackgroundTensor(inImage_Tensor,
         numModelParams: takes either 1, which gives a horizontal plane or 4 which gives an algebraic plane.
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         numStrides: Convolve the filter this number of times. For example, if the image is 32 by 32
                     and winX and Y are 16 and numStrides is 1, from 0 to 15 and 15 to 31,
@@ -614,8 +620,8 @@ def fitBackgroundTensor(inImage_Tensor,
                                     inImage_Tensor.shape[0],
                                     inImage_Tensor.shape[1],
                                     inImage_Tensor.shape[2],
-                                    topKthPerc,
-                                    bottomKthPerc,
+                                    likelyRatio,
+                                    certainRatio,
                                     MSSE_LAMBDA,
                                     stretch2CornersOpt,
                                     numModelParams,
@@ -644,8 +650,8 @@ def fitBackgroundTensor(inImage_Tensor,
                                                  _inImage_Tensor.shape[0],
                                                  _inImage_Tensor.shape[1],
                                                  _inImage_Tensor.shape[2],
-                                                 topKthPerc,
-                                                 bottomKthPerc,
+                                                 likelyRatio,
+                                                 certainRatio,
                                                  MSSE_LAMBDA,
                                                  stretch2CornersOpt,
                                                  numModelParams,
@@ -662,8 +668,8 @@ def fitBackgroundRadially(inImage,
                           includeCenter = 0,
                           maxRes = None,
                           shellWidth = 2,
-                          topKthPerc = 0.5,
-                          bottomKthPerc = 0.35,
+                          likelyRatio = 0.5,
+                          certainRatio = 0.35,
                           MSSE_LAMBDA = 3.0,
                           optIters = 12,
                           stride = 1,
@@ -689,22 +695,22 @@ def fitBackgroundRadially(inImage,
             default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         stride: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
@@ -761,8 +767,8 @@ def fitBackgroundRadially(inImage,
                                   finiteSampleBias,
                                   inImage.shape[0],
                                   inImage.shape[1],
-                                  topKthPerc,
-                                  bottomKthPerc,
+                                  likelyRatio,
+                                  certainRatio,
                                   MSSE_LAMBDA,
                                   optIters,
                                   minimumResidual)
@@ -778,8 +784,8 @@ def fitBackgroundCylindrically(inTensor,
                                includeCenter = 0,
                                maxRes = None,
                                shellWidth = 2,
-                               topKthPerc = 0.5,
-                               bottomKthPerc = 0.35,
+                               likelyRatio = 0.5,
+                               certainRatio = 0.35,
                                MSSE_LAMBDA = 3.0,
                                optIters = 12,
                                numStrides = 0,
@@ -805,22 +811,22 @@ def fitBackgroundCylindrically(inTensor,
             default : twice monte carlo finite sample bias 2x200
         optIters: number of iterations of FLKOS for this fitting
             value 0: returns total mean and total STD
-            value 1: returns topKthPerc percentile and the scale by MSSE.
+            value 1: returns likelyRatio percentile and the scale by MSSE.
             value 8 and above is recommended for optimization according 
                     to Newton method
             default : 12
         MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
                         default: 3.0
-        topKthPerc: A rough but certain guess of portion of inliers, between 0 and 1, e.g. 0.5. 
-                    Choose the topKthPerc to be as high as you are sure the portion of data is inlier.
+        likelyRatio: A rough but certain guess of ratio of inliers, between 0 and 1, e.g. 0.5. 
+                    Choose the likelyRatio to be as high as you are sure the ratio of data is inlier.
                     if you are not sure at all, refer to the note above this code.
                     default : 0.5
-        bottomKthPerc: We'd like to make a sample out of worst inliers from data points that are
-                       between bottomKthPerc and topKthPerc of sorted residuals.
-                       set it to 0.9*topKthPerc, if N is number of data points, then make sure that
-                       (topKthPerc - bottomKthPerc)*N>4, 
-                       it is best if bottomKthPerc*N>12 then MSSE makes sense
+        certainRatio: We'd like to make a sample out of worst inliers from data points that are
+                       between certainRatio and likelyRatio of sorted residuals.
+                       set it to 0.9*likelyRatio, if N is number of data points, then make sure that
+                       (likelyRatio - certainRatio)*N>4, 
+                       it is best if certainRatio*N>12 then MSSE makes sense
                        otherwise the code may return non-robust results.
         numStrides: by giving a shellWidth>1, one can desire convolving the shell over radius by
             number of strides.
@@ -866,8 +872,8 @@ def fitBackgroundCylindrically(inTensor,
                                            n_F,
                                            n_R,
                                            n_C,
-                                           topKthPerc,
-                                           bottomKthPerc,
+                                           likelyRatio,
+                                           certainRatio,
                                            MSSE_LAMBDA,
                                            optIters,
                                            minimumResidual)

@@ -176,10 +176,10 @@ def naiveHistTwoColors(inVec, mP, SNR_ACCEPT=3.0, figsize = (4,4)):
     
     plt.xlim(_xlimMin, _xlimMax)
     plt.grid(axis='y', alpha=0.75)
-    plt.xlabel('Fitting error of line to points',fontsize=15)
-    plt.ylabel('Histogram',fontsize=15)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    plt.xlabel('Fitting error of line to points')
+    plt.ylabel('Histogram')
+    plt.xticks()
+    plt.yticks()
     plt.show()
 
 def robust_hist(inVec, mP = None, SNR_ACCEPT=3.0):

@@ -13,8 +13,8 @@ Rmode_rec=zeros(1,numTests);
 for test = 1: numTests
 	N = 60;
 	inlierPerc = 0.75;
-	topKthPerc = 0.5;
-	bottomKthPerc = 0.4;
+	likelyRatio = 0.5;
+	certainRatio = 0.4;
 	MSSE_LAMBDA = 3.0;	%std away from mean is still a guassians.
 	optIters = 12;
 	minimumResidual = 0;
@@ -35,7 +35,7 @@ for test = 1: numTests
 	N = numel(inVec);
 
 	Rmode = RGFLib_mex_fitValue2Skewed(inVec, inWeights, initModel, N, ...
-									   topKthPerc, bottomKthPerc, ...
+									   likelyRatio, certainRatio, ...
 									   MSSE_LAMBDA, optIters, ...
 									   minimumResidual, downSampledSize);
 	Rmode_rec(test) = Rmode;
