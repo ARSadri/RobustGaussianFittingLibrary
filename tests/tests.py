@@ -95,7 +95,7 @@ def gkern(kernlen):
 def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):    
     inData = np.zeros((XSZ, YSZ), dtype='float32')
     
-    inMask = np.ones(inData.shape, dtype = 'uint8')
+    inMask = np.ones(inData.shape, dtype = 'int8')
     inMask[::64, ::64] = 0
     
     for ccnt in range(inData.shape[1]):
@@ -122,7 +122,7 @@ def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):
 def test_removeIslands():
     print('test_removeIslands')
     #an island cannot be bigger than the stack size of your OS
-    inMask = np.ones((20, 21), dtype='uint8')
+    inMask = np.ones((20, 21), dtype='int8')
     
     inMask[0,1] = 0
     inMask[1,1] = 0
@@ -647,7 +647,7 @@ def test_RobustAlgebraicLineFittingPy():
     X = np.concatenate((inX, outX))
     Y = np.concatenate((inY, outY))
     
-    label = np.ones(X.shape[0], dtype='uint8')
+    label = np.ones(X.shape[0], dtype='int8')
     _errors = Y - (0.5*X + 10)
     label[np.fabs(_errors) >= 3*inSigma] = 0
     
@@ -925,24 +925,32 @@ def test_SginleGaussianVec():
     
 def test_fitValue2Skewed():
     print('test_fitValue2Skewed')
-    RNN0 = 50 + 5*np.random.randn(50)
-    RNN1 = 200*(np.random.rand(50)-0.5)
+    n_inliers = 51
+    n_outliers = 49
+    RNN0 = 50 + 5*np.random.randn(n_inliers)
+    RNN1 = 200*(np.random.rand(n_outliers)-0.5)
     testData = np.concatenate((RNN0, RNN1)).flatten()
     np.random.shuffle(testData)
     print('testing fitValue2Skewed')
     mP = rgflib.fitValue(testData, 
-                                               fit2Skewed = True,
-                                               likelyRatio = 0.43, 
-                                               certainRatio=0.37, 
-                                               MSSE_LAMBDA=3.0)
+                         fit2Skewed = True,
+                         likelyRatio = 0.43, 
+                         certainRatio=0.37, 
+                         MSSE_LAMBDA=3.0)
+    mP_true = np.array([RNN0.mean(), RNN0.std()])
+    print(f'mP_true:{mP_true}')
+    print(f'     mP:{mP}')
     rgflib.misc.naiveHist(testData, mP)
     plt.plot(testData,'.'), plt.show()
     plt.plot(testData,'.'), 
-    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]-3*mP[1], mP[0]-3*mP[1]]))
-    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0], mP[0]]))
-    plt.plot(np.array([0, testData.shape[0]]), np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
+    plt.plot(np.array([0, testData.shape[0]]), 
+             np.array([mP[0]-3*mP[1], mP[0]-3*mP[1]]))
+    plt.plot(np.array([0, testData.shape[0]]), 
+             np.array([mP[0], mP[0]]))
+    plt.plot(np.array([0, testData.shape[0]]), 
+             np.array([mP[0]+3*mP[1], mP[0]+3*mP[1]]))
     plt.show()
-    rgflib.misc.robust_hist(testData, mP)    
+    rgflib.misc.robust_hist(testData, mP)
     
 def test_fitValue2Skewed_sweep_over_N():
     print('test_fitValue2Skewed_sweep_over_N')
@@ -1287,6 +1295,7 @@ def test_multiprocessor():
 
 if __name__ == '__main__':
     print('PID ->' + str(os.getpid()))
+    test_fitValue2Skewed()
     test_fitBackgroundTensor()
     test_fitBackgroundTensor_multiproc()
     test_fitBackground()

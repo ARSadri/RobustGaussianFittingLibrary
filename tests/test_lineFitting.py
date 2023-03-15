@@ -69,7 +69,7 @@ def test_RobustAlgebraicLineFitting():
     X = np.concatenate((inX, outX))
     Y = np.concatenate((inY, outY))
     
-    label = np.ones(X.shape[0], dtype='uint8')
+    label = np.ones(X.shape[0], dtype='int8')
     _errors = Y - (slope*X + intercept)
     label[np.fabs(_errors) <= 3*inSigma] = 0
     label[-n_out:] = 1

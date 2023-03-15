@@ -16,9 +16,13 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 #include "RGFLib.h"
 #include <stdio.h>
 
-void dfs(unsigned char* inMask, unsigned int* mask, 
-         int x,  int y, unsigned int X, unsigned int Y,
-         unsigned int label, unsigned int* islandSize, 
+#ifndef M_PI
+#define M_PI 3.14159265359
+#endif
+
+void dfs(char* inMask, int* mask,
+         int x,  int y, int X, int Y,
+         int label, int* islandSize,
          int* rowsToMask, int* clmsToMask){
                 
     int nx, ny, i;
@@ -42,18 +46,18 @@ void dfs(unsigned char* inMask, unsigned int* mask,
     }
 }
 
-void islandRemoval(unsigned char* inMask, unsigned char* labelMap, 
-                   unsigned int X, unsigned int Y,
-                   unsigned int islandSizeThreshold) {
-    unsigned int label = 1;
+void islandRemoval(char* inMask, char* labelMap,
+                   int X, int Y,
+                   int islandSizeThreshold) {
+    int label = 1;
     int i, j, cnt;
-    unsigned int islandSize[1];
+    int islandSize[1];
     
     int* rowsToMask;
     int* clmsToMask;
-    unsigned int* mask;
+    int* mask;
     
-    mask = (unsigned int*) malloc(X*Y * sizeof(unsigned int));
+    mask = (int*) malloc(X*Y * sizeof(int));
     rowsToMask = (int*) malloc(X*Y * sizeof(int));
     clmsToMask = (int*) malloc(X*Y * sizeof(int));
     
@@ -84,8 +88,8 @@ void islandRemoval(unsigned char* inMask, unsigned char* labelMap,
 }
 
 void indexCheck(float* inTensor, float* targetLoc,
-                unsigned int X, unsigned int Y, float Z) {
-    unsigned int rCnt, cCnt;
+                int X, int Y, float Z) {
+    int rCnt, cCnt;
     for(rCnt = 0; rCnt < X; rCnt++)
         for(cCnt = 0; cCnt < Y; cCnt++)
             if(inTensor[cCnt + rCnt*Y]==Z) {
@@ -96,7 +100,7 @@ void indexCheck(float* inTensor, float* targetLoc,
 
 struct sortStruct {
     float vecData;
-    unsigned int indxs;
+    int indxs;
 };
 
 int _partition( struct sortStruct dataVec[], int l, int r) {
@@ -196,10 +200,10 @@ void MQSort(struct sortStruct dataVec[], int l, int r) {
     }
 }
 
-float MSSE(float* error, unsigned int vecLen, float MSSE_LAMBDA, 
-           unsigned int k, float minimumResidual) {
+float MSSE(float* error, int vecLen, float MSSE_LAMBDA,
+           int k, float minimumResidual) {
     
-    unsigned int i;
+    int i;
     float estScale, cumulative_sum, cumulative_sum_perv;
     struct sortStruct* sortedSqError;
 
@@ -239,9 +243,9 @@ float MSSE(float* error, unsigned int vecLen, float MSSE_LAMBDA,
     return estScale;
 }
 
-float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
-                   float MSSE_LAMBDA, unsigned int k, float minimumResidual) {
-    unsigned int i, q;
+float MSSEWeighted(float* error, float* weights, int vecLen,
+                   float MSSE_LAMBDA, int k, float minimumResidual) {
+    int i, q;
     float estScale, cumulative_sum, tmp;
     struct sortStruct* sortedSqWErrors;
 
@@ -287,22 +291,22 @@ void fitValue(float* inVec,
 			  float* inWeights,
 			  float* modelParams,
 			  float theta,
-			  unsigned int inN,
+			  int inN,
               float likelyRatio,
 			  float certainRatio,
               float MSSE_LAMBDA,
-			  unsigned char optIters,
+			  char optIters,
               float minimumResidual,
-			  unsigned int downSampledSize) {
+			  int downSampledSize) {
 
     float wAVG, estScale, dsCnt;
-    unsigned int i, iter, ds_N;
+    int i, iter, ds_N;
 
     float *vec;
     vec = (float*) malloc(inN * sizeof(float));
     float *weights;
     weights = (float*) malloc(inN * sizeof(float));
-    unsigned int N = 0;
+    int N = 0;
     for (i = 0; i < inN; i++) {
     	if(inWeights[i]>0){
 			vec[N] = inVec[i];
@@ -349,7 +353,7 @@ void fitValue(float* inVec,
                 errorVec[ds_N].indxs = i;
                 ds_N++;
                 dsCnt += (float)N/(float)downSampledSize;
-                i = (unsigned int) dsCnt;
+                i = (int) dsCnt;
             }
             quickSort(errorVec,0,ds_N-1);
 
@@ -452,23 +456,23 @@ void fitValue2Skewed(float* inVec,
 			         float* inWeights,
 			         float* modelParams,
 			         float theta,
-			         unsigned int inN,
+			         int inN,
 					 float likelyRatio,
 			         float certainRatio,
                      float MSSE_LAMBDA,
-			         unsigned char optIters,
+			         char optIters,
                      float minimumResidual,
-			         unsigned int downSampledSize) {
+			         int downSampledSize) {
 
     float wAVG, estScale, dsCnt;
-    unsigned int i, iter, ds_N;
+    int i, iter, ds_N;
     float sampleRatio = likelyRatio - certainRatio;
-    unsigned int step;
+    int step;
     float *vec;
     vec = (float*) malloc(inN * sizeof(float));
     float *weights;
     weights = (float*) malloc(inN * sizeof(float));
-    unsigned int N = 0;
+    int N = 0;
     for (i = 0; i < inN; i++) {
     	if(inWeights[i]>0){
 			vec[N] = inVec[i];
@@ -517,7 +521,7 @@ void fitValue2Skewed(float* inVec,
                 errorVec[ds_N].indxs = i;
                 ds_N++;
                 dsCnt += (float)N/(float)downSampledSize;
-                i = (unsigned int) dsCnt;
+                i = (int) dsCnt;
             }
             quickSort(errorVec,0,ds_N-1);
 
@@ -527,7 +531,7 @@ void fitValue2Skewed(float* inVec,
             	certainRatio -= botkPerc_step;
             if(certainRatio<0)
             	certainRatio = 0;
-            step = (unsigned int)((likelyRatio - certainRatio) / sampleRatio);
+            step = (int)((likelyRatio - certainRatio) / sampleRatio);
             for(i=(int)(ds_N*certainRatio); i<(int)(ds_N*likelyRatio); i+=step) {
                 theta += vec[errorVec[i].indxs];
                 wAVG += weights[errorVec[i].indxs];
@@ -620,16 +624,16 @@ void fitValue2Skewed(float* inVec,
 }
 
 void medianOfFits(float *vec, float *weights, 
-                  float *modelParams, float theta, unsigned int N,
+                  float *modelParams, float theta, int N,
                   float likelyRatio_min, float likelyRatio_max,
-				  unsigned int numSamples, float sampleRatio,
-                  float MSSE_LAMBDA, unsigned char optIters,
+				  int numSamples, float sampleRatio,
+                  float MSSE_LAMBDA, char optIters,
 				  float minimumResidual,
-				  unsigned int downSampledSize) {
+				  int downSampledSize) {
     float* rSTSDs;
     float mP[2];
     float likelyRatio;
-    unsigned int i, medArg;
+    int i, medArg;
 
     if (numSamples<1)
         numSamples = 1;
@@ -670,8 +674,8 @@ void medianOfFits(float *vec, float *weights,
     free(rSTSDs);
 }
 
-void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
-    unsigned int i;
+void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, int N) {
+    int i;
     float xsum,x2sum,ysum,xysum, D; 
     xsum=0;
     x2sum=0;
@@ -695,8 +699,8 @@ void TLS_AlgebraicLineFitting(float* x, float* y, float* mP, unsigned int N) {
 }
 
 void lineAlgebraicModelEval(float* x, float* y_fit,
-		float* mP, unsigned int N) {
-    unsigned int i;
+		float* mP, int N) {
+    int i;
     for (i=0;i<N;i++)
         y_fit[i]=mP[0]*x[i]+mP[1];
 }
@@ -704,20 +708,20 @@ void lineAlgebraicModelEval(float* x, float* y_fit,
 void RobustAlgebraicLineFitting(float* x,
 								float* y,
 								float* mP,
-                                unsigned int N,
+                                int N,
 								float likelyRatio,
 								float certainRatio,
 								float MSSE_LAMBDA) {
     float model[2];
-    unsigned int i, iter, cnt;
-    unsigned int sampleSize;
+    int i, iter, cnt;
+    int sampleSize;
     float *residual;
     float* sample_x;
     float* sample_y;
     struct sortStruct* errorVec;
     errorVec = (struct sortStruct*) malloc(N * sizeof(struct sortStruct));
 
-    sampleSize = (unsigned int)(N*likelyRatio)- (unsigned int)(N*certainRatio);
+    sampleSize = (int)(N*likelyRatio)- (int)(N*certainRatio);
 
     sample_x = (float*) malloc(sampleSize * sizeof(float));
     sample_y = (float*) malloc(sampleSize * sizeof(float));
@@ -757,8 +761,8 @@ void RobustAlgebraicLineFitting(float* x,
 }
 
 void RobustAlgebraicLineFittingTensor(float* inTensorX, float* inTensorY,
-                                      float* modelParamsMap, unsigned int N,
-                                      unsigned int X, unsigned int Y, 
+                                      float* modelParamsMap, int N,
+                                      int X, int Y,
                                       float likelyRatio, float certainRatio,
                                       float MSSE_LAMBDA) {
 
@@ -768,7 +772,7 @@ void RobustAlgebraicLineFittingTensor(float* inTensorX, float* inTensorY,
     yVals = (float*) malloc(N * sizeof(float));
     
     float mP[3];
-    unsigned int rCnt, cCnt, i;
+    int rCnt, cCnt, i;
 
     for(rCnt=0; rCnt<X; rCnt++) {
         for(cCnt=0; cCnt<Y; cCnt++) {
@@ -790,8 +794,8 @@ void RobustAlgebraicLineFittingTensor(float* inTensorX, float* inTensorY,
 }
 
 void TLS_AlgebraicPlaneFitting(float* x, float* y,
-		float* z, float* mP, unsigned int N) {
-    unsigned int i;
+		float* z, float* mP, int N) {
+    int i;
     float x_mean, y_mean, z_mean, x_x_sum, y_y_sum;
 	float x_y_sum, x_z_sum, y_z_sum, a,b,c, D;
 
@@ -834,29 +838,29 @@ void TLS_AlgebraicPlaneFitting(float* x, float* y,
     mP[2] = c;
 }
 
-int stretch2CornersFunc(float* x, float* y, unsigned int N, 
-                        unsigned char stretch2CornersOpt, 
-                        unsigned int* sample_inds, unsigned int sampleSize) {
+int stretch2CornersFunc(float* x, float* y, int N,
+                        char stretch2CornersOpt,
+                        int* sample_inds, int sampleSize) {
     return 0;
 }
 
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z, 
                                  float* mP, float* mP_Init,
-                                 unsigned int N, float likelyRatio,
+                                 int N, float likelyRatio,
 								 float certainRatio,
                                  float MSSE_LAMBDA,
-								 unsigned char stretch2CornersOpt,
+								 char stretch2CornersOpt,
                                  float minimumResidual,
-								 unsigned char optIters) {
+								 char optIters) {
     float model[3];
-    unsigned int i, iter, cnt;
-    unsigned int sampleSize;
-    unsigned isStretchingPossible=0;
+    int i, iter, cnt;
+    int sampleSize;
+    int isStretchingPossible=0;
     float* residual;
     float* sample_x;
     float* sample_y;
     float* sample_z;
-    unsigned int* sample_inds;
+    int* sample_inds;
     struct sortStruct* errorVec;
     float* sortedX;
     float* sortedY;
@@ -867,14 +871,14 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z,
     sortedY = (float*) malloc(N * sizeof(float));
     residual = (float*) malloc(N * sizeof(float));
     
-    sampleSize = (unsigned int)(N*likelyRatio)- (unsigned int)(N*certainRatio);
+    sampleSize = (int)(N*likelyRatio)- (int)(N*certainRatio);
     sample_x = (float*) malloc(sampleSize * sizeof(float));
     sample_y = (float*) malloc(sampleSize * sizeof(float));
     sample_z = (float*) malloc(sampleSize * sizeof(float));
-    sample_inds = (unsigned int*) malloc(sampleSize * sizeof(unsigned int));
+    sample_inds = (int*) malloc(sampleSize * sizeof(int));
 
     cnt = 0;
-    for(i=(unsigned int)(N*certainRatio); i<(unsigned int)(N*likelyRatio); i++)
+    for(i=(int)(N*certainRatio); i<(int)(N*likelyRatio); i++)
         sample_inds[cnt++] = i;
     
     model[0] = mP_Init[0];
@@ -891,19 +895,19 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z,
         
   
         if(stretch2CornersOpt>0) {
-            for(i=0; i<(unsigned int)(N*likelyRatio); i++) {
+            for(i=0; i<(int)(N*likelyRatio); i++) {
                 sortedX[i] = x[errorVec[i].indxs];
                 sortedY[i] = y[errorVec[i].indxs];
             }
             isStretchingPossible = stretch2CornersFunc(sortedX, sortedY,
-            		(unsigned int)(N*likelyRatio),
+            		(int)(N*likelyRatio),
 					stretch2CornersOpt,
 					sample_inds,
 					sampleSize);
             if(isStretchingPossible==0) {
                 cnt = 0;
-                for(i=(unsigned int)(N*certainRatio);
-                		i<(unsigned int)(N*likelyRatio);
+                for(i=(int)(N*certainRatio);
+                		i<(int)(N*likelyRatio);
                 		i++)
                     sample_inds[cnt++] = i;
             }
@@ -938,16 +942,16 @@ void RobustAlgebraicPlaneFitting(float* x, float* y, float* z,
 }
 
 void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
-					unsigned int N, unsigned int X, unsigned int Y,
+					int N, int X, int Y,
 					float likelyRatio, float certainRatio, float MSSE_LAMBDA,
-					unsigned char optIters, float minimumResidual,
-					unsigned int downSampledSize) {
+					char optIters, float minimumResidual,
+					int downSampledSize) {
 
     float* vec;
     float* weights;
 
     float mP[2];
-    unsigned int rCnt, cCnt, i, L;
+    int rCnt, cCnt, i, L;
 
     vec = (float*) malloc(N * sizeof(float));
     weights = (float*) malloc(N * sizeof(float));
@@ -970,12 +974,12 @@ void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
     free(vec);
 }
 
-void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
-                unsigned int winX, unsigned int winY,
-                unsigned int X, unsigned int Y, 
+void RSGImage(float* inImage, char* inMask, float* modelParamsMap,
+                int winX, int winY,
+                int X, int Y,
                 float likelyRatio, float certainRatio,
-                float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-                unsigned char numModelParams, unsigned char optIters,
+                float MSSE_LAMBDA, char stretch2CornersOpt,
+                char numModelParams, char optIters,
 				float minimumResidual) {
 
     float* x;
@@ -986,7 +990,7 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
     z = (float*) malloc(winX*winY * sizeof(float));
     float* w;
     w = (float*) malloc(winX*winY * sizeof(float));
-    unsigned int rCnt, cCnt, numElem, pRowStart, pRowEnd, pClmStart, pClmEnd;
+    int rCnt, cCnt, numElem, pRowStart, pRowEnd, pClmStart, pClmEnd;
     float mP[4];
     float mP_MOne[2];
     pRowStart = 0;
@@ -1074,22 +1078,22 @@ void RSGImage(float* inImage, unsigned char* inMask, float* modelParamsMap,
 }
 
 void RSGImage_by_Image_Tensor(float* inImage_Tensor,
-		unsigned char* inMask_Tensor,
+		char* inMask_Tensor,
                         float* model_mean, float* model_std,
-                        unsigned int winX, unsigned int winY,
-                        unsigned int N, unsigned int X, unsigned int Y, 
+                        int winX, int winY,
+                        int N, int X, int Y,
                         float likelyRatio, float certainRatio,
-                        float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-                        unsigned char numModelParams, unsigned char optIters,
+                        float MSSE_LAMBDA, char stretch2CornersOpt,
+                        char numModelParams, char optIters,
 						float minimumResidual) {
 
-    unsigned int frmCnt, rCnt, cCnt;
+    int frmCnt, rCnt, cCnt;
     float* modelParamsMap;
     modelParamsMap = (float*) malloc(2*X*Y * sizeof(float));
     float* inImage;
     inImage = (float*) malloc(X*Y * sizeof(float));
-    unsigned char* inMask;
-    inMask = (unsigned char*) malloc(X*Y * sizeof(unsigned char));
+    char* inMask;
+    inMask = (char*) malloc(X*Y * sizeof(char));
             
     for(frmCnt=0; frmCnt<N; frmCnt++) {
         
@@ -1124,17 +1128,17 @@ void RSGImage_by_Image_Tensor(float* inImage_Tensor,
     free(inMask);
 }
 
-void _fitBackgroundRadially(float* inImage, unsigned char* inMask,
+void _fitBackgroundRadially(float* inImage, char* inMask,
                            float* modelParamsMap, float* vecMP,
-                           unsigned int minRes,
-                           unsigned int maxRes, 
-                           unsigned int shellWidth,
-                           unsigned char includeCenter, 
-                           unsigned int finiteSampleBias,
-                           unsigned int X, unsigned int Y,
+                           int minRes,
+                           int maxRes,
+                           int shellWidth,
+                           char includeCenter,
+                           int finiteSampleBias,
+                           int X, int Y,
                            float likelyRatio, float certainRatio, 
                            float MSSE_LAMBDA, 
-                           unsigned char optIters,
+                           char optIters,
 						   float minimumResidual) {
 
     int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
@@ -1274,21 +1278,21 @@ void _fitBackgroundRadially(float* inImage, unsigned char* inMask,
 }
 
 void fitBackgroundCylindrically(float* inTensor,
-								unsigned char* inMask,
+								char* inMask,
                                 float* modelParamsMap,
 								float* vecMP,
-                                unsigned int minRes,
-                                unsigned int maxRes,
-                                unsigned int shellWidth,
-                                unsigned char includeCenter,
-                                unsigned int finiteSampleBias,
-								unsigned int N,
-                                unsigned int X,
-								unsigned int Y,
+                                int minRes,
+                                int maxRes,
+                                int shellWidth,
+                                char includeCenter,
+                                int finiteSampleBias,
+								int N,
+                                int X,
+								int Y,
                                 float likelyRatio,
 								float certainRatio,
                                 float MSSE_LAMBDA,
-                                unsigned char optIters,
+                                char optIters,
 						        float minimumResidual) {
 
 	int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;
@@ -1429,20 +1433,20 @@ void fitBackgroundCylindrically(float* inTensor,
 }
 
 
-void fitBackgroundRadially(float* inImage, unsigned char* inMask,
+void fitBackgroundRadially(float* inImage, char* inMask,
                            float* modelParamsMap, float* vecMP,
-                           unsigned int minRes,
-                           unsigned int maxRes,
-                           unsigned int shellWidth,
-						   unsigned int stride,
-						   unsigned int X_Cent,
-						   unsigned int Y_Cent,
-                           unsigned char includeCenter,
-                           unsigned int finiteSampleBias,
-                           unsigned int X, unsigned int Y,
+                           int minRes,
+                           int maxRes,
+                           int shellWidth,
+						   int stride,
+						   int X_Cent,
+						   int Y_Cent,
+                           char includeCenter,
+                           int finiteSampleBias,
+                           int X, int Y,
                            float likelyRatio, float certainRatio,
                            float MSSE_LAMBDA,
-                           unsigned char optIters,
+                           char optIters,
 						   float minimumResidual) {
 
     int r, maxR, shellCnt, pixX, pixY, i, pixInd, new_numElem;

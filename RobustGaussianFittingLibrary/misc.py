@@ -49,7 +49,7 @@ def PDF2Uniform(inVec, inMask=None, numBins=10,
     if(inMask is not None):
         indPerBin[inMask==0] = outIndicator
     nUniPoints = np.minimum(nUniPoints, (indPerBin != outIndicator).sum())
-    uniInds = np.zeros(nUniPoints, dtype='uint32')
+    uniInds = np.zeros(nUniPoints, dtype='int32')
     ptCnt = 0
     if(showProgress):
         pBar = printprogress(nUniPoints)
@@ -84,8 +84,8 @@ def removeIslands(inMask, minSize = 1):
         the input are now 1s if they were on lonly islands of 
         good pixels surrounded by bad 1s.
     """
-    outMask = np.zeros(inMask.shape, dtype='uint8')
-    RGFCLib.islandRemoval(1 - inMask.astype('uint8'),
+    outMask = np.zeros(inMask.shape, dtype='int8')
+    RGFCLib.islandRemoval(1 - inMask.astype('int8'),
                           outMask,
                           inMask.shape[0],
                           inMask.shape[1],

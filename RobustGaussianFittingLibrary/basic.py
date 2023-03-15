@@ -8,7 +8,7 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 """
 
 """ fit a Gaussian to recover vector value, lines, plane,...
-Input arguments
+Common input arguments
 ~~~~~~~~~~~~~~~
     MSSE_LAMBDA : How far (normalized by STD of the Gaussian) from the 
                         mean of the Gaussian, data is considered inlier.
@@ -101,7 +101,7 @@ def fitValue(inVec, inWeights = None,
              modelValueInit = 0,
              optIters = 12,
              minimumResidual = 0,
-             downSampledSize = np.iinfo("uint32").max,
+             downSampledSize = np.iinfo("int32").max,
              fit2Skewed = True):
     """Fit a Gaussian to input vector robustly:
     The function returns the parameters of a single gaussian structure through
@@ -142,7 +142,7 @@ def fitValue(inVec, inWeights = None,
             less part of data for edtimation of the noise which is not recommended
             then down sample the whole thing before you send it to this function
             and set the downSampledSize to inf.
-            default: np.iinfo('uint32').max
+            default: np.iinfo('int32').max
             
         fit2Skewed: Fit a skewed bell shaped unimodal sharp density robustly.
             The function works exactly the same as the fitValue, it fits 
@@ -247,7 +247,7 @@ def fitValueTensor(inTensor,
                    MSSE_LAMBDA = 3.0,
                    optIters = 12,
                    minimumResidual = 0.0,
-                   downSampledSize = np.iinfo('uint32').max):
+                   downSampledSize = np.iinfo('int32').max):
     """ fit a Gaussian to every vector inside a Tensor, robustly.
     Input arguments
     ~~~~~~~~~~~~~~~
@@ -281,7 +281,7 @@ def fitValueTensor(inTensor,
             less part of data for edtimation of the noise which is not recommended
             then down sample the whole thing before you send it to this function
             and set the downSampledSize to inf.
-            default: np.iinfo('uint32').max                          
+            default: np.iinfo('int32').max                          
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
@@ -494,9 +494,9 @@ def fitBackground(inImage,
         numpy array with 2 parameters for each pixel : 2 x n_R, n_C : Rmean and RSTD.
     """
     
-    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
+    stretch2CornersOpt = np.int8(stretch2CornersOpt)
     if(inMask is None):
-        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
+        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='int8')
         
     if(winX is None):
         winX = inImage.shape[0]
@@ -522,10 +522,10 @@ def fitBackground(inImage,
                      optIters,
                      minimumResidual)
     
-    _sums = np.ones((2, n_R, n_C), dtype='uint8')
+    _sums = np.ones((2, n_R, n_C), dtype='int8')
     if(numStrides>1):
-        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
-        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
+        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='int8')[1:-1]
+        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='int8')[1:-1]
         for wSDRow in wSDListRows:
             for wSDClm in wSDListClms:
                 _inImage = inImage[wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
@@ -597,9 +597,9 @@ def fitBackgroundTensor(inImage_Tensor,
         2 x n_F x n_R x n_C where out[0] would be background mean and out[1] would be STD for each pixel in the Tensor.
     """
     
-    stretch2CornersOpt = np.uint8(stretch2CornersOpt)
+    stretch2CornersOpt = np.int8(stretch2CornersOpt)
     if(inMask_Tensor is None):
-        inMask_Tensor = np.ones(inImage_Tensor.shape, dtype='uint8')
+        inMask_Tensor = np.ones(inImage_Tensor.shape, dtype='int8')
     if(winX is None):
         winX = inImage_Tensor.shape[1]
     if(winY is None):
@@ -612,7 +612,7 @@ def fitBackgroundTensor(inImage_Tensor,
     model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
     model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
     RGFCLib.RSGImage_by_Image_Tensor(inImage_Tensor.astype('float32'),
-                                    inMask_Tensor.astype('uint8'),
+                                    inMask_Tensor.astype('int8'),
                                     model_mean,
                                     model_std,
                                     winX,
@@ -629,10 +629,10 @@ def fitBackgroundTensor(inImage_Tensor,
                                     minimumResidual)
 
     bckParam = np.array([model_mean, model_std])    
-    _sums = np.ones((2, n_F, n_R, n_C), dtype='uint8')
+    _sums = np.ones((2, n_F, n_R, n_C), dtype='int8')
     if(numStrides>0):
-        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='uint8')[1:-1]
-        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='uint8')[1:-1]
+        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='int8')[1:-1]
+        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='int8')[1:-1]
         for wSDRow in wSDListRows:
             for wSDClm in wSDListClms:
                 _inImage_Tensor = inImage_Tensor[:, wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
@@ -642,7 +642,7 @@ def fitBackgroundTensor(inImage_Tensor,
                 model_std  = np.zeros(_inImage_Tensor.shape, dtype='float32')
             
                 RGFCLib.RSGImage_by_Image_Tensor(_inImage_Tensor.astype('float32'),
-                                                 _inMask_Tensor.astype('uint8'),
+                                                 _inMask_Tensor.astype('int8'),
                                                  model_mean,
                                                  model_std,
                                                  winX,
@@ -731,7 +731,7 @@ def fitBackgroundRadially(inImage,
     """
     
     if(inMask is None):
-        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='uint8')
+        inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='int8')
         
     if(maxRes is None):
         maxRes = int(((inImage.shape[0])**2 + (inImage.shape[1])**2)**0.5)
@@ -845,7 +845,7 @@ def fitBackgroundCylindrically(inTensor,
     n_F, n_R, n_C = inTensor.shape
 
     if(inMask is None):
-        inMask = np.ones(inTensor.shape, dtype='uint8')
+        inMask = np.ones(inTensor.shape, dtype='int8')
         
     if(maxRes is None):
         maxRes = int(((n_R/2)**2 + (n_C/2)**2)**0.5)
@@ -858,7 +858,7 @@ def fitBackgroundCylindrically(inTensor,
         shellWidth = 1
     modelParamsMap = bckParam.copy()
     _sums = 0
-    shellStrideList = np.linspace(0, shellWidth, numStrides + 1, dtype='uint8')
+    shellStrideList = np.linspace(0, shellWidth, numStrides + 1, dtype='int8')
     for shellStride in shellStrideList:
         RGFCLib.fitBackgroundCylindrically(inTensor.astype('float32'),
                                            inMask,

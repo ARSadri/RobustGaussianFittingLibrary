@@ -14,7 +14,7 @@ def gkern(kernlen):
 def diffractionPatternMaker(XSZ, YSZ, WINSIZE, inputPeaksNumber, numOutliers):    
     inData = np.zeros((XSZ, YSZ), dtype='float32')
     
-    inMask = np.ones(inData.shape, dtype = 'uint8')
+    inMask = np.ones(inData.shape, dtype = 'int8')
     inMask[::64, ::64] = 0
     
     for ccnt in range(inData.shape[1]):

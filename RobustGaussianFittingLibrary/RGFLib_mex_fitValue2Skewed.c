@@ -22,9 +22,9 @@ Currently we will write a mex for the following function(s):
 
 		void RobustSingleGaussianVec(float *vec, 
 					float *modelParams, float theta, 
-					unsigned int N,
+					int N,
 					float likelyRatio, float certainRatio, 
-					float MSSE_LAMBDA, unsigned char optIters)
+					float MSSE_LAMBDA, char optIters)
 
 Written by Alireza Sadri, arsadri@gmail.com 
 */
@@ -53,7 +53,7 @@ Written by Alireza Sadri, arsadri@gmail.com
 /* The gateway function */
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
-	unsigned int i;
+	int i;
 	double *inVec;
 	double *inWeights;
 	double *initModel;
@@ -80,22 +80,22 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	float *_inVec;
 	float *_inWeights;
 	float _initModel;
-	unsigned int _N;
+	int _N;
 	float _topKthPerc;
 	float _bottomKthPerc;
 	float _MSSE_LAMBDA;
-	unsigned char _optIters;
+	char _optIters;
 	float _minimumResidual;
-	unsigned int _downSampledSize;
+	int _downSampledSize;
 		
 	_initModel = (float)(initModel[0]);
-	_N = (unsigned int)(N[0]);
+	_N = (int)(N[0]);
 	_topKthPerc = (float)(likelyRatio[0]);
 	_bottomKthPerc = (float)(certainRatio[0]);
 	_MSSE_LAMBDA = (float)(MSSE_LAMBDA[0]);
-	_optIters = (unsigned char)(optIters[0]);
+	_optIters = (char)(optIters[0]);
 	_minimumResidual = (float)(minimumResidual[0]);
-	_downSampledSize = (unsigned int) (downSampledSize[0]);
+	_downSampledSize = (int) (downSampledSize[0]);
 	
 	_inVec=(float *) malloc( _N*sizeof(float));
 	for(i=0; i<_N; i++)

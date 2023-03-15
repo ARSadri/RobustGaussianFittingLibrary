@@ -13,7 +13,7 @@ def calcMyThing(cnt, inputs, iterable_inputs):
 
 N = 100
 data = np.random.randn(N, 1000000).astype('float32')
-mask = np.floor(2*np.random.rand(N, 1000000)).astype('uint8')
+mask = np.floor(2*np.random.rand(N, 1000000)).astype('int8')
 weights = np.random.randn(N, 1000000).astype('float32')
 
 time_time = time.time()

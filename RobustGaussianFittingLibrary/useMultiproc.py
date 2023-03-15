@@ -66,7 +66,7 @@ def fitValueTensor_MultiProcFunc(aQ,
                        MSSE_LAMBDA = 3.0,
                        optIters = 12,
                        minimumResidual = 0.0,
-                       downSampledSize = np.iinfo('uint32').max)
+                       downSampledSize = np.iinfo('int32').max)
     """
     modelParams = fitValueTensor(inTensor=inTensor, 
                                  inWeights = inWeights,
@@ -122,7 +122,7 @@ def fitValueTensor_MultiProc(inTensor,
             less part of data for edtimation of the noise which is not recommended
             then down sample the whole thing before you send it to this function
             and set the downSampledSize to inf.
-            default: np.iinfo('uint32').max
+            default: np.iinfo('int32').max
     Output
     ~~~~~~
         2 x n_R x n_C float32 values, out[0] is mean and out[1] is the STDs for each element
@@ -158,7 +158,7 @@ def fitValueTensor_MultiProc(inTensor,
                     pBar = printprogress(numProc-1, title = 'Calculationg Values')
                     firstProcessed = 1
                 else:
-                    pBar(1)
+                    pBar()
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
             
@@ -257,7 +257,7 @@ def fitLineTensor_MultiProc(inTensorX, inTensorY,
                     pBar = printprogress(numProc-1, title = 'Calculationg line parameters')
                     firstProcessed = 1
                 else:
-                    pBar(1)
+                    pBar()
 
 
         if((numWiating>0) & (numBusyCores < myCPUCount)):
@@ -363,7 +363,7 @@ def fitBackgroundTensor_multiproc(inDataSet, inMask = None,
     c_N = inDataSet.shape[2]
     
     if(inMask is None):
-        inMask = np.ones(inDataSet.shape, dtype='uint8')
+        inMask = np.ones(inDataSet.shape, dtype='int8')
     if(winX is None):
         winX = r_N
     if(winY is None):
@@ -488,7 +488,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
     Input arguments
     ~~~~~~~~~~~~~~~
         inImg_Tensor: a 3D float32 numpy array as the tensor of n_F images: n_f x n_R x n_C
-        inMask_Tensor: same size as inImg_Tensor, with data type 'uint8',
+        inMask_Tensor: same size as inImg_Tensor, with data type 'int8',
                         where 0 is bad and 1 is good. The masked pixels have not effect
                         in the calculation of the parameters of the plane fit to background.
                         However, the value of the background at their location can be found.
@@ -543,7 +543,7 @@ def fitBackgroundRadiallyTensor_multiproc(inImg_Tensor,
     """
 
     if(inMask_Tensor is None):
-        inMask_Tensor = np.ones(inImg_Tensor.shape, dtype='uint8')
+        inMask_Tensor = np.ones(inImg_Tensor.shape, dtype='int8')
 
     n_F = inImg_Tensor.shape[0]
     n_R = inImg_Tensor.shape[1]

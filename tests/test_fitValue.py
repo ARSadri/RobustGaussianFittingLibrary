@@ -35,7 +35,7 @@ def test_fitValue():
     
     np.random.shuffle(data_indices)
     testData = testData[data_indices]
-    label = np.ones(n_pts, dtype='uint8')
+    label = np.ones(n_pts, dtype='int8')
     label[np.fabs(testData) <= 3*inSigma] = 0
     mP_R = rgflib.fitValue(testData, 
                          fit2Skewed = True,

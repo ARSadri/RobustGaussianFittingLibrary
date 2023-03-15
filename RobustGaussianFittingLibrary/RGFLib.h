@@ -15,124 +15,124 @@ Copyright: 2017-2020 LaTrobe University Melbourne,
 
 #define NEGATIVE_MAX -(1e+20)
 
-void islandRemoval(unsigned char* inMask, unsigned char* outMask,
- 	 			   unsigned int X, unsigned int Y,
-				   unsigned int islandSizeThreshold);
+void islandRemoval(char* inMask, char* outMask,
+ 	 			   int X, int Y,
+				   int islandSizeThreshold);
 
-float MSSE(float *error, unsigned int vecLen, float MSSE_LAMBDA,
-		   unsigned int k, float minimumResidual);
-float MSSEWeighted(float* error, float* weights, unsigned int vecLen,
-                   float MSSE_LAMBDA, unsigned int k, float minimumResidual);
+float MSSE(float *error, int vecLen, float MSSE_LAMBDA,
+		   int k, float minimumResidual);
+float MSSEWeighted(float* error, float* weights, int vecLen,
+                   float MSSE_LAMBDA, int k, float minimumResidual);
 	
 void fitValue(float* inVec,
 			  float* inWeights,
 			  float* modelParams,
 			  float theta,
-			  unsigned int inN,
+			  int inN,
               float likelyRatio,
 			  float certainRatio,
               float MSSE_LAMBDA,
-			  unsigned char optIters,
+			  char optIters,
               float minimumResidual,
-			  unsigned int downSampledSize);
+			  int downSampledSize);
 
 void fitValue2Skewed(float* inVec,
 			         float* inWeights,
 			         float* modelParams,
 			         float theta,
-			         unsigned int inN,
+			         int inN,
 					 float likelyRatio,
 			         float certainRatio,
                      float MSSE_LAMBDA,
-			         unsigned char optIters,
+			         char optIters,
                      float minimumResidual,
-			         unsigned int downSampledSize);
+			         int downSampledSize);
 
 void medianOfFits(float *vec, float *weights, 
-        float *modelParams, float theta, unsigned int N,
+        float *modelParams, float theta, int N,
         float likelyRatio_min, float likelyRatio_max,
-		  unsigned int numSamples, float sampleRatio,
-        float MSSE_LAMBDA, unsigned char optIters,
+		  int numSamples, float sampleRatio,
+        float MSSE_LAMBDA, char optIters,
 		  float minimumResidual,
-		  unsigned int downSampledSize);
+		  int downSampledSize);
 
 void RobustAlgebraicLineFitting(float* x, float* y, float* mP,
-							unsigned int N, float likelyRatio,
+							int N, float likelyRatio,
 							float certainRatio, float MSSE_LAMBDA);
 
 void RobustAlgebraicLineFittingTensor(float *inTensorX, float *inTensorY,
-									float *modelParamsMap, unsigned int N,
-									unsigned int X, unsigned int Y,
+									float *modelParamsMap, int N,
+									int X, int Y,
 									float likelyRatio, float certainRatio,
 									float MSSE_LAMBDA);
 
 void RobustAlgebraicPlaneFitting(float* x, float* y, float* z,
 								 float* mP, float* mP_Init,
-							     unsigned int N, float likelyRatio,
+							     int N, float likelyRatio,
 								 float certainRatio,
 								 float MSSE_LAMBDA,
-								 unsigned char stretch2CornersOpt,
+								 char stretch2CornersOpt,
 							     float minimumResidual,
-								 unsigned char optIters);
+								 char optIters);
 
 void fitValueTensor(float* inTensor, float* inWeights, float* modelParamsMap,
-		unsigned int N, unsigned int X, unsigned int Y,
+		int N, int X, int Y,
 		float likelyRatio, float certainRatio, float MSSE_LAMBDA,
-		unsigned char optIters, float minimumResidual,
-		unsigned int downSampledSize);
+		char optIters, float minimumResidual,
+		int downSampledSize);
 
-void RSGImage(float* inImage, unsigned char* inMask, float *modelParamsMap,
-		      unsigned int winX, unsigned int winY,
-		      unsigned int X, unsigned int Y,
+void RSGImage(float* inImage, char* inMask, float *modelParamsMap,
+		      int winX, int winY,
+		      int X, int Y,
 		      float likelyRatio, float certainRatio,
-		      float MSSE_LAMBDA, unsigned char stretch2CornersOpt,
-		      unsigned char numModelParams, unsigned char optIters,
+		      float MSSE_LAMBDA, char stretch2CornersOpt,
+		      char numModelParams, char optIters,
 		      float minimumResidual);
 
 void RSGImage_by_Image_Tensor(float* inImage_Tensor,
-							  unsigned char* inMask_Tensor,
+							  char* inMask_Tensor,
 						      float *model_mean, float *model_std,
-						      unsigned int winX, unsigned int winY,
-						      unsigned int N, unsigned int X, unsigned int Y,
+						      int winX, int winY,
+						      int N, int X, int Y,
 						      float likelyRatio, float certainRatio,
 						      float MSSE_LAMBDA,
-							  unsigned char stretch2CornersOpt,
-						      unsigned char numModelParams,
-							  unsigned char optIters,
+							  char stretch2CornersOpt,
+						      char numModelParams,
+							  char optIters,
 						      float minimumResidual);
 
-void fitBackgroundRadially(float* inImage, unsigned char* inMask,
+void fitBackgroundRadially(float* inImage, char* inMask,
                            float* modelParamsMap, float* vecMP,
-                           unsigned int minRes,
-                           unsigned int maxRes,
-                           unsigned int shellWidth,
-						   unsigned int stride,
-						   unsigned int X_Cent,
-						   unsigned int Y_Cent,
-                           unsigned char includeCenter,
-                           unsigned int finiteSampleBias,
-                           unsigned int X, unsigned int Y,
+                           int minRes,
+                           int maxRes,
+                           int shellWidth,
+						   int stride,
+						   int X_Cent,
+						   int Y_Cent,
+                           char includeCenter,
+                           int finiteSampleBias,
+                           int X, int Y,
                            float likelyRatio, float certainRatio,
                            float MSSE_LAMBDA,
-                           unsigned char optIters,
+                           char optIters,
 						   float minimumResidual);
 
 void fitBackgroundCylindrically(float* inTensor,
-								unsigned char* inMask,
+								char* inMask,
                                 float* modelParamsMap,
 								float* vecMP,
-                                unsigned int minRes,
-                                unsigned int maxRes,
-                                unsigned int shellWidth,
-                                unsigned char includeCenter,
-                                unsigned int finiteSampleBias,
-								unsigned int N,
-                                unsigned int X,
-								unsigned int Y,
+                                int minRes,
+                                int maxRes,
+                                int shellWidth,
+                                char includeCenter,
+                                int finiteSampleBias,
+								int N,
+                                int X,
+								int Y,
                                 float likelyRatio,
 								float certainRatio,
                                 float MSSE_LAMBDA,
-                                unsigned char optIters,
+                                char optIters,
 						        float minimumResidual);
 
 #endif
