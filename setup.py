@@ -13,8 +13,8 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 
 from setuptools import setup
 from setuptools import Extension
-
-_version = '0.2.3'
+from platform import system as platform_system
+_version = '0.2.4'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
@@ -22,6 +22,17 @@ with open('README.md') as readme_file:
 requirements = ['numpy', 'scipy', 'matplotlib', 'lognflow']
 
 test_requirements = ['pytest>=3', ]
+
+more_setup_arguments = {}
+if platform_system() == 'Linux':
+    more_setup_arguments['ext_modules'] = [
+        Extension(name = 'RGFLib', 
+                  sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
+                  language = 'c',
+                  extra_compile_args = ['-shared'])]
+else:
+    more_setup_arguments['package_data']=\
+        {'': ['RobustGaussianFittingLibrary/RGFLib.so']}
 
 setup(
     author="Alireza Sadri",
@@ -63,8 +74,5 @@ setup(
     url='https://github.com/arsadri/RobustGaussianFittingLibrary',
     version=_version,
     zip_safe=False,
-    ext_modules=[Extension(name = 'RGFLib', 
-                           sources = ['RobustGaussianFittingLibrary/RGFLib.c'],
-                           language = 'c',
-                           extra_compile_args = ['-shared'])],
+    **more_setup_arguments
 )

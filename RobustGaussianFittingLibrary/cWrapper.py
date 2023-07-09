@@ -15,7 +15,8 @@ import ctypes
 import os
 import fnmatch
 
-dir_path = os.path.dirname(os.path.realpath(__file__)) + os.path.sep + '..' + os.path.sep
+dir_path = os.path.dirname(
+    os.path.realpath(__file__)) + os.path.sep + '..' + os.path.sep
 fileNameTemplate = 'RGFLib*.so'
 flist = fnmatch.filter(os.listdir(dir_path + os.path.sep), fileNameTemplate)
 if(len(flist)==0):	#for those who use make
