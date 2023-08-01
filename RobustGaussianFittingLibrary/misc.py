@@ -406,6 +406,114 @@ def getTriangularVertices(n,
 
     return(triVecs)
 
+class image_by_windows:
+    def __init__(self, 
+                 img_shape: tuple[int, int], 
+                 win_shape: tuple[int, int],
+                 skip: tuple[int, int] = (1, 1),
+                 method = 'linear'):
+        """image by windows
+        
+            I am using OOP here because the user pretty much always wants to
+            transform results back to the original shape. It is different
+            from typical transforms, where the processing ends at the other
+            space.
+        
+            Parameters
+            ----------
+            :param img_shape:
+                pass your_data.shape. First two dimensions should be for the
+                image to be cropped.
+            :param win_shape:
+                the cropping windows shape
+            :param skip:
+                The skipping length of windows
+            :param method:
+                default is linear, it means that if it cannot preserve the skip
+                it will not, but the grid will be spread evenly among windows.
+                If you wish to keep the skip exact, choose fixed. If the size
+                of the image is not dividable by the skip, it will have to
+                change the location of last window such that the entire image
+                is covered. This emans that the location of the grid will be 
+                moved to the left. 
+        """
+        self.img_shape = img_shape
+        self.win_shape = win_shape
+        self.skip = skip
+        
+        n_r, n_c = img_shape[:2]
+
+        if(method == 'fixed'):
+            rows = np.arange(0, n_r - win_shape[0] + 1, skip[0])
+            clms = np.arange(0, n_c - win_shape[1] + 1, skip[1])
+            if rows[-1] < n_r - win_shape[0]:
+                rows = np.concatenate((rows, np.array([n_r - win_shape[0]])))
+            if clms[-1] < n_c - win_shape[1]:
+                clms = np.concatenate((clms, np.array([n_c - win_shape[1]])))
+        if(method == 'linear'):
+            rows = np.linspace(
+                0, n_r - win_shape[0],n_r // skip[0], dtype = 'int')
+            rows = np.unique(rows)
+            clms = np.linspace(
+                0, n_c - win_shape[1],n_r // skip[1], dtype = 'int')
+            clms = np.unique(clms)
+            
+        grid_clms, grid_rows = np.meshgrid(clms, rows)
+    
+        self.grid = np.array([grid_rows.ravel(), grid_clms.ravel()]).T
+        self.visited = np.zeros(self.img_shape, dtype='int')
+        for grc in self.grid:
+            self.visited[grc[0]:grc[0] + self.win_shape[0], 
+                         grc[1]:grc[1] + self.win_shape[1]] += 1
+        self.n_pts = self.grid.shape[0]
+        
+    def image2views(self, img):
+        all_other_dims = ()
+        if (len(self.img_shape)>2):
+            all_other_dims = self.img_shape[2:]
+            
+        viewed = np.zeros(
+            (self.grid.shape[0], self.win_shape[0], 
+                                 self.win_shape[1]) + all_other_dims,
+            dtype = img.dtype)
+        for gcnt, grc in enumerate(self.grid):
+            gr, gc = grc
+            viewed[gcnt] = img[
+                gr:gr + self.win_shape[0], gc:gc + self.win_shape[1]]
+        return viewed
+    
+    def views2image(self, viewed, method = 'linear'):
+        if(method == 'linear'):
+            img = np.zeros(self.img_shape, dtype = 'float')
+            for gcnt, grc in enumerate(self.grid):
+                gr, gc = grc
+                img[gr:gr + self.win_shape[0], gc:gc + self.win_shape[1]] += \
+                    viewed[gcnt]
+            img[self.visited>0, ...] = \
+                img[self.visited>0, ...] / self.visited[self.visited>0]
+            img = img.astype(viewed.dtype)
+        else:
+            img = np.zeros(
+                (self.win_shape[0]*self.win_shape[1],) + self.img_shape, 
+                viewed.dtype)
+            visited = np.zeros(
+                (self.win_shape[0] * self.win_shape[1], 
+                 self.img_shape[0], self.img_shape[1]), dtype='int')
+            for gcnt, grc in enumerate(self.grid):
+                gr, gc = grc
+                
+                level2use = visited[
+                    :, gr:gr + self.win_shape[0], 
+                       gc:gc + self.win_shape[1]].max(2).max(1)
+                level = np.where(level2use == 0)[0][0]
+                
+                img[level, gr:gr + self.win_shape[0], gc:gc + self.win_shape[1]] += \
+                    viewed[gcnt]
+                visited[level, 
+                    gr:gr + self.win_shape[0], gc:gc + self.win_shape[1]] = 1
+            if(method == 'max'):
+                img = img.max(0).squeeze()
+        return img
 
 #################
 #TO DOL

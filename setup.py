@@ -14,7 +14,7 @@ Authors: Alireza Sadri, Marjan Hadian Jazi
 from setuptools import setup
 from setuptools import Extension
 from platform import system as platform_system
-_version = '0.2.4'
+_version = '0.2.5'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()

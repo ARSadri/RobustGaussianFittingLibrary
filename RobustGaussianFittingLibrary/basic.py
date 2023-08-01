@@ -449,7 +449,8 @@ def fitBackground(inImage,
                   stretch2CornersOpt = 0,
                   numModelParams = 4,
                   optIters = 12,
-                  numStrides = 0,
+                  numStrides = None,
+                  skip = (1, 1),
                   minimumResidual = 0):
     """ fit a plane to the background of the image uainf convolving the window by number of strides
         and calculate the value of the background plane and STD at the location of each pixel.
@@ -498,56 +499,80 @@ def fitBackground(inImage,
     if(inMask is None):
         inMask = np.ones((inImage.shape[0], inImage.shape[1]), dtype='int8')
         
-    if(winX is None):
-        winX = inImage.shape[0]
-    if(winY is None):
-        winY = inImage.shape[1]
-
     n_R = inImage.shape[0]
     n_C = inImage.shape[1]
+
+    if ((winX is None) & (winY is None)):
+        winX = inImage.shape[0]
+        winY = inImage.shape[1]
+        bckParam = np.zeros((2, n_R, n_C), dtype='float32')
+        RGFCLib.RSGImage(inImage.astype('float32'),
+                         inMask,
+                         bckParam,
+                         winX,
+                         winY,
+                         inImage.shape[0],
+                         inImage.shape[1],
+                         likelyRatio,
+                         certainRatio,
+                         MSSE_LAMBDA,
+                         stretch2CornersOpt,
+                         numModelParams,
+                         optIters,
+                         minimumResidual)
+        return(bckParam)
+    else:
+        if(winX is None):
+            winX = inImage.shape[0]
+        if(winY is None):
+            winY = inImage.shape[1]
+
+        if(numStrides is None):
+            skip = skip
+        else:
+            numStrides = int(numStrides)
+            if(numStrides<=0):
+                skip = (winX, winY)
+            else:
+                skip = (winX // numStrides, winY // numStrides)
         
-    bckParam = np.zeros((2, n_R, n_C), dtype='float32')
-    RGFCLib.RSGImage(inImage.astype('float32'),
-                     inMask,
-                     bckParam,
-                     winX,
-                     winY,
-                     inImage.shape[0],
-                     inImage.shape[1],
-                     likelyRatio,
-                     certainRatio,
-                     MSSE_LAMBDA,
-                     stretch2CornersOpt,
-                     numModelParams,
-                     optIters,
-                     minimumResidual)
+        from .misc import image_by_windows
+        imbywin = image_by_windows(inImage.shape, (winX, winY), skip)
+        inImage_Tensor = imbywin.image2views(inImage)
+        inMask_Tensor = imbywin.image2views(inMask)
+        
+        winX = inImage_Tensor.shape[1]
+        winY = inImage_Tensor.shape[2]
+        
+        n_F = inImage_Tensor.shape[0]
+        n_R = inImage_Tensor.shape[1]
+        n_C = inImage_Tensor.shape[2]
+            
+        model_mean = np.zeros(inImage_Tensor.shape, dtype='float32')
+        model_std  = np.zeros(inImage_Tensor.shape, dtype='float32')
+        RGFCLib.RSGImage_by_Image_Tensor(inImage_Tensor.astype('float32'),
+                                         inMask_Tensor.astype('int8'),
+                                         model_mean,
+                                         model_std,
+                                         winX,
+                                         winY,
+                                         inImage_Tensor.shape[0],
+                                         inImage_Tensor.shape[1],
+                                         inImage_Tensor.shape[2],
+                                         likelyRatio,
+                                         certainRatio,
+                                         MSSE_LAMBDA,
+                                         stretch2CornersOpt,
+                                         numModelParams,
+                                         optIters,
+                                         minimumResidual)
     
-    _sums = np.ones((2, n_R, n_C), dtype='int8')
-    if(numStrides>1):
-        wSDListRows = np.linspace(0, winX, numStrides+2, dtype='int8')[1:-1]
-        wSDListClms = np.linspace(0, winY, numStrides+2, dtype='int8')[1:-1]
-        for wSDRow in wSDListRows:
-            for wSDClm in wSDListClms:
-                _inImage = inImage[wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
-                _inMask = inMask[wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm].copy()
-                modelParamsMap = np.zeros((2, _inImage.shape[0], _inImage.shape[1]), dtype='float32')
-                RGFCLib.RSGImage(_inImage.astype('float32'),
-                                 _inMask,
-                                 modelParamsMap,
-                                 winX,
-                                 winY,
-                                 _inImage.shape[0],
-                                 _inImage.shape[1],
-                                 likelyRatio,
-                                 certainRatio,
-                                 MSSE_LAMBDA,
-                                 stretch2CornersOpt,
-                                 numModelParams,
-                                 optIters,
-                                 minimumResidual)
-                bckParam[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += modelParamsMap
-                _sums[:,wSDRow:n_R-winX+wSDRow ,wSDClm:n_C-winY+wSDClm] += 1
-    return(bckParam / _sums)
+        model_mean = imbywin.views2image(model_mean)
+        model_std  = imbywin.views2image(model_std)
+        bckParam = np.concatenate((np.array([model_mean]), 
+                                   np.array([model_std])), axis = 0)
+        
+        return(bckParam)
 
 def fitBackgroundTensor(inImage_Tensor, 
                         inMask_Tensor = None,
@@ -884,7 +909,6 @@ def fitBackgroundCylindrically(inTensor,
         return(bckParam/_sums, vecMP/_sums)
     else:
         return(bckParam/_sums)
-
 
 def fitValue_by_meanShift(inVec, minSNR = 3.0, MS_numIter = 8):
     MS_mu = inVec.mean()
