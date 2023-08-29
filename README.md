@@ -103,4 +103,4 @@ This library is an effort to implement a set of robsut statistical functions. Ho
 ## Authors
 * Alireza Sadri <Alireza[Dot]Sadri[At]Monash[Dot]edu>
 * Marjan Hadian Jazi <Hadian-Jazi.M[At]WEHI[Dot]edu[Dot]au>
-"A Python package based on robust statistical analysis for serial crystallography data processing",M. Hadian-Jazi A. and Sadri, Acta Crystallographica Section D, Sep, 2023
+* "A Python package based on robust statistical analysis for serial crystallography data processing",M. Hadian-Jazi A. and Sadri, Acta Crystallographica Section D, Sep, 2023
